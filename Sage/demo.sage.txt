@@ -1,0 +1,18 @@
+import sqlite3
+connection = sqlite3.connect("/home/bercic/graphs.db")
+connection.execute("""CREATE TABLE graphs (sparse6 text primary key, n int, i int, girth int, diameter int)""")
+
+previous = 0
+i = 0
+with open("/home/bercic/CVT.txt") as f:
+	for line in f:
+		g = Graph(eval(line.strip()))
+		n = g.order()
+		if n > previous:
+			previous = n
+			i = 0
+		i += 1
+		print n, i
+		connection.execute("INSERT INTO graphs(sparse6, n, i, girth, diameter) VALUES (?,?,?,?,?)", (g.sparse6_string(), int(n), int(i), int(g.girth()), int(g.diameter())))
+
+connection.commit()
