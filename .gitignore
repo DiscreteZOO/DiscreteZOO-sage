@@ -1,0 +1,10 @@
+*~
+__pycache__
+*.aux
+*.db
+*.log
+*.out
+*.pyc
+*.sqlite
+*.sqlite3
+.DS_Store
