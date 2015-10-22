@@ -1,3 +1,4 @@
+from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from zoograph import ZooGraph
 from utility import lookup
@@ -7,8 +8,24 @@ import sqlite
 class CVTGraph(ZooGraph):
     _cvtprops = {}
 
-    def __init__(self, vertices = None, index = None, zooid = None):
-        if vertices != None and index != None:
+    def __init__(self, vertices = None, index = None, zooid = None,
+                 graph = None, name = None):
+        cvtprops = None
+        if graph is not None:
+            if not isinstance(graph, GenericGraph):
+                raise TypeError("not a graph")
+            if name is None:
+                name = graph.name()
+            if isinstance(graph, ZooGraph):
+                zooid = graph._zooid
+            elif zooid is None:
+                raise IndexError("graph id not given")
+            if isinstance(graph, CVTGraph):
+                cvtprops = graph._cvtprops
+            vertices = None
+            index = None
+
+        if vertices is not None and index is not None:
             cur = sqlite.db.cursor()
             cur.execute("""
                 SELECT graph.* FROM graph NATURAL JOIN graph_cvt
@@ -16,25 +33,34 @@ class CVTGraph(ZooGraph):
             """, [int(vertices), int(index)])
             r = cur.fetchone()
             cur.close()
-            if r == None:
-                raise KeyError(zooid)
+            if r is None:
+                raise KeyError((vertices, index))
             props = todict(r, skip = ["id", "data"])
             zooid = r["id"]
             ZooGraph.__init__(self, zooid = zooid, data = r["data"],
-                              props = props)
+                              props = props, name = name)
         else:
-            if zooid == None:
-                raise IndexError("graph id not given")
-            ZooGraph.__init__(self, zooid = zooid)
+            ZooGraph.__init__(self, zooid = zooid, graph = graph, name = name)
+        if cvtprops is None:
+            self._db_read()
+        else:
+            self._cvtprops = cvtprops
+        if not name:
+            self.name("Cubic vertex-transitive graph on %d vertices, number %d"
+                      % (self.order(), self.cvt_index()))
+
+    def _db_read(self):
         cur = sqlite.db.cursor()
-        cur.execute("SELECT * FROM graph_cvt WHERE id = ?", [int(zooid)])
+        cur.execute("SELECT * FROM graph_cvt WHERE id = ?", [int(self._zooid)])
         r = cur.fetchone()
         cur.close()
-        if r == None:
-            raise KeyError(zooid)
+        if r is None:
+            raise KeyError(self._zooid)
         self._cvtprops = todict(r, skip = ["id"])
-        self.rename("Cubic vertex-transitive graph on %d vertices, number %d" %
-                    (self.order(), self.cvt_index()))
+
+    def load_db_data(self):
+        ZooGraph.load_db_data(self)
+        self._db_read()
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvtid")

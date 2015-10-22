@@ -1,3 +1,4 @@
+from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from utility import lookup
 from utility import todict
@@ -7,23 +8,42 @@ class ZooGraph(Graph):
     _zooid = None
     _props = {}
     
-    def __init__(self, zooid = None, data = None, props = None):
-        if data != None:
-            if props != None:
+    def __init__(self, zooid = None, data = None, props = None, graph = None,
+                 name = None):
+        if graph is not None:
+            if not isinstance(graph, GenericGraph):
+                raise TypeError("not a graph")
+            data = graph
+            if name is None:
+                name = graph.name()
+            if isinstance(graph, ZooGraph):
+                zooid = graph._zooid
+                props = graph._props
+            elif zooid is None:
+                raise IndexError("graph id not given")
+
+        self._zooid = zooid
+        if data is not None:
+            if props is not None:
                 self._props = props
         else:
-            if zooid == None:
-                raise IndexError("graph id not given")
-            cur = sqlite.db.cursor()
-            cur.execute("SELECT * FROM graph WHERE id = ?", [int(zooid)])
-            r = cur.fetchone()
-            cur.close()
-            if r == None:
-                raise KeyError(zooid)
-            self._props = todict(r, skip = ["id", "data"])
-            data = r["data"]
-        self._zooid = zooid
-        Graph.__init__(self, data)
+            data = self._db_read()
+        Graph.__init__(self, data = data, name = name)
+
+    def _db_read(self):
+        if self._zooid is None:
+            raise IndexError("graph id not given")
+        cur = sqlite.db.cursor()
+        cur.execute("SELECT * FROM graph WHERE id = ?", [int(self._zooid)])
+        r = cur.fetchone()
+        cur.close()
+        if r is None:
+            raise KeyError(self._zooid)
+        self._props = todict(r, skip = ["id", "data"])
+        return r["data"]
+
+    def load_db_data(self):
+        self._db_read()
 
     def order(self, store = False):
         try:
@@ -43,31 +63,28 @@ class ZooGraph(Graph):
                 self._props["girth"] = g
             return g
 
-    def diameter(self, by_weight=False, algorithm = None, weight_function=None,
-                 check_weight=True, store = False):
-        default = not by_weight and algorithm == None and \
-                  weight_function == None and check_weight
+    def diameter(self, store = False, **kargs):
+        default = len(kargs) == 0
         try:
             if not default:
-                    raise NotImplementedError
+                raise NotImplementedError
             return lookup(self._props, "diameter")
         except (KeyError, NotImplementedError):
-            d = Graph.diameter(self, by_weight, algorithm, weight_function,
-                               check_weight)
+            d = Graph.diameter(self, **kargs)
             if default and store:
                 self._props["diameter"] = d
             return d
 
-    def is_regular(self, k = None):
+    def is_regular(self, k = None, store = False):
         try:
             r = lookup(self._props, "is_regular")
-            if k == None:
+            if k is None:
                 return r >= 0
             else:
                 return r == k
         except KeyError:
             r = Graph.is_regular(self, k)
-            if store and (r ^ (k == None)):
+            if store and (r ^ (k is None)):
                 if not r:
                     self._props["is_regular"] = -1
                 else:
