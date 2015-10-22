@@ -33,6 +33,8 @@ class CVTGraph(ZooGraph):
         if r == None:
             raise KeyError(zooid)
         self._cvtprops = todict(r, skip = ["id"])
+        self.rename("Cubic vertex-transitive graph on %d vertices, number %d" %
+                    (self.order(), self.cvt_index()))
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvtid")
