@@ -1,6 +1,7 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from utility import lookup
+from utility import update
 from utility import todict
 import sqlite
 
@@ -51,7 +52,7 @@ class ZooGraph(Graph):
         except KeyError:
             o = Graph.order(self)
             if store:
-                self._props["vertices"] = o
+                update(self._props, "vertices", o)
             return o
 
     def girth(self, store = False):
@@ -60,7 +61,7 @@ class ZooGraph(Graph):
         except KeyError:
             g = Graph.girth(self)
             if store:
-                self._props["girth"] = g
+                update(self._props, "girth", g)
             return g
 
     def diameter(self, store = False, **kargs):
@@ -72,7 +73,7 @@ class ZooGraph(Graph):
         except (KeyError, NotImplementedError):
             d = Graph.diameter(self, **kargs)
             if default and store:
-                self._props["diameter"] = d
+                update(self._props, "diameter", d)
             return d
 
     def is_regular(self, k = None, store = False):
@@ -85,8 +86,5 @@ class ZooGraph(Graph):
         except KeyError:
             r = Graph.is_regular(self, k)
             if store and (r ^ (k is None)):
-                if not r:
-                    self._props["is_regular"] = -1
-                else:
-                    self._props["is_regular"] = k
+                update(self._props, "is_regular", k if r else -1)
             return r
