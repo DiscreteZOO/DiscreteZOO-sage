@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import errno
 
 DBFILE = os.path.join(os.path.expanduser("~"), ".graphzoo", "graphzoo.db")
 
@@ -7,7 +8,7 @@ def connect(file):
     try:
         os.makedirs(os.path.dirname(file))
     except OSError as ex:
-        if ex.errno != 17:
+        if ex.errno != errno.EEXIST:
             raise ex
     db = sqlite3.connect(file)
     db.text_factory = str
