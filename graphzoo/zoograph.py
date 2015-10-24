@@ -48,35 +48,23 @@ class ZooGraph(Graph):
         cur.close()
         if r is None:
             raise KeyError(self._zooid)
-        self._props = todict(r, skip = ["id", "data"])
+        self._props = todict(r, skip = ["id", "data"], bools = ["is_regular"])
         return r["data"]
 
     def load_db_data(self):
         self._db_read()
 
-    def order(self, store = False, **kargs):
+    def average_degree(self, store = False, **kargs):
         default = len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
-            return lookup(self._props, "vertices")
+            return lookup(self._props, "average_degree")
         except (KeyError, NotImplementedError):
-            o = Graph.order(self, **kargs)
+            d = Graph.average_degree(self, **kargs)
             if default and store:
-                update(self._props, "vertices", o)
-            return o
-
-    def girth(self, store = False, **kargs):
-        default = len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "girth")
-        except (KeyError, NotImplementedError):
-            g = Graph.girth(self, **kargs)
-            if default and store:
-                update(self._props, "girth", g)
-            return g
+                update(self._props, "average_degree", d)
+            return d
 
     def diameter(self, store = False, **kargs):
         default = len(kargs) == 0
@@ -90,18 +78,42 @@ class ZooGraph(Graph):
                 update(self._props, "diameter", d)
             return d
 
+    def girth(self, store = False, **kargs):
+        default = len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            return lookup(self._props, "girth")
+        except (KeyError, NotImplementedError):
+            g = Graph.girth(self, **kargs)
+            if default and store:
+                update(self._props, "girth", g)
+            return g
+
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
             r = lookup(self._props, "is_regular")
-            if k is None:
-                return r >= 0
-            else:
-                return r == k
+            return r and (True if k is None
+                          else k == self.average_degree(store = store))
         except (KeyError, NotImplementedError):
             r = Graph.is_regular(self, k, **kargs)
-            if default and store and (r ^ (k is None)):
-                update(self._props, "is_regular", k if r else -1)
+            if default and store:
+                update(self._props, "is_regular", r)
+                if r and k is not None:
+                    update(self._props, "average_degree", k)
             return r
+
+    def order(self, store = False, **kargs):
+        default = len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            return lookup(self._props, "vertices")
+        except (KeyError, NotImplementedError):
+            o = Graph.order(self, **kargs)
+            if default and store:
+                update(self._props, "vertices", o)
+            return o

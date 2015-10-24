@@ -20,12 +20,13 @@ db = connect(DBFILE)
 def initdb():
     db.execute("""
         CREATE TABLE IF NOT EXISTS graph (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            data        TEXT NOT NULL,
-            vertices    INTEGER,
-            girth       INTEGER,
-            diameter    INTEGER,
-            is_regular  INTEGER
+            id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+            data                    TEXT NOT NULL,
+            average_degree          INTEGER,
+            diameter                INTEGER,
+            girth                   INTEGER,
+            is_regular              INTEGER,
+            vertices                INTEGER
         )
     """)
     db.commit()

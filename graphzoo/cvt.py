@@ -101,9 +101,11 @@ def import_cvt(file):
                 i = 0
             i += 1
             cur.execute("""
-                INSERT INTO graph(data, vertices, girth, diameter, is_regular)
-                VALUES (?, ?, ?, ?, 3)
-            """, (g.sparse6_string(), int(n), int(g.girth()), int(g.diameter())))
+                INSERT INTO graph(data, average_degree, diameter, girth,
+                                  is_regular, vertices)
+                VALUES (?, 3, ?, ?, 1, ?)
+            """, (g.sparse6_string(), int(g.diameter()), int(g.girth()),
+                  int(n)))
             id = cur.lastrowid
             cur.execute("""
                 INSERT INTO graph_cvt(id, cvtid) VALUES (?, ?)
