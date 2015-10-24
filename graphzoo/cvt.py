@@ -12,6 +12,8 @@ class CVTGraph(ZooGraph):
 
     def __init__(self, data = None, index = None, vertices = None,
                  zooid = None, graph = None, name = None, **kargs):
+        kargs["loops"] = False
+        kargs["multiedges"] = False
         if isinteger(data):
             if index is None:
                 zooid = Integer(data)
