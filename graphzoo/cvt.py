@@ -1,15 +1,26 @@
+from sage.rings.integer import Integer
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from zoograph import ZooGraph
 from utility import lookup
 from utility import todict
+from utility import isinteger
 import sqlite
 
 class CVTGraph(ZooGraph):
     _cvtprops = {}
 
-    def __init__(self, vertices = None, index = None, zooid = None,
-                 graph = None, name = None):
+    def __init__(self, data = None, index = None, vertices = None,
+                 zooid = None, graph = None, name = None, **kargs):
+        if isinteger(data):
+            if index is None:
+                zooid = Integer(data)
+            else:
+                vertices = Integer(data)
+            data = None
+        elif isinstance(data, GenericGraph):
+            graph = data
+            data = None
         cvtprops = None
         if graph is not None:
             if not isinstance(graph, GenericGraph):
@@ -38,18 +49,19 @@ class CVTGraph(ZooGraph):
             props = todict(r, skip = ["id", "data"])
             zooid = r["id"]
             ZooGraph.__init__(self, zooid = zooid, data = r["data"],
-                              props = props, name = name)
+                              props = props, name = name, **kargs)
         else:
-            ZooGraph.__init__(self, zooid = zooid, graph = graph, name = name)
+            ZooGraph.__init__(self, zooid = zooid, graph = graph, name = name,
+                              **kargs)
         if cvtprops is None:
-            self._db_read()
+            self._db_read_cvt()
         else:
             self._cvtprops = cvtprops
         if not name:
             self.name("Cubic vertex-transitive graph on %d vertices, number %d"
                       % (self.order(), self.cvt_index()))
 
-    def _db_read(self):
+    def _db_read_cvt(self):
         cur = sqlite.db.cursor()
         cur.execute("SELECT * FROM graph_cvt WHERE id = ?", [int(self._zooid)])
         r = cur.fetchone()
@@ -60,7 +72,7 @@ class CVTGraph(ZooGraph):
 
     def load_db_data(self):
         ZooGraph.load_db_data(self)
-        self._db_read()
+        self._db_read_cvt()
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvtid")

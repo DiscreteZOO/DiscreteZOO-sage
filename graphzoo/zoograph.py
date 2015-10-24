@@ -1,16 +1,24 @@
+from sage.rings.integer import Integer
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from utility import lookup
 from utility import update
 from utility import todict
+from utility import isinteger
 import sqlite
 
 class ZooGraph(Graph):
     _zooid = None
     _props = {}
     
-    def __init__(self, zooid = None, data = None, props = None, graph = None,
-                 name = None):
+    def __init__(self, data = None, zooid = None, props = None, graph = None,
+                 name = None, **kargs):
+        if isinteger(data):
+            zooid = Integer(data)
+            data = None
+        elif isinstance(data, GenericGraph):
+            graph = data
+            data = None
         if graph is not None:
             if not isinstance(graph, GenericGraph):
                 raise TypeError("not a graph")
@@ -29,7 +37,7 @@ class ZooGraph(Graph):
                 self._props = props
         else:
             data = self._db_read()
-        Graph.__init__(self, data = data, name = name)
+        Graph.__init__(self, data = data, name = name, **kargs)
 
     def _db_read(self):
         if self._zooid is None:
@@ -46,21 +54,27 @@ class ZooGraph(Graph):
     def load_db_data(self):
         self._db_read()
 
-    def order(self, store = False):
+    def order(self, store = False, **kargs):
+        default = len(kargs) == 0
         try:
+            if not default:
+                raise NotImplementedError
             return lookup(self._props, "vertices")
-        except KeyError:
-            o = Graph.order(self)
-            if store:
+        except (KeyError, NotImplementedError):
+            o = Graph.order(self, **kargs)
+            if default and store:
                 update(self._props, "vertices", o)
             return o
 
-    def girth(self, store = False):
+    def girth(self, store = False, **kargs):
+        default = len(kargs) == 0
         try:
+            if not default:
+                raise NotImplementedError
             return lookup(self._props, "girth")
-        except KeyError:
-            g = Graph.girth(self)
-            if store:
+        except (KeyError, NotImplementedError):
+            g = Graph.girth(self, **kargs)
+            if default and store:
                 update(self._props, "girth", g)
             return g
 
@@ -76,15 +90,18 @@ class ZooGraph(Graph):
                 update(self._props, "diameter", d)
             return d
 
-    def is_regular(self, k = None, store = False):
+    def is_regular(self, k = None, store = False, **kargs):
+        default = len(kargs) == 0
         try:
+            if not default:
+                raise NotImplementedError
             r = lookup(self._props, "is_regular")
             if k is None:
                 return r >= 0
             else:
                 return r == k
-        except KeyError:
-            r = Graph.is_regular(self, k)
-            if store and (r ^ (k is None)):
+        except (KeyError, NotImplementedError):
+            r = Graph.is_regular(self, k, **kargs)
+            if default and store and (r ^ (k is None)):
                 update(self._props, "is_regular", k if r else -1)
             return r
