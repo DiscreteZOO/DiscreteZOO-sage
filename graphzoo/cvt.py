@@ -24,8 +24,8 @@ class CVTGraph(ZooGraph):
     _parent = ZooGraph
 
     def __init__(self, data = None, index = None, vertices = None,
-                 zooid = None, graph = None, name = None, cur = None,
-                 db = None, **kargs):
+                 zooid = None, props = None, graph = None, name = None,
+                 cur = None, db = None, **kargs):
         kargs["loops"] = False
         kargs["multiedges"] = False
         if isinteger(data):
@@ -37,6 +37,16 @@ class CVTGraph(ZooGraph):
         elif isinstance(data, GenericGraph):
             graph = data
             data = None
+        elif isinstance(data, dict):
+            props = data
+            data = None
+        if props is not None:
+            if "id" in props:
+                zooid = props["id"]
+            if "data" in props:
+                data = props["data"]
+            props = {k: v for k, v in props.items() if k not in ["id", "data"]}
+
         if graph is not None:
             if not isinstance(graph, GenericGraph):
                 raise TypeError("not a graph")
@@ -62,10 +72,16 @@ class CVTGraph(ZooGraph):
                 self._props["number_of_loops"] = 0
             elif zooid is None:
                 raise IndexError("graph id not given")
+            data = None
             vertices = None
             index = None
         else:
             cur = None
+            if props is not None:
+                self._cvtprops = {k: v for k, v in props.items()
+                                  if k in self._spec["fields"]}
+                props = {k: v for k, v in props.items()
+                         if k not in self._spec["fields"]}
 
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
@@ -73,10 +89,11 @@ class CVTGraph(ZooGraph):
             ZooObject.__init__(self, db);
             r = self._db_read(join, {"vertices": vertices, "cvtid": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
-                              name = name, db = db, **kargs)
+                              props = props, name = name, db = db, **kargs)
         else:
-            ZooGraph.__init__(self, zooid = zooid, graph = graph, name = name,
-                              cur = cur, db = db, **kargs)
+            ZooGraph.__init__(self, zooid = zooid, data = data, graph = graph,
+                              props = props, name = name, cur = cur, db = db,
+                              **kargs)
         if vertices is not None:
             assert(vertices == self._props["vertices"])
         if self._cvtprops is None:

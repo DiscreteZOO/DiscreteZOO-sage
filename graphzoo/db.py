@@ -1,8 +1,10 @@
+from sage.rings.real_mpfr import RealNumber
 from zooobject import ZooObject
 
 class DB:
     convert_to = None
     convert_from = None
+    rowtype = None
 
     def __init__(self, **kargs):
         self.connect(**kargs)
@@ -31,6 +33,8 @@ class DB:
     def to_db_type(self, x):
         if isinstance(x, ZooObject):
             return self.convert_to[ZooObject](x._zooid)
+        elif isinstance(x, RealNumber):
+            return self.convert_to[RealNumber](x)
         elif type(x) in self.convert_to:
             return self.convert_to[type(x)](x)
         else:

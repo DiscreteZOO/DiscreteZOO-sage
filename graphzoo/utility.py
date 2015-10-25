@@ -38,3 +38,6 @@ def tomultidict(rows, dims):
                     dd[v] = (dims[i+1], {})
                 dd = dd[v][1]
     return (dims[0], d)
+
+def drop_none(r):
+    return {k: v for k, v in dict(r).items() if v is not None}

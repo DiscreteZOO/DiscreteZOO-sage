@@ -94,6 +94,15 @@ class ZooGraph(Graph, ZooObject):
         elif isinstance(data, GenericGraph):
             graph = data
             data = None
+        elif isinstance(data, dict):
+            props = data
+            data = None
+        if props is not None:
+            if "id" in props:
+                zooid = props["id"]
+            if "data" in props:
+                data = props["data"]
+            props = {k: v for k, v in props.items() if k not in ["id", "data"]}
 
         if graph is not None:
             if not isinstance(graph, GenericGraph):

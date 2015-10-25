@@ -1,6 +1,7 @@
 import graphzoo
 from query import Count
 from query import Table
+from utility import drop_none
 from utility import lookup
 from utility import tomultidict
 
@@ -89,3 +90,30 @@ class ZooInfo:
                                               if k not in outg),
                     groupby_orig = groupby_orig,
                     **dict([(k, kargs[k]) for k in outk]))
+
+    def query(self, db = None, cur = None, orderby = [], join = None,
+              by = None, limit = None, offset = None, **kargs):
+        if db is None:
+            db = self.updatedb()
+        t = Table(self.cl._spec["name"])
+        if join is not None:
+            t = t.join(join, by = by)
+        if self.cl._parent is None:
+            return db.query(columns = [None], table = t, query = kargs,
+                            orderby = orderby, limit = limit,  offset = offset,
+                            cur = cur)
+        else:
+            return ZooInfo(self.cl._parent).query(db, cur = cur,
+                                        orderby = orderby, join = t,
+                                        by = {self.cl._spec["primary_key"]},
+                                        limit = limit, offset = offset,
+                                        **kargs)
+
+    def all(self, **kargs):
+        cur = self.query(**kargs)
+        return (self.cl(drop_none(r)) for r in cur)
+
+    def one(self, **kargs):
+        kargs["limit"] = 1
+        cur = self.query(**kargs)
+        return self.cl(drop_none(cur.fetchone()))

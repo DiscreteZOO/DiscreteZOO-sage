@@ -94,6 +94,7 @@ class SQLiteDB(DB):
         self.db = sqlite3.connect(file)
         self.db.text_factory = str
         self.db.row_factory = sqlite3.Row
+        self.rowtype = sqlite3.Row
 
     def cursor(self, **kargs):
         return self.db.cursor(**kargs)
@@ -137,7 +138,7 @@ class SQLiteDB(DB):
                 self.db.commit()
 
     def query(self, columns, table, query = None, groupby = None,
-              orderby = None, cur = None):
+              orderby = None, limit = None, offset = None, cur = None):
         t = makeTable(table)
         c = ", ".join([makeColumn(col) for col in columns])
         q = query.keys()
@@ -159,18 +160,26 @@ class SQLiteDB(DB):
                 orderby = [(k, True) for k in orderby]
             elif type(orderby) is dict:
                 orderby = orderby.items()
-            if type(orderby) is not list:
+            if type(orderby) is tuple:
+                orderby = [orderby]
+            elif type(orderby) is not list:
                 orderby = [(orderby, True)]
             else:
-                orderby = [t if type(t) is tuple else (t, True)
-                           for t in orderby]
+                orderby = [k if type(k) is tuple else (k, True)
+                           for k in orderby]
                 orderby = [(k, False if isinstance(v, basestring)
                                      and v[0].upper() == 'D'
                                      else v) for k, v in orderby]
             o = " ORDER BY %s" % ", ".join("`%s` %s" %
                             (k, "ASC" if v else "DESC") for k, v in orderby)
+        if limit is None:
+            l = ""
+        else:
+            l = " LIMIT %d" % limit
+            if offset is not None:
+                l += " OFFSET %d" % offset
         if cur is None:
             cur = self.db.cursor()
-        cur.execute("SELECT %s FROM %s WHERE %s%s%s" % (c, t, w, g, o),
+        cur.execute("SELECT %s FROM %s WHERE %s%s%s%s" % (c, t, w, g, o, l),
                     [self.to_db_type(query[k]) for k in q])
         return cur
