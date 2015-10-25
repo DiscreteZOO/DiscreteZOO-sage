@@ -53,13 +53,17 @@ class ZooInfo:
             db.init_table(self.cl._spec, commit = commit)
 
     def count(self, db = None, groupby = set(), join = None, by = None,
-              sub = {}, subgroup = set(), **kargs):
+              sub = {}, subgroup = set(), groupby_orig = None, **kargs):
         if db is None:
             db = self.updatedb()
         if type(groupby) is not set:
             if type(groupby) is not list:
                 groupby = [groupby]
+            if groupby_orig is None:
+                groupby_orig = groupby
             groupby = set(groupby)
+        elif groupby_orig is None:
+            groupby_orig = list(groupby)
         t = Table(self.cl._spec["name"])
         if join is not None:
             t = t.join(join, by = by)
@@ -72,7 +76,7 @@ class ZooInfo:
                            groupby = grp)
             n = cur.fetchall()
             cur.close()
-            return tomultidict(n, list(grp))
+            return tomultidict(n, groupby_orig)
         else:
             if self.cl._parent is None:
                 raise KeyError
@@ -83,4 +87,5 @@ class ZooInfo:
                                               if k not in outk]),
                     subgroup = subgroup.union(k for k in groupby
                                               if k not in outg),
+                    groupby_orig = groupby_orig,
                     **dict([(k, kargs[k]) for k in outk]))
