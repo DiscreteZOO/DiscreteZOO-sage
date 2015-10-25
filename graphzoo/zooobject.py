@@ -116,4 +116,7 @@ class ZooInfo:
     def one(self, **kargs):
         kargs["limit"] = 1
         cur = self.query(**kargs)
-        return self.cl(drop_none(cur.fetchone()))
+        r = cur.fetchone()
+        if r is None:
+            raise KeyError(kargs)
+        return self.cl(drop_none(r))
