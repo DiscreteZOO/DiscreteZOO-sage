@@ -103,6 +103,9 @@ class SQLiteDB(DB):
         self.db.execute("CREATE TABLE IF NOT EXISTS `%s` (%s)" %
                         (spec["name"], ", ".join(["`%s` %s" % (k, makeType(v))
                                         for k, v in spec["fields"].items()])))
+        for col in spec["indices"]:
+            self.db.execute("CREATE INDEX IF NOT EXISTS `idx_%s_%s` ON `%s`(`%s`)"
+                            % (spec["name"], col, spec["name"], col))
         if commit:
             self.db.commit()
 

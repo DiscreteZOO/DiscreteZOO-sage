@@ -11,7 +11,7 @@ from zooobject import ZooObject
 _objspec = {
     "name": "graph_cvt",
     "primary_key": "id",
-    "foreign_keys": {"id": ("graph", "id")},
+    "indices": {"cvtid"},
     "fields" : {
         "cvtid": Integer,
         "id": (ZooGraph, {"primary_key"})

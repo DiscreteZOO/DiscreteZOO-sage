@@ -13,7 +13,7 @@ from zooobject import ZooObject
 _objspec = {
     "name": "graph",
     "primary_key": "id",
-    "foreign_keys": {},
+    "indices": {"average_degree", "vertices"},
     "fields" : {
         #"automorphism_group": ZooGroup,
         "average_degree": Rational,
