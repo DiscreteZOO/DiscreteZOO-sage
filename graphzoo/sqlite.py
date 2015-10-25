@@ -162,6 +162,8 @@ class SQLiteDB(DB):
             if type(orderby) is not list:
                 orderby = [(orderby, True)]
             else:
+                orderby = [t if type(t) is tuple else (t, True)
+                           for t in orderby]
                 orderby = [(k, False if isinstance(v, basestring)
                                      and v[0].upper() == 'D'
                                      else v) for k, v in orderby]
