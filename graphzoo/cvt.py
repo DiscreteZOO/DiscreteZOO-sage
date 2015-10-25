@@ -116,7 +116,8 @@ class CVTGraph(ZooGraph):
 def initdb(db = None, commit = True):
     _initdb(CVTGraph, db, commit = commit)
 
-def import_cvt(file, db = None):
+def import_cvt(file, db = None, format = "sparse6", canonical = False,
+               verbose = False):
     if db is None:
         db = ZooObject()._db
     initdb(db, commit = False)
@@ -125,13 +126,22 @@ def import_cvt(file, db = None):
     cur = db.cursor()
     with open(file) as f:
         for line in f:
-            g = Graph(line.strip())
+            data = line.strip()
+            if format not in ["graph6", "sparse6"]:
+                data = eval(data)
+            g = Graph(data)
+            if canonical:
+                g = g.canonical_label()
             n = g.order()
             if n > previous:
+                if verbose:
+                    print "Imported %d graphs of order %d" % (i, previous)
                 previous = n
                 i = 0
             i += 1
             CVTGraph(graph = g, vertices = n, index = i, cur = cur)
+        if verbose:
+            print "Imported %d graphs of order %d" % (i, n)
         f.close()
     cur.close()
     db.commit()
