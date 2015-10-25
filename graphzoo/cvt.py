@@ -44,13 +44,13 @@ class CVTGraph(ZooGraph):
             if isinstance(graph, ZooGraph):
                 zooid = graph._zooid
                 self._props = graph._props
-            if self._props is None:
-                self._props = {}
             if isinstance(graph, CVTGraph):
                 self._cvtprops = graph._cvtprops
-            if self._cvtprops is None:
-                self._cvtprops = {}
             if cur is not None:
+                if self._props is None:
+                    self._props = {}
+                if self._cvtprops is None:
+                    self._cvtprops = {}
                 self._cvtprops["cvtid"] = index
                 self._props["average_degree"] = 3
                 self._props["is_regular"] = True

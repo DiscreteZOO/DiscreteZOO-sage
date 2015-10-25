@@ -104,9 +104,9 @@ class ZooGraph(Graph, ZooObject):
             if isinstance(graph, ZooGraph):
                 zooid = graph._zooid
                 self._props = graph._props
-            if self._props is None:
-                self._props = {}
             if cur is not None:
+                if self._props is None:
+                    self._props = {}
                 self._props["diameter"] = graph.diameter()
                 self._props["girth"] = graph.girth()
                 self._props["vertices"] = graph.order()
