@@ -136,7 +136,7 @@ class SQLiteDB(DB):
             if commit is not False:
                 self.db.commit()
 
-    def query(self, columns, table, query = None, cur = None):
+    def query(self, columns, table, query = None, groupby = None, cur = None):
         t = makeTable(table)
         c = ", ".join([makeColumn(col) for col in columns])
         q = query.keys()
@@ -145,8 +145,12 @@ class SQLiteDB(DB):
             query = {}
         else:
             w = " AND ".join(["`%s` = ?" % k for k in q])
+        if groupby is None or len(groupby) == 0:
+            g = ""
+        else:
+            g = "GROUP BY %s" % ", ".join("`%s`" % x for x in groupby)
         if cur is None:
             cur = self.db.cursor()
-        cur.execute("SELECT %s FROM %s WHERE %s" % (c, t, w),
+        cur.execute("SELECT %s FROM %s WHERE %s %s" % (c, t, w, g),
                     [self.to_db_type(query[k]) for k in q])
         return cur

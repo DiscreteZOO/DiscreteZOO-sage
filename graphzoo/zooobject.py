@@ -2,6 +2,7 @@ import graphzoo
 from query import Count
 from query import Table
 from utility import lookup
+from utility import tomultidict
 
 class ZooObject:
     _spec = None
@@ -51,26 +52,35 @@ class ZooInfo:
         if self.cl._spec is not None:
             db.init_table(self.cl._spec, commit = commit)
 
-    def count(self, db = None, join = None, by = None, sub = {}, **kargs):
+    def count(self, db = None, groupby = set(), join = None, by = None,
+              sub = {}, subgroup = set(), **kargs):
         if db is None:
             db = self.updatedb()
+        if type(groupby) is not set:
+            if type(groupby) is not list:
+                groupby = [groupby]
+            groupby = set(groupby)
         t = Table(self.cl._spec["name"])
-        if join is None:
-            join = t
-        else:
-            t.join(join, by = by)
-        if all(k in self.cl._spec["fields"] for k in kargs):
-            cur = db.query([Count()], t, dict(kargs.items() + sub.items()))
-            n = cur.fetchone()[0]
+        if join is not None:
+            t = t.join(join, by = by)
+        outk = {k for k in kargs if k not in self.cl._spec["fields"]}
+        outg = {k for k in groupby if k not in self.cl._spec["fields"]}
+        if len(outk) == 0 and len(outg) == 0:
+            grp = groupby.union(subgroup)
+            cur = db.query(columns = [Count()] + list(grp), table = t,
+                           query = dict(kargs.items() + sub.items()),
+                           groupby = grp)
+            n = cur.fetchall()
             cur.close()
-            return n
+            return tomultidict(n, list(grp))
         else:
             if self.cl._parent is None:
                 raise KeyError
-            return ZooInfo(self.cl._parent).count(db, join = t,
-                                    by = {self.cl._spec["primary_key"]},
-                                    sub = dict(sub.items() +
-                                        [(k, v) for k, v in kargs.items()
-                                        if k in self.cl._spec["fields"]]),
-                                    **dict([(k, v) for k, v in kargs.items()
-                                        if k not in self.cl._spec["fields"]]))
+            return ZooInfo(self.cl._parent).count(db,
+                    groupby = set(outg), join = t,
+                    by = {self.cl._spec["primary_key"]},
+                    sub = dict(sub.items() + [(k, v) for k, v in kargs.items()
+                                              if k not in outk]),
+                    subgroup = subgroup.union(k for k in groupby
+                                              if k not in outg),
+                    **dict([(k, kargs[k]) for k in outk]))
