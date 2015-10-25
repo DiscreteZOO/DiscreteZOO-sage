@@ -155,14 +155,16 @@ class SQLiteDB(DB):
         if orderby is None or len(orderby) == 0:
             o = ""
         else:
-            if type(orderby) in [set, list]:
-                orderby = {k: True for k in orderby}
-            elif type(orderby) is not dict:
-                orderby = {orderby: True}
+            if type(orderby) is set:
+                orderby = [(k, True) for k in orderby]
+            elif type(orderby) is dict:
+                orderby = orderby.items()
+            if type(orderby) is not list:
+                orderby = [(orderby, True)]
             else:
-                orderby = {k: False if isinstance(v, basestring)
-                                    and v[0].upper() == 'D'
-                                    else v for k, v in orderby}
+                orderby = [(k, False if isinstance(v, basestring)
+                                     and v[0].upper() == 'D'
+                                     else v) for k, v in orderby]
             o = " ORDER BY %s" % ", ".join("`%s` %s" %
                             (k, "ASC" if v else "DESC") for k, v in orderby)
         if cur is None:
