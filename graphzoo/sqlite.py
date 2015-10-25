@@ -6,7 +6,8 @@ from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from db import DB
-from db import Table
+from query import Count
+from query import Table
 from utility import int_or_real
 from zooobject import ZooObject
 
@@ -54,8 +55,12 @@ def makeTable(t):
         return "`%s`" % t
 
 def makeColumn(c):
-    if isinstance(c, Table):
+    if c is None:
+        return "*"
+    elif isinstance(c, Table):
         return "`%s`.*" % c.tables[0]["alias"]
+    elif isinstance(c, Count):
+        return "COUNT(%s)" % makeColumn(c.column)
     else:
         return c
 
@@ -136,7 +141,7 @@ class SQLiteDB(DB):
         c = ", ".join([makeColumn(col) for col in columns])
         q = query.keys()
         if query is None or len(query) == 0:
-            w = "TRUE"
+            w = "1"
             query = {}
         else:
             w = " AND ".join(["`%s` = ?" % k for k in q])

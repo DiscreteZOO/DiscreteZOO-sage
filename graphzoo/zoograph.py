@@ -3,11 +3,11 @@ from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
-from db import Table
+from query import Table
 from utility import isinteger
 from utility import lookup
 from utility import update
-from zooobject import _initdb
+from zooobject import ZooInfo
 from zooobject import ZooObject
 
 _objspec = {
@@ -216,5 +216,4 @@ class ZooGraph(Graph, ZooObject):
                 update(self._props, "vertices", o)
             return o
 
-def initdb(db = None, commit = True):
-    _initdb(ZooGraph, db, commit = commit)
+info = ZooInfo(ZooGraph)

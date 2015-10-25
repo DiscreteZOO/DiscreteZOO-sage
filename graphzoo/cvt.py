@@ -1,11 +1,11 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
-from db import Table
+from query import Table
 from utility import isinteger
 from utility import lookup
 from zoograph import ZooGraph
-from zooobject import _initdb
+from zooobject import ZooInfo
 from zooobject import ZooObject
 
 _objspec = {
@@ -21,6 +21,7 @@ _objspec = {
 class CVTGraph(ZooGraph):
     _cvtprops = None
     _spec = _objspec
+    _parent = ZooGraph
 
     def __init__(self, data = None, index = None, vertices = None,
                  zooid = None, graph = None, name = None, cur = None,
@@ -67,7 +68,8 @@ class CVTGraph(ZooGraph):
             cur = None
 
         if vertices is not None and index is not None:
-            join = Table(self._spec["name"]).join(Table(ZooGraph._spec["name"]), by = {"id"})
+            join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
+                         by = {self._spec["primary_key"]})
             ZooObject.__init__(self, db);
             r = self._db_read(join, {"vertices": vertices, "cvtid": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
@@ -113,14 +115,13 @@ class CVTGraph(ZooGraph):
     def cvt_index(self):
         return lookup(self._cvtprops, "cvtid")
 
-def initdb(db = None, commit = True):
-    _initdb(CVTGraph, db, commit = commit)
+info = ZooInfo(CVTGraph)
 
 def import_cvt(file, db = None, format = "sparse6", canonical = False,
                verbose = False):
     if db is None:
-        db = ZooObject()._db
-    initdb(db, commit = False)
+        db = info.updatedb()
+    info.initdb(db = db, commit = False)
     previous = 0
     i = 0
     cur = db.cursor()
