@@ -1,4 +1,3 @@
-import graphzoo
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
@@ -7,6 +6,7 @@ from utility import isinteger
 from utility import lookup
 from zoograph import ZooGraph
 from zooobject import _initdb
+from zooobject import ZooObject
 
 _objspec = {
     "name": "graph_cvt",
@@ -24,7 +24,7 @@ class CVTGraph(ZooGraph):
 
     def __init__(self, data = None, index = None, vertices = None,
                  zooid = None, graph = None, name = None, cur = None,
-                 **kargs):
+                 db = None, **kargs):
         kargs["loops"] = False
         kargs["multiedges"] = False
         if isinteger(data):
@@ -44,11 +44,11 @@ class CVTGraph(ZooGraph):
             if isinstance(graph, ZooGraph):
                 zooid = graph._zooid
                 self._props = graph._props
-            else:
+            if self._props is None:
                 self._props = {}
             if isinstance(graph, CVTGraph):
                 self._cvtprops = graph._cvtprops
-            else:
+            if self._cvtprops is None:
                 self._cvtprops = {}
             if cur is not None:
                 self._cvtprops["cvtid"] = index
@@ -68,12 +68,13 @@ class CVTGraph(ZooGraph):
 
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(ZooGraph._spec["name"]), by = {"id"})
+            ZooObject.__init__(self, db);
             r = self._db_read(join, {"vertices": vertices, "cvtid": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
-                              name = name, **kargs)
+                              name = name, db = db, **kargs)
         else:
-            ZooGraph.__init__(self, zooid = zooid, graph = graph, cur = cur,
-                              name = name, **kargs)
+            ZooGraph.__init__(self, zooid = zooid, graph = graph, name = name,
+                              cur = cur, db = db, **kargs)
         if vertices is not None:
             assert(vertices == self._props["vertices"])
         if self._cvtprops is None:
@@ -97,7 +98,8 @@ class CVTGraph(ZooGraph):
         cur.close()
         if r is None:
             raise KeyError(query)
-        self._cvtprops = self._todict(r, skip = ["id"])
+        self._cvtprops = self._todict(r, skip = ["id"],
+                                      fields = CVTGraph._spec["fields"])
 
     def _db_write_cvt(self, cur):
         self._db.insert_row(CVTGraph._spec["name"],
@@ -112,11 +114,11 @@ class CVTGraph(ZooGraph):
         return lookup(self._cvtprops, "cvtid")
 
 def initdb(db = None, commit = True):
-    _initdb(graphzoo.cvt.CVTGraph, db, commit = commit)
+    _initdb(CVTGraph, db, commit = commit)
 
 def import_cvt(file, db = None):
     if db is None:
-        db = graphzoo.DEFAULT_DB
+        db = ZooObject()._db
     initdb(db, commit = False)
     previous = 0
     i = 0

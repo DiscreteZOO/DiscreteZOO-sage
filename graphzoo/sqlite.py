@@ -4,6 +4,7 @@ import sqlite3
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
+from sage.rings.real_mpfr import create_RealNumber
 from db import DB
 from db import Table
 from utility import int_or_real
@@ -40,9 +41,10 @@ def makeType(t):
 
 def makeTable(t):
     if isinstance(t, Table):
-        aliases = ["%s AS `%s`" % (makeTable(x["table"]), x["alias"])
+        aliases = ["(%s)" % makeTable(x["table"]) if x["alias"] is None
+              else "(%s) AS `%s`" % (makeTable(x["table"]), x["alias"])
                                                             for x in t.tables]
-        joins = [" %sJOIN" % "LEFT " if x["left"] else "" for x in t.tables]
+        joins = [" %sJOIN " % ("LEFT " if x["left"] else "") for x in t.tables]
         using = ["" if len(x["by"]) == 0
                  else " USING (%s)" % ", ".join(["`%s`" % c for c in x["by"]])
                  for x in t.tables]
@@ -72,7 +74,7 @@ class SQLiteDB(DB):
     convert_from = {
         Integer: Integer,
         Rational: int_or_real,
-        RealNumber: RealNumber,
+        RealNumber: create_RealNumber,
         str: str,
         bool: bool,
         ZooObject: Integer

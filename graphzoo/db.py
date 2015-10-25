@@ -59,12 +59,10 @@ class Table:
                         "left": False,
                         "by": set()} for a, t in kargs]
 
-    def join(self, by = {}, left = False, alias = None, *args, **kargs):
-        if len(kargs) == 0:
-            table = args[0]
-        elif len(kargs) == 1:
+    def join(self, table, by = set(), left = False, alias = None, **kargs):
+        if len(kargs) == 1:
             alias, table = kargs.items()[0]
-        else:
+        elif len(kargs) != 0:
             raise NotImplementedError
         self.tables.append({"table": table,
                             "alias": alias,

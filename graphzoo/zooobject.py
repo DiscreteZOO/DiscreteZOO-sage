@@ -27,8 +27,10 @@ class ZooObject:
     def initdb(self, db = None):
         _initdb(self.__class__, self._db)
 
-    def _todict(self, r, skip = []):
+    def _todict(self, r, skip = [], fields = None):
+        if fields is None:
+            fields = self._spec["fields"]
         return {k: self._db.from_db_type(r[k],
-                                lookup(self._spec["fields"], k, type(r[k])))
-                for k in r.keys() if k not in skip}
+                                lookup(fields, k, type(r[k])))
+                for k in r.keys() if k not in skip and r[k] is not None}
 

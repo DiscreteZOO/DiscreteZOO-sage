@@ -104,7 +104,7 @@ class ZooGraph(Graph, ZooObject):
             if isinstance(graph, ZooGraph):
                 zooid = graph._zooid
                 self._props = graph._props
-            else:
+            if self._props is None:
                 self._props = {}
             if cur is not None:
                 self._props["diameter"] = graph.diameter()
@@ -114,7 +114,8 @@ class ZooGraph(Graph, ZooObject):
                 raise IndexError("graph id not given")
         else:
             cur = None
-            self._props = props
+            if props is not None:
+                self._props = props
 
         ZooObject.__init__(self, db)
         self._zooid = zooid
@@ -137,7 +138,8 @@ class ZooGraph(Graph, ZooObject):
         cur.close()
         if r is None:
             raise KeyError(query)
-        self._props = self._todict(r, skip = ["id", "data"])
+        self._props = self._todict(r, skip = ["id", "data"],
+                                   fields = ZooGraph._spec["fields"])
         return r
 
     def _db_write(self, cur):
@@ -214,5 +216,5 @@ class ZooGraph(Graph, ZooObject):
                 update(self._props, "vertices", o)
             return o
 
-def initdb():
-    _initdb(graphzoo.zoograph.ZooGraph)
+def initdb(db = None, commit = True):
+    _initdb(ZooGraph, db, commit = commit)
