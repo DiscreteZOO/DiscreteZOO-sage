@@ -136,7 +136,8 @@ class SQLiteDB(DB):
             if commit is not False:
                 self.db.commit()
 
-    def query(self, columns, table, query = None, groupby = None, cur = None):
+    def query(self, columns, table, query = None, groupby = None,
+              orderby = None, cur = None):
         t = makeTable(table)
         c = ", ".join([makeColumn(col) for col in columns])
         q = query.keys()
@@ -148,9 +149,24 @@ class SQLiteDB(DB):
         if groupby is None or len(groupby) == 0:
             g = ""
         else:
-            g = "GROUP BY %s" % ", ".join("`%s`" % x for x in groupby)
+            if type(groupby) not in (set, list):
+                groupby = [groupby]
+            g = " GROUP BY %s" % ", ".join("`%s`" % x for x in groupby)
+        if orderby is None or len(orderby) == 0:
+            o = ""
+        else:
+            if type(orderby) in [set, list]:
+                orderby = {k: True for k in orderby}
+            elif type(orderby) is not dict:
+                orderby = {orderby: True}
+            else:
+                orderby = {k: False if isinstance(v, basestring)
+                                    and v[0].upper() == 'D'
+                                    else v for k, v in orderby}
+            o = " ORDER BY %s" % ", ".join("`%s` %s" %
+                            (k, "ASC" if v else "DESC") for k, v in orderby)
         if cur is None:
             cur = self.db.cursor()
-        cur.execute("SELECT %s FROM %s WHERE %s %s" % (c, t, w, g),
+        cur.execute("SELECT %s FROM %s WHERE %s%s%s" % (c, t, w, g, o),
                     [self.to_db_type(query[k]) for k in q])
         return cur
