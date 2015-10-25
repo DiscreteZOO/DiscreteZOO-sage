@@ -1,24 +1,100 @@
-from sage.rings.integer import Integer
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from sage.rings.real_mpfr import RealNumber
+from db import Table
+from utility import isinteger
 from utility import lookup
 from utility import update
-from utility import todict
-from utility import isinteger
-import sqlite
+from zooobject import _initdb
+from zooobject import ZooObject
 
-class ZooGraph(Graph):
-    _zooid = None
-    _props = {}
+_objspec = {
+    "name": "graph",
+    "primary_key": "id",
+    "foreign_keys": {},
+    "fields" : {
+        #"automorphism_group": ZooGroup,
+        "average_degree": Rational,
+        "average_distance": Rational,
+        "chromatic_index": Integer,
+        "chromatic_number": Integer,
+        "clique_number": Integer,
+        "cluster_transitivity": Rational,
+        "clustering_average": Rational,
+        "connected_components_number": Integer,
+        "data": (str, {"not_null"}),
+        "density": Rational,
+        "diameter": Integer,
+        "edge_connectivity": Integer,
+        "fractional_chromatic_index": Integer,
+        "genus": Integer,
+        "girth": Integer,
+        "id": (Integer, {"autoincrement"}),
+        "is_arc_transitive": bool,
+        "is_asteroidal_triple_free": bool,
+        "is_bipartite": bool,
+        "is_cartesian_product": bool,
+        "is_cayley_graph": bool,
+        "is_chordal": bool,
+        "is_circulant": bool,
+        "is_circular_planar": bool,
+        "is_distance_regular": bool,
+        "is_distance_transitive": bool,
+        "is_edge_transitive": bool,
+        "is_eulerian": bool,
+        "is_even_hole_free": bool,
+        "is_forest": bool,
+        "is_gallai_tree": bool,
+        "is_hamiltonian": bool,
+        "is_interval": bool,
+        "is_line_graph": bool,
+        "is_long_antihole_free": bool,
+        "is_long_hole_free": bool,
+        "is_odd_hole_free": bool,
+        "is_overfull": bool,
+        "is_perfect": bool,
+        "is_planar": bool,
+        "is_prime": bool,
+        "is_regular": bool,
+        "is_split": bool,
+        "is_strongly_regular": bool,
+        "is_tree": bool,
+        "is_vertex_transitive": bool,
+        "is_weakly_chordal": bool,
+        "lovasz_theta": RealNumber,
+        "maximum_average_degree": Rational,
+        "name": str,
+        "num_edges": Integer,
+        "number_of_loops": Integer,
+        "odd_girth": Integer,
+        "radius": Integer,
+        "spanning_trees_count": Integer,
+        "szeged_index": Integer,
+        "triangles_count": Integer,
+        "treewidth": Integer,
+        "vertex_connectivity": Integer,
+        "vertices": Integer,
+        "wiener_index": Integer,
+        "zagreb1_index": Integer,
+        "zagreb2_index": Integer
+    }
+}
+
+class ZooGraph(Graph, ZooObject):
+    _props = None
+    _spec = _objspec
     
     def __init__(self, data = None, zooid = None, props = None, graph = None,
-                 name = None, **kargs):
+                 name = None, cur = None, db = None, **kargs):
         if isinteger(data):
             zooid = Integer(data)
             data = None
         elif isinstance(data, GenericGraph):
             graph = data
             data = None
+
         if graph is not None:
             if not isinstance(graph, GenericGraph):
                 raise TypeError("not a graph")
@@ -27,29 +103,49 @@ class ZooGraph(Graph):
                 name = graph.name()
             if isinstance(graph, ZooGraph):
                 zooid = graph._zooid
-                props = graph._props
+                self._props = graph._props
+            else:
+                self._props = {}
+            if cur is not None:
+                self._props["diameter"] = graph.diameter()
+                self._props["girth"] = graph.girth()
+                self._props["vertices"] = graph.order()
             elif zooid is None:
                 raise IndexError("graph id not given")
-
-        self._zooid = zooid
-        if data is not None:
-            if props is not None:
-                self._props = props
         else:
-            data = self._db_read()
-        Graph.__init__(self, data = data, name = name, **kargs)
+            cur = None
+            self._props = props
 
-    def _db_read(self):
-        if self._zooid is None:
-            raise IndexError("graph id not given")
-        cur = sqlite.db.cursor()
-        cur.execute("SELECT * FROM graph WHERE id = ?", [int(self._zooid)])
+        ZooObject.__init__(self, db)
+        self._zooid = zooid
+        if data is None:
+            data = self._db_read()["data"]
+        Graph.__init__(self, data = data, name = name, **kargs)
+        if cur is not None:
+            self._db_write(cur)
+
+    def _db_read(self, join = None, query = None):
+        if query is None:
+            if self._zooid is None:
+                raise IndexError("graph id not given")
+            query = {"id": self._zooid}
+        t = Table(ZooGraph._spec["name"])
+        if join is None:
+            join = t
+        cur = self._db.query([t], join, query)
         r = cur.fetchone()
         cur.close()
         if r is None:
-            raise KeyError(self._zooid)
-        self._props = todict(r, skip = ["id", "data"], bools = ["is_regular"])
-        return r["data"]
+            raise KeyError(query)
+        self._props = self._todict(r, skip = ["id", "data"])
+        return r
+
+    def _db_write(self, cur):
+        self._db.insert_row(ZooGraph._spec["name"],
+                            dict(self._props.items() + \
+                                 [("id", self._zooid),
+                                  ("data", self.sparse6_string())]),
+                            cur = cur)
 
     def load_db_data(self):
         self._db_read()
@@ -117,3 +213,6 @@ class ZooGraph(Graph):
             if default and store:
                 update(self._props, "vertices", o)
             return o
+
+def initdb():
+    _initdb(graphzoo.zoograph.ZooGraph)

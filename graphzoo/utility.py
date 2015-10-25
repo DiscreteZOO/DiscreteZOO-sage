@@ -1,18 +1,22 @@
 from sage.rings.integer import Integer
+from sage.rings.real_mpfr import RealNumber
 
-def lookup(d, k):
+def lookup(d, k, default = None):
     if k in d and d[k] is not None:
         return d[k]
+    if default is not None:
+        return default
     raise KeyError(k)
 
 def update(d, k, v):
     d[k] = v
     # TODO: write to the database and prepare a commit
 
-def todict(r, skip = [], bools = []):
-    return {k: bool(r[k]) if k in bools
-               else (Integer(r[k]) if isinstance(r[k], int)
-               else r[k]) for k in r.keys() if k not in skip}
-
 def isinteger(x):
     return isinstance(x, Integer) or isinstance(x, int)
+
+def int_or_real(x):
+    if isinteger(x):
+        return Integer(x)
+    else:
+        return RealNumber(x)
