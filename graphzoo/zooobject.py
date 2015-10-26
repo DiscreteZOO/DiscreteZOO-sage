@@ -28,7 +28,8 @@ class ZooObject:
             fields = self._spec["fields"]
         return {k: self._db.from_db_type(r[k],
                                 lookup(fields, k, type(r[k])))
-                for k in r.keys() if k not in skip and r[k] is not None}
+                for k in r.keys() if k in fields and k not in skip
+                                     and r[k] is not None}
 
 class ZooInfo:
     cl = None

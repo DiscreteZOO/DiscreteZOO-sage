@@ -14,6 +14,7 @@ _objspec = {
     "name": "graph",
     "primary_key": "id",
     "indices": {"average_degree", "vertices"},
+    "skip": {"id", "data"},
     "fields" : {
         #"automorphism_group": ZooGroup,
         "average_degree": Rational,
@@ -124,7 +125,9 @@ class ZooGraph(Graph, ZooObject):
         else:
             cur = None
             if props is not None:
-                self._props = props
+                self._props = self._todict(props,
+                                           skip = ZooGraph._spec["skip"],
+                                           fields = ZooGraph._spec["fields"])
 
         ZooObject.__init__(self, db)
         self._zooid = zooid
@@ -147,7 +150,7 @@ class ZooGraph(Graph, ZooObject):
         cur.close()
         if r is None:
             raise KeyError(query)
-        self._props = self._todict(r, skip = ["id", "data"],
+        self._props = self._todict(r, skip = ZooGraph._spec["skip"],
                                    fields = ZooGraph._spec["fields"])
         return r
 

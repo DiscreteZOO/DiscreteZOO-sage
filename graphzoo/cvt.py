@@ -12,6 +12,7 @@ _objspec = {
     "name": "graph_cvt",
     "primary_key": "id",
     "indices": {"cvtid"},
+    "skip": {"id"},
     "fields" : {
         "cvtid": Integer,
         "id": (ZooGraph, {"primary_key"})
@@ -78,8 +79,9 @@ class CVTGraph(ZooGraph):
         else:
             cur = None
             if props is not None:
-                self._cvtprops = {k: v for k, v in props.items()
-                                  if k in self._spec["fields"]}
+                self._cvtprops = self._todict(props,
+                                            skip = CVTGraph._spec["skip"],
+                                            fields = CVTGraph._spec["fields"])
                 props = {k: v for k, v in props.items()
                          if k not in self._spec["fields"]}
 
@@ -117,7 +119,7 @@ class CVTGraph(ZooGraph):
         cur.close()
         if r is None:
             raise KeyError(query)
-        self._cvtprops = self._todict(r, skip = ["id"],
+        self._cvtprops = self._todict(r, skip = CVTGraph._spec["skip"],
                                       fields = CVTGraph._spec["fields"])
 
     def _db_write_cvt(self, cur):
