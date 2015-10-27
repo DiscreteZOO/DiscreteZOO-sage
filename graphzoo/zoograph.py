@@ -89,6 +89,8 @@ class ZooGraph(Graph, ZooObject):
     
     def __init__(self, data = None, zooid = None, props = None, graph = None,
                  name = None, cur = None, db = None, **kargs):
+        kargs["immutable"] = True
+        kargs["data_structure"] = "static_sparse"
         if isinteger(data):
             zooid = Integer(data)
             data = None
@@ -136,6 +138,22 @@ class ZooGraph(Graph, ZooObject):
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
             self._db_write(cur)
+
+    def copy(self, weighted = None, implementation = 'c_graph',
+             data_structure = None, sparse = None, immutable = None):
+        if immutable is False or (data_structure is not None
+                                  and data_structure is not'static_sparse'):
+            return Graph(self).copy(weighted = weighted,
+                                    implementation = implementation,
+                                    data_structure = data_structure,
+                                    sparse = sparse,
+                                    immutable = immutable)
+        else:
+            return Graph.copy(self, weighted = weighted,
+                                    implementation = implementation,
+                                    data_structure = data_structure,
+                                    sparse = sparse,
+                                    immutable = immutable)
 
     def _db_read(self, join = None, query = None):
         if query is None:

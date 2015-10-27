@@ -100,11 +100,15 @@ class CVTGraph(ZooGraph):
             assert(vertices == self._props["vertices"])
         if self._cvtprops is None:
             self._db_read_cvt()
-        if not name:
-            self.name("Cubic vertex-transitive graph on %d vertices, number %d"
-                      % (self.order(), self.cvt_index()))
         if cur is not None:
             self._db_write_cvt(cur)
+
+    def _repr_(self):
+        name = "Cubic vertex-transitive graph on %d vertices, number %d" \
+                                            % (self.order(), self.cvt_index())
+        if self.name() != '':
+            name = self.name() + ": " + name
+        return name
 
     def _db_read_cvt(self, join = None, query = None):
         if query is None:
