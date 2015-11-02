@@ -88,7 +88,8 @@ class ZooGraph(Graph, ZooObject):
     _spec = _objspec
     
     def __init__(self, data = None, zooid = None, props = None, graph = None,
-                 labels = None, name = None, cur = None, db = None, **kargs):
+                 vertex_labels = None, name = None, cur = None, db = None,
+                 **kargs):
         kargs["immutable"] = True
         kargs["data_structure"] = "static_sparse"
         if isinteger(data):
@@ -135,8 +136,8 @@ class ZooGraph(Graph, ZooObject):
         self._zooid = zooid
         if data is None:
             data = self._db_read()["data"]
-        if labels is not None:
-            data = Graph(data).relabel(labels, inplace = False)
+        if vertex_labels is not None:
+            data = Graph(data).relabel(vertex_labels, inplace = False)
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
             self._db_write(cur)
@@ -164,7 +165,7 @@ class ZooGraph(Graph, ZooObject):
         G = Graph(self, immutable = False)
         perm = G.relabel(perm, return_map = True, check_input = check_input,
                          complete_partial_function = complete_partial_function)
-        G = self.__class__(self, labels = perm)
+        G = self.__class__(self, vertex_labels = perm)
         if return_map:
             return G, perm
         else:
