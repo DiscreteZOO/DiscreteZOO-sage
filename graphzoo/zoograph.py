@@ -158,7 +158,7 @@ class ZooGraph(Graph, ZooObject):
                                     sparse = sparse,
                                     immutable = immutable)
 
-    def relabel(self, perm = None, inplace = False, return_map = False,
+    def relabel(self, perm = None, inplace = True, return_map = False,
                 check_input = True, complete_partial_function = True):
         if inplace:
             raise ValueError("To relabel an immutable graph use inplace=False")
