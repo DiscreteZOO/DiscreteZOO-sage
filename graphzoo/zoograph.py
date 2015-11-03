@@ -244,6 +244,7 @@ class ZooGraph(Graph, ZooObject):
                        if s.is_transitive())
             if store:
                 update(self._props, "is_cayley_graph", c)
+            return c
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
