@@ -63,7 +63,6 @@ _objspec = {
         "is_strongly_regular": bool,
         "is_tree": bool,
         "is_vertex_transitive": bool,
-        "is_weakly_chordal": bool,
         "lovasz_theta": RealNumber,
         "maximum_average_degree": Rational,
         "name": str,
