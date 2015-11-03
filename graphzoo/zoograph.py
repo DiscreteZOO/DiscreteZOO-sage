@@ -234,6 +234,17 @@ class ZooGraph(Graph, ZooObject):
                 update(self._props, "girth", g)
             return g
 
+    def is_cayley_graph(self, store = False):
+        try:
+            return lookup(self._props, "is_cayley_graph")
+        except (KeyError, NotImplementedError):
+            A = self.automorphism_group()
+            n = self.order()
+            c = any(s.order() == n for s in A.conjugacy_classes_subgroups()
+                       if s.is_transitive())
+            if store:
+                update(self._props, "is_cayley_graph", c)
+
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
         try:
