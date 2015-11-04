@@ -3,6 +3,7 @@ __pycache__
 *.aux
 *.db
 *.log
+*.mgm
 *.out
 *.pyc
 *.sqlite
