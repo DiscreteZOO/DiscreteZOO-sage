@@ -63,7 +63,6 @@ _objspec = {
         "is_strongly_regular": bool,
         "is_tree": bool,
         "is_vertex_transitive": bool,
-        "is_weakly_chordal": bool,
         "lovasz_theta": RealNumber,
         "maximum_average_degree": Rational,
         "name": str,
@@ -88,7 +87,8 @@ class ZooGraph(Graph, ZooObject):
     _spec = _objspec
     
     def __init__(self, data = None, zooid = None, props = None, graph = None,
-                 name = None, cur = None, db = None, **kargs):
+                 vertex_labels = None, name = None, cur = None, db = None,
+                 **kargs):
         kargs["immutable"] = True
         kargs["data_structure"] = "static_sparse"
         if isinteger(data):
@@ -135,6 +135,8 @@ class ZooGraph(Graph, ZooObject):
         self._zooid = zooid
         if data is None:
             data = self._db_read()["data"]
+        if vertex_labels is not None:
+            data = Graph(data).relabel(vertex_labels, inplace = False)
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
             self._db_write(cur)
@@ -142,7 +144,7 @@ class ZooGraph(Graph, ZooObject):
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
         if immutable is False or (data_structure is not None
-                                  and data_structure is not'static_sparse'):
+                                  and data_structure is not 'static_sparse'):
             return Graph(self).copy(weighted = weighted,
                                     implementation = implementation,
                                     data_structure = data_structure,
@@ -154,6 +156,20 @@ class ZooGraph(Graph, ZooObject):
                                     data_structure = data_structure,
                                     sparse = sparse,
                                     immutable = immutable)
+
+    def relabel(self, perm = None, inplace = True, return_map = False,
+                check_input = True, complete_partial_function = True):
+        if inplace:
+            raise ValueError("To relabel an immutable graph use inplace=False")
+        G = Graph(self, immutable = False)
+        perm = G.relabel(perm, return_map = True, check_input = check_input,
+                         complete_partial_function = complete_partial_function)
+        G = self.__class__(self, vertex_labels = perm)
+        if return_map:
+            return G, perm
+        else:
+            return G
+
 
     def _db_read(self, join = None, query = None):
         if query is None:
@@ -217,6 +233,18 @@ class ZooGraph(Graph, ZooObject):
             if default and store:
                 update(self._props, "girth", g)
             return g
+
+    def is_cayley_graph(self, store = False):
+        try:
+            return lookup(self._props, "is_cayley_graph")
+        except (KeyError, NotImplementedError):
+            A = self.automorphism_group()
+            n = self.order()
+            c = any(s.order() == n for s in A.conjugacy_classes_subgroups()
+                       if s.is_transitive())
+            if store:
+                update(self._props, "is_cayley_graph", c)
+            return c
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
