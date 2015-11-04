@@ -2,8 +2,8 @@
 
 import re
 import sys
-import sqlite3
-from sage.all import *
+#import sqlite3
+#from sage.all import *
 
 SQL=False
 
@@ -12,8 +12,9 @@ matcher=re.compile("^CubicVT\\[(\\d+),(\\d+)\\] := [^|]+ \\| ([^>]+)>;$")
 def process_sql(m):
 	conn.execute("INSERT INTO cvt (n, k, edges) VALUES (%s, %s, \"%s\");"%(m.group(1),m.group(2),m.group(3)))
 def process_py(m):
-	g = Graph(eval("["+m.group(3)[1:-1].replace("{","(").replace("}",")")+"]"))
-	print g.sparse6_string()
+	#g = Graph(eval("["+m.group(3)[1:-1].replace("{","(").replace("}",")")+"]"))
+	#print g.sparse6_string()
+	print m.group(3);
 def process(l,num):
 	m=matcher.match(l)
 	if m is None: raise RuntimeError("malformed input line %d"%(num))
