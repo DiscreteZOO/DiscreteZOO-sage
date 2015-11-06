@@ -242,8 +242,11 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, NotImplementedError):
             A = self.automorphism_group()
             n = self.order()
-            c = any(s.order() == n for s in A.conjugacy_classes_subgroups()
-                       if s.is_transitive())
+            if A.order() == n:
+                c = A.is_transitive()
+            else:
+                c = any(s.order() == n and s.is_transitive()
+                        for s in A.conjugacy_classes_subgroups())
             if store:
                 update(self._props, "is_cayley_graph", c)
             return c
