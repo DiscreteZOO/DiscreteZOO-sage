@@ -158,13 +158,15 @@ class ZooGraph(Graph, ZooObject):
                                     immutable = immutable)
 
     def relabel(self, perm = None, inplace = True, return_map = False,
-                check_input = True, complete_partial_function = True):
+                check_input = True, complete_partial_function = True,
+                immutable = True):
         if inplace:
             raise ValueError("To relabel an immutable graph use inplace=False")
         G = Graph(self, immutable = False)
         perm = G.relabel(perm, return_map = True, check_input = check_input,
                          complete_partial_function = complete_partial_function)
-        G = self.__class__(self, vertex_labels = perm)
+        if immutable is not False:
+            G = self.__class__(self, vertex_labels = perm)
         if return_map:
             return G, perm
         else:
