@@ -89,7 +89,7 @@ class CVTGraph(ZooGraph):
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
                          by = {self._spec["primary_key"]})
             ZooObject.__init__(self, db);
-            r = self._db_read(join, {"vertices": vertices, "cvt_index": index})
+            r = self._db_read(join, {"order": vertices, "cvt_index": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
                               props = props, name = name, db = db, **kargs)
         else:
@@ -97,7 +97,7 @@ class CVTGraph(ZooGraph):
                               props = props, name = name, cur = cur, db = db,
                               **kargs)
         if vertices is not None:
-            assert(vertices == self._props["vertices"])
+            assert(vertices == self._props["order"])
         if self._cvtprops is None:
             self._db_read_cvt()
         if cur is not None:
