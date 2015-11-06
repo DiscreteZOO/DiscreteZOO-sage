@@ -6,6 +6,8 @@ from sqldb import SQLDB
 DBFILE = os.path.join(os.path.expanduser("~"), ".graphzoo", "graphzoo.db")
 
 class SQLiteDB(SQLDB):
+    data_string = "?"
+    
     def connect(self, file = DBFILE):
         try:
             os.makedirs(os.path.dirname(file))
