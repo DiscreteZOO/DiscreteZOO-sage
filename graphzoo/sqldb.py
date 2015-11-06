@@ -89,6 +89,8 @@ class SQLDB(DB):
             return "*"
         elif isinstance(c, query.Table):
             return "`%s`.*" % c.tables[0]["alias"]
+        elif isinstance(c, query.Value):
+            return self.to_db_type(c.value)
         elif isinstance(c, query.Column):
             if c.alias is None:
                 return self.makeColumn(c.column)
@@ -102,8 +104,10 @@ class SQLDB(DB):
                 return "COUNT(DISTINCT %s)" % self.makeColumn(c.column)
             else:
                 return "COUNT(%s)" % self.makeColumn(c.column)
-        else:
+        elif isinstance(c, basestring):
             return "`%s`" % c
+        else:
+            return self.to_db_type(c)
 
     def cursor(self, **kargs):
         return self.db.cursor(**kargs)
