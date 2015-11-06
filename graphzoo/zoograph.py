@@ -13,7 +13,7 @@ from zooobject import ZooObject
 _objspec = {
     "name": "graph",
     "primary_key": "id",
-    "indices": {"average_degree", "vertices"},
+    "indices": {"average_degree", "order"},
     "skip": {"id", "data"},
     "fields" : {
         #"automorphism_group": ZooGroup,
@@ -66,16 +66,16 @@ _objspec = {
         "lovasz_theta": RealNumber,
         "maximum_average_degree": Rational,
         "name": str,
-        "num_edges": Integer,
         "number_of_loops": Integer,
         "odd_girth": Integer,
+        "order": Integer,
         "radius": Integer,
+        "size": Integer,
         "spanning_trees_count": Integer,
         "szeged_index": Integer,
         "triangles_count": Integer,
         "treewidth": Integer,
         "vertex_connectivity": Integer,
-        "vertices": Integer,
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
@@ -121,7 +121,7 @@ class ZooGraph(Graph, ZooObject):
                     self._props = {}
                 self._props["diameter"] = graph.diameter()
                 self._props["girth"] = graph.girth()
-                self._props["vertices"] = graph.order()
+                self._props["order"] = graph.order()
             elif zooid is None:
                 raise IndexError("graph id not given")
         else:
@@ -242,8 +242,11 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, NotImplementedError):
             A = self.automorphism_group()
             n = self.order()
-            c = any(s.order() == n for s in A.conjugacy_classes_subgroups()
-                       if s.is_transitive())
+            if A.order() == n:
+                c = A.is_transitive()
+            else:
+                c = any(s.order() == n and s.is_transitive()
+                        for s in A.conjugacy_classes_subgroups())
             if store:
                 update(self._props, "is_cayley_graph", c)
             return c
@@ -269,11 +272,11 @@ class ZooGraph(Graph, ZooObject):
         try:
             if not default:
                 raise NotImplementedError
-            return lookup(self._props, "vertices")
+            return lookup(self._props, "order")
         except (KeyError, NotImplementedError):
             o = Graph.order(self, **kargs)
             if default and store:
-                update(self._props, "vertices", o)
+                update(self._props, "order", o)
             return o
 
 info = ZooInfo(ZooGraph)
