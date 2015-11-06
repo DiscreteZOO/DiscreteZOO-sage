@@ -11,10 +11,10 @@ from zooobject import ZooObject
 _objspec = {
     "name": "graph_cvt",
     "primary_key": "id",
-    "indices": {"cvtid"},
+    "indices": {"cvt_index"},
     "skip": {"id"},
     "fields" : {
-        "cvtid": Integer,
+        "cvt_index": Integer,
         "id": (ZooGraph, {"primary_key"})
     }
 }
@@ -63,7 +63,7 @@ class CVTGraph(ZooGraph):
                     self._props = {}
                 if self._cvtprops is None:
                     self._cvtprops = {}
-                self._cvtprops["cvtid"] = index
+                self._cvtprops["cvt_index"] = index
                 self._props["average_degree"] = 3
                 self._props["is_regular"] = True
                 self._props["is_tree"] = False
@@ -89,7 +89,7 @@ class CVTGraph(ZooGraph):
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
                          by = {self._spec["primary_key"]})
             ZooObject.__init__(self, db);
-            r = self._db_read(join, {"vertices": vertices, "cvtid": index})
+            r = self._db_read(join, {"vertices": vertices, "cvt_index": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
                               props = props, name = name, db = db, **kargs)
         else:
@@ -136,7 +136,7 @@ class CVTGraph(ZooGraph):
         self._db_read_cvt()
 
     def cvt_index(self):
-        return lookup(self._cvtprops, "cvtid")
+        return lookup(self._cvtprops, "cvt_index")
 
 info = ZooInfo(CVTGraph)
 
