@@ -1,12 +1,11 @@
 import os
 import sqlite3
+import query
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from db import DB
-from query import Count
-from query import Table
 from utility import int_or_real
 from zooobject import ZooObject
 
@@ -48,6 +47,15 @@ class SQLDB(DB):
         "unique": "UNIQUE"
     }
 
+    binaryops = {
+        query.LessThan: "<",
+        query.LessEqual: "<=",
+        query.Equal: "=",
+        query.NotEqual: "<>",
+        query.GreaterThan: "<",
+        query.GreaterEqual: "<="
+    }
+
     def makeType(self, t):
         if type(t) == tuple:
             t, c = t
@@ -61,7 +69,7 @@ class SQLDB(DB):
             return types[t] + cons
 
     def makeTable(self, t):
-        if isinstance(t, Table):
+        if isinstance(t, query.Table):
             aliases = ["(%s)" % self.makeTable(x["table"])
                         if x["alias"] is None else "(%s) AS `%s`" %
                                     (self.makeTable(x["table"]), x["alias"])
@@ -79,12 +87,23 @@ class SQLDB(DB):
     def makeColumn(self, c):
         if c is None:
             return "*"
-        elif isinstance(c, Table):
+        elif isinstance(c, query.Table):
             return "`%s`.*" % c.tables[0]["alias"]
-        elif isinstance(c, Count):
-            return "COUNT(%s)" % self.makeColumn(c.column)
+        elif isinstance(c, query.Column):
+            if c.alias is None:
+                return self.makeColumn(c.column)
+            else:
+                return "%s AS `%s`" % (self.makeColumn(c.column), c.alias)
+        elif isinstance(c, query.BinaryOp):
+            return "(%s) %s (%s)" % (self.makeColumn(c.left),
+                        self.binaryops[c.__class__], self.makeColumn(c.right))
+        elif isinstance(c, query.Count):
+            if c.distinct:
+                return "COUNT(DISTINCT %s)" % self.makeColumn(c.column)
+            else:
+                return "COUNT(%s)" % self.makeColumn(c.column)
         else:
-            return c
+            return "`%s`" % c
 
     def cursor(self, **kargs):
         return self.db.cursor(**kargs)
