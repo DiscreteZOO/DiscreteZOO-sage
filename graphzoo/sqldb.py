@@ -14,6 +14,8 @@ class SQLDB(DB):
     
     data_string = None
 
+    none_val = "NULL"
+
     convert_to = {
         Integer: int,
         Rational: float,
@@ -52,8 +54,13 @@ class SQLDB(DB):
         query.LessEqual: "<=",
         query.Equal: "=",
         query.NotEqual: "<>",
-        query.GreaterThan: "<",
-        query.GreaterEqual: "<="
+        query.GreaterThan: ">",
+        query.GreaterEqual: ">="
+    }
+
+    logicalexps = {
+        query.And: (" AND ", "1"),
+        query.Or: (" OR ", "0")
     }
 
     def makeType(self, t):
@@ -84,30 +91,46 @@ class SQLDB(DB):
         else:
             return "`%s`" % t
 
-    def makeColumn(self, c):
-        if c is None:
-            return "*"
-        elif isinstance(c, query.Table):
-            return "`%s`.*" % c.tables[0]["alias"]
-        elif isinstance(c, query.Value):
-            return self.to_db_type(c.value)
-        elif isinstance(c, query.Column):
-            if c.alias is None:
-                return self.makeColumn(c.column)
-            else:
-                return "%s AS `%s`" % (self.makeColumn(c.column), c.alias)
-        elif isinstance(c, query.BinaryOp):
-            return "(%s) %s (%s)" % (self.makeColumn(c.left),
-                        self.binaryops[c.__class__], self.makeColumn(c.right))
-        elif isinstance(c, query.Count):
-            if c.distinct:
-                return "COUNT(DISTINCT %s)" % self.makeColumn(c.column)
-            else:
-                return "COUNT(%s)" % self.makeColumn(c.column)
-        elif isinstance(c, basestring):
-            return "`%s`" % c
+    def makeExpression(self, exp, alias = False):
+        if exp is None:
+            return (self.none_val, [])
+        elif isinstance(exp, query.All):
+            return ("*", [])
+        elif isinstance(exp, query.Table):
+            return ("`%s`.*" % exp.tables[0]["alias"], [])
         else:
-            return self.to_db_type(c)
+            exp = query.makeExpression(exp)
+        if isinstance(exp, query.Value):
+            return (self.data_string, [self.to_db_type(exp.value)])
+        elif isinstance(exp, query.Column):
+            if isinstance(exp.column, basestring):
+                sql = "`%s`" % exp.column
+                data = []
+            else:
+                sql, data = self.makeExpression(exp.column)
+            if alias and exp.alias is not None:
+                sql += " AS `%s`" % exp.alias
+            return (sql, data)
+        elif isinstance(exp, query.LogicalExpression):
+            word, const = self.logicalexps[exp.__class__]
+            if len(exp.terms) == 0:
+                return (const, [])
+            else:
+                q = [self.makeExpression(x) for x in exp.terms]
+                return (word.join(["(%s)" % x[0] for x in q]),
+                        sum([x[1] for x in q], []))
+        elif isinstance(exp, query.BinaryOp):
+            lq, ld = self.makeExpression(exp.left)
+            rq, rd = self.makeExpression(exp.right)
+            return ("(%s) %s (%s)" % (lq, self.binaryops[exp.__class__], rq),
+                    ld + rd)
+        elif isinstance(c, query.Count):
+            sql, data = self.makeExpression(exp.column)
+            if exp.distinct:
+                sql = "COUNT(DISTINCT %s)" % sql
+            else:
+                sql = "COUNT(%s)" % sql
+            return (sql, data)
 
     def cursor(self, **kargs):
         return self.db.cursor(**kargs)
@@ -151,22 +174,24 @@ class SQLDB(DB):
             if commit is not False:
                 self.db.commit()
 
-    def query(self, columns, table, query = None, groupby = None,
+    def query(self, columns, table, cond = None, groupby = None,
               orderby = None, limit = None, offset = None, cur = None):
         t = self.makeTable(table)
-        c = ", ".join([self.makeColumn(col) for col in columns])
-        q = query.keys()
-        if query is None or len(query) == 0:
-            w = "1"
-            query = {}
-        else:
-            w = " AND ".join(["`%s` = %s" % (k, self.data_string) for k in q])
+        cols = [self.makeExpression(col, alias = True) for col in columns]
+        c = ", ".join([x[0] for x in cols])
+        data = sum([x[1] for x in cols], [])
+        if cond is not None:
+            w, d = self.makeExpression(cond)
+            w = " WHERE %s" % w
+            data += d
         if groupby is None or len(groupby) == 0:
             g = ""
         else:
             if type(groupby) not in (set, list):
                 groupby = [groupby]
-            g = " GROUP BY %s" % ", ".join("`%s`" % x for x in groupby)
+            groups = [self.makeExpression(grp) for grp in groupby]
+            g = " GROUP BY %s" % ", ".join([x[0] for x in groups])
+            data += sum([x[1] for x in groups], [])
         if orderby is None or len(orderby) == 0:
             o = ""
         else:
@@ -181,11 +206,13 @@ class SQLDB(DB):
             else:
                 orderby = [k if type(k) is tuple else (k, True)
                            for k in orderby]
-                orderby = [(k, False if isinstance(v, basestring)
-                                     and v[0].upper() == 'D'
-                                     else v) for k, v in orderby]
+                orderby = [(self.makeExpression(k),
+                            False if isinstance(v, basestring)
+                                and v[0].upper() == 'D' else v)
+                            for k, v in orderby]
             o = " ORDER BY %s" % ", ".join("`%s` %s" %
-                            (k, "ASC" if v else "DESC") for k, v in orderby)
+                        (k, "ASC" if v else "DESC") for (k, _), v in orderby)
+            data += sum([x[0][1] for x in orderby], [])
         if limit is None:
             l = ""
         else:
@@ -194,6 +221,5 @@ class SQLDB(DB):
                 l += " OFFSET %d" % offset
         if cur is None:
             cur = self.db.cursor()
-        cur.execute("SELECT %s FROM %s WHERE %s%s%s%s" % (c, t, w, g, o, l),
-                    [self.to_db_type(query[k]) for k in q])
+        cur.execute("SELECT %s FROM %s%s%s%s%s" % (c, t, w, g, o, l), data)
         return cur

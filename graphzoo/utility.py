@@ -1,11 +1,15 @@
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
 
-def lookup(d, k, default = None):
-    if k in d and d[k] is not None:
-        return d[k]
-    if default is not None:
-        return default
+def lookup(d, k, destroy = False, **kargs):
+    if k in d:
+        v = d[k]
+        if destroy:
+            del d[k]
+        if v is not None:
+            return v
+    if "default" in kargs:
+        return kargs["default"]
     raise KeyError(k)
 
 def update(d, k, v):

@@ -27,6 +27,7 @@ class CVTGraph(ZooGraph):
     def __init__(self, data = None, index = None, vertices = None,
                  zooid = None, props = None, graph = None, name = None,
                  cur = None, db = None, **kargs):
+        ZooObject.__init__(self, db)
         kargs["loops"] = False
         kargs["multiedges"] = False
         if isinteger(data):
@@ -88,7 +89,6 @@ class CVTGraph(ZooGraph):
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
                          by = {self._spec["primary_key"]})
-            ZooObject.__init__(self, db);
             r = self._db_read(join, {"order": vertices, "cvt_index": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
                               props = props, name = name, db = db, **kargs)
@@ -143,7 +143,7 @@ info = ZooInfo(CVTGraph)
 def import_cvt(file, db = None, format = "sparse6", canonical = False,
                verbose = False):
     if db is None:
-        db = info.updatedb()
+        db = info.getdb()
     info.initdb(db = db, commit = False)
     previous = 0
     i = 0

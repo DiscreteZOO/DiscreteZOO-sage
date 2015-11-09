@@ -1,3 +1,5 @@
+class All: pass
+
 class Table:
     tables = []
 
@@ -75,16 +77,11 @@ class BinaryOp(Expression):
     right = None
 
     def __init__(self, left, right):
-        self.left = left
-        self.right = right
+        self.left = makeExpression(left)
+        self.right = makeExpression(right)
 
     def getColumns():
-        cols = set()
-        if isinstance(self.left, Expression):
-            cols.update(self.left.getColumns())
-        if isinstance(self.right, Expression):
-            cols.update(self.right.getColumns())
-        return cols
+        return self.left.getColumns().union(self.right.getColumns())
 
 class LessThan(BinaryOp): pass
 class LessEqual(BinaryOp): pass
@@ -92,6 +89,20 @@ class Equal(BinaryOp): pass
 class NotEqual(BinaryOp): pass
 class GreaterThan(BinaryOp): pass
 class GreaterEqual(BinaryOp): pass
+
+class LogicalExpression(Expression):
+    terms = None
+
+    def __init__(self, *lterms, **kterms):
+        if len(kterms) > 0:
+            q = kterms.keys()
+            self.__init__(*(lterms + \
+                    [Equal(Column(k), makeExpression(kterms[k])) for k in q]))
+        else:
+            self.terms = [makeExpression(e) for e in lterms]
+
+class And(LogicalExpression): pass
+class Or(LogicalExpression): pass
 
 class Count(Expression):
     column = None
@@ -105,3 +116,18 @@ class Count(Expression):
             return self.column.getColumns()
         else:
             return {self.column}
+
+def makeExpression(val):
+    if isinstance(val, Expression):
+        return val
+    elif isinstance(val, basestring):
+        return Column(val)
+    elif type(val) == dict:
+        return And(**val)
+    elif type(val) in [list, set]:
+        return And(*list(val))
+    else:
+        return Value(val)
+
+C = Column
+V = Value
