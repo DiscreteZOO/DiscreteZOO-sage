@@ -79,7 +79,8 @@ _objspec = {
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
-    }
+    },
+    "special": {"is_cayley_graph", "is_regular"}
 }
 
 class ZooGraph(Graph, ZooObject):
@@ -141,6 +142,29 @@ class ZooGraph(Graph, ZooObject):
         if cur is not None:
             self._db_write(cur)
 
+    def __getattribute__(self, name):
+        def _graphattr(store = False, *largs, **kargs):
+            default = len(largs) + len(kargs) == 0
+            try:
+                if not default:
+                    raise NotImplementedError
+                return lookup(self._props, name)
+            except (KeyError, NotImplementedError):
+                a = Graph.__getattribute__(self, name)(*largs, **kargs)
+                if default and store:
+                    update(self._props, attr, d)
+                return a
+        attr = Graph.__getattribute__(self, name)
+        cl = type(self)
+        while cl is not None:
+            if name in cl._spec["fields"] and name not in cl._spec["skip"] \
+                    and name not in cl._spec["special"]:
+                _graphattr.func_name = name
+                _graphattr.func_doc = attr.func_doc
+                return _graphattr
+            cl = cl._parent
+        return attr
+
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
         if immutable is False or (data_structure is not None
@@ -172,7 +196,6 @@ class ZooGraph(Graph, ZooObject):
         else:
             return G
 
-
     def _db_read(self, join = None, query = None):
         if query is None:
             if self._zooid is None:
@@ -199,42 +222,6 @@ class ZooGraph(Graph, ZooObject):
 
     def load_db_data(self):
         self._db_read()
-
-    def average_degree(self, store = False, **kargs):
-        default = len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "average_degree")
-        except (KeyError, NotImplementedError):
-            d = Graph.average_degree(self, **kargs)
-            if default and store:
-                update(self._props, "average_degree", d)
-            return d
-
-    def diameter(self, store = False, **kargs):
-        default = len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "diameter")
-        except (KeyError, NotImplementedError):
-            d = Graph.diameter(self, **kargs)
-            if default and store:
-                update(self._props, "diameter", d)
-            return d
-
-    def girth(self, store = False, **kargs):
-        default = len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "girth")
-        except (KeyError, NotImplementedError):
-            g = Graph.girth(self, **kargs)
-            if default and store:
-                update(self._props, "girth", g)
-            return g
 
     def is_cayley_graph(self, store = False):
         try:
@@ -266,17 +253,6 @@ class ZooGraph(Graph, ZooObject):
                 if r and k is not None:
                     update(self._props, "average_degree", k)
             return r
-
-    def order(self, store = False, **kargs):
-        default = len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "order")
-        except (KeyError, NotImplementedError):
-            o = Graph.order(self, **kargs)
-            if default and store:
-                update(self._props, "order", o)
-            return o
+    is_regular.func_doc = Graph.is_regular.func_doc
 
 info = ZooInfo(ZooGraph)
