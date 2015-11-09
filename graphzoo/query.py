@@ -96,7 +96,7 @@ class LogicalExpression(Expression):
     def __init__(self, *lterms, **kterms):
         if len(kterms) > 0:
             q = kterms.keys()
-            self.__init__(*(lterms + \
+            self.__init__(*(list(lterms) + \
                     [Equal(Column(k), makeExpression(kterms[k])) for k in q]))
         else:
             self.terms = [makeExpression(e) for e in lterms]

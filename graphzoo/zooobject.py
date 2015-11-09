@@ -53,44 +53,30 @@ class ZooInfo:
         if self.cl._spec is not None:
             db.init_table(self.cl._spec, commit = commit)
 
-    def count(self, db = None, groupby = set(), join = None, by = None,
-              sub = {}, subgroup = set(), groupby_orig = None, *largs,
-              **kargs):
+    def count(self, *largs, **kargs):
+        db = lookup(kargs, "db", default = None, destroy = True)
+        join = lookup(kargs, "join", default = None, destroy = True)
+        by = lookup(kargs, "by", default = None, destroy = True)
         if db is None:
             db = self.getdb()
-        if type(groupby) is not set:
-            if type(groupby) is not list:
-                groupby = [groupby]
-            if groupby_orig is None:
-                groupby_orig = groupby
-            groupby = set(groupby)
-        elif groupby_orig is None:
-            groupby_orig = list(groupby)
         t = Table(self.cl._spec["name"])
         if join is not None:
             t = t.join(join, by = by)
-        outk = {k for k in kargs if k not in self.cl._spec["fields"]}
-        outg = {k for k in groupby if k not in self.cl._spec["fields"]}
-        if len(outk) == 0 and len(outg) == 0:
-            grp = groupby.union(subgroup)
-            cur = db.query(columns = [Count()] + list(grp), table = t,
-                           cond = dict(kargs.items() + sub.items()),
-                           groupby = grp)
+        if self.cl._parent is None:
+            groupby = lookup(kargs, "groupby", default = [], destroy = True)
+            if type(groupby) == set:
+                groupby = list(groupby)
+            elif type(groupby) != list:
+                groupby = [groupby]
+            cur = db.query(columns = [Count(All())] + groupby, table = t,
+                           cond = And(*largs, **kargs), groupby = groupby)
             n = cur.fetchall()
             cur.close()
-            return tomultidict(n, groupby_orig)
+            return tomultidict(n, groupby)
         else:
-            if self.cl._parent is None:
-                raise KeyError
-            return ZooInfo(self.cl._parent).count(db,
-                    groupby = set(outg), join = t,
-                    by = {self.cl._spec["primary_key"]},
-                    sub = dict(sub.items() + [(k, v) for k, v in kargs.items()
-                                              if k not in outk]),
-                    subgroup = subgroup.union(k for k in groupby
-                                              if k not in outg),
-                    groupby_orig = groupby_orig,
-                    **dict([(k, kargs[k]) for k in outk]))
+            return ZooInfo(self.cl._parent).count(db = db, join = t,
+                                        by = {self.cl._spec["primary_key"]},
+                                        *largs, **kargs)
 
     def query(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)

@@ -124,13 +124,15 @@ class SQLDB(DB):
             rq, rd = self.makeExpression(exp.right)
             return ("(%s) %s (%s)" % (lq, self.binaryops[exp.__class__], rq),
                     ld + rd)
-        elif isinstance(c, query.Count):
+        elif isinstance(exp, query.Count):
             sql, data = self.makeExpression(exp.column)
             if exp.distinct:
                 sql = "COUNT(DISTINCT %s)" % sql
             else:
                 sql = "COUNT(%s)" % sql
             return (sql, data)
+        else:
+            raise NotImplementedError
 
     def cursor(self, **kargs):
         return self.db.cursor(**kargs)
