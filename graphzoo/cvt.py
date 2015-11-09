@@ -69,7 +69,7 @@ class CVTGraph(ZooGraph):
                 self._props["is_tree"] = False
                 self._props["is_vertex_transitive"] = True
                 if vertices is not None:
-                    self._props["num_edges"] = 3*vertices/2
+                    self._props["size"] = 3*vertices/2
                 self._props["number_of_loops"] = 0
             elif zooid is None:
                 raise IndexError("graph id not given")
