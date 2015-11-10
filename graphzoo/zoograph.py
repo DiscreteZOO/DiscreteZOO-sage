@@ -90,6 +90,7 @@ class ZooGraph(Graph, ZooObject):
     def __init__(self, data = None, zooid = None, props = None, graph = None,
                  vertex_labels = None, name = None, cur = None, db = None,
                  **kargs):
+        ZooObject.__init__(self, db)
         kargs["immutable"] = True
         kargs["data_structure"] = "static_sparse"
         if isinteger(data):
@@ -132,7 +133,6 @@ class ZooGraph(Graph, ZooObject):
                                            skip = ZooGraph._spec["skip"],
                                            fields = ZooGraph._spec["fields"])
 
-        ZooObject.__init__(self, db)
         self._zooid = zooid
         if data is None:
             data = self._db_read()["data"]
@@ -218,7 +218,8 @@ class ZooGraph(Graph, ZooObject):
                             dict(self._props.items() + \
                                  [("id", self._zooid),
                                   ("data", self.sparse6_string())]),
-                            cur = cur)
+                            cur = cur, id = ZooGraph._spec["primary_key"])
+        self._zooid = self._db.lastrowid(cur)
 
     def load_db_data(self):
         self._db_read()
