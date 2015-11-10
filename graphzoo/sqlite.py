@@ -17,4 +17,5 @@ class SQLiteDB(SQLDB):
         self.db = sqlite3.connect(file)
         self.db.text_factory = str
         self.db.row_factory = sqlite3.Row
-        self.rowtype = sqlite3.Row
+
+        self.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'

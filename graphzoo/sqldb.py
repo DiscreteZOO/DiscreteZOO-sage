@@ -35,33 +35,59 @@ class SQLDB(DB):
     }
     
     types = {
-        Integer: "INTEGER",
-        Rational: "REAL",
-        RealNumber: "REAL",
-        str: "TEXT",
-        bool: "INTEGER"
+        Integer: 'INTEGER',
+        Rational: 'REAL',
+        RealNumber: 'REAL',
+        str: 'TEXT',
+        bool: 'INTEGER'
     }
 
     constraints = {
-        "autoincrement": "PRIMARY KEY AUTOINCREMENT",
-        "not_null": "NOT NULL",
-        "primary_key": "PRIMARY KEY",
-        "unique": "UNIQUE"
+        'not_null': 'NOT NULL',
+        'primary_key': 'PRIMARY KEY',
+        'unique': 'UNIQUE'
     }
 
     binaryops = {
-        query.LessThan: "<",
-        query.LessEqual: "<=",
-        query.Equal: "=",
-        query.NotEqual: "<>",
-        query.GreaterThan: ">",
-        query.GreaterEqual: ">="
+        query.LessThan: '<',
+        query.LessEqual: '<=',
+        query.Equal: '=',
+        query.NotEqual: '<>',
+        query.GreaterThan: '>',
+        query.GreaterEqual: '>=',
+        query.Plus: '+',
+        query.Minus: '-',
+        query.Times: '*',
+        query.Divide: '/',
+        query.Modulo: '%',
+        query.LeftShift: '<<',
+        query.RightShift: '>>',
+        query.BitwiseAnd: '&',
+        query.BitwiseOr: '|',
+        query.Concatenate: '||',
+        query.Is: 'IS',
+        query.IsNot: 'IS NOT',
+        query.Like: 'LIKE'
+    }
+
+    unaryops = {
+        query.Not: 'NOT',
+        query.Negate: '-',
+        query.Invert: '~'
     }
 
     logicalexps = {
-        query.And: (" AND ", "1"),
-        query.Or: (" OR ", "0")
+        query.And: (' AND ', '1'),
+        query.Or: (' OR ', '0')
     }
+
+    def binaryOp(self, op, left, right):
+        return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
+
+    def unaryOp(self, op, exp):
+        if op == query.Absolute:
+            return 'abs(%s)' % exp
+        return '%s (%s)' % (self.unaryops[op.__class__], exp)
 
     def makeType(self, t):
         if type(t) == tuple:
@@ -73,7 +99,7 @@ class SQLDB(DB):
             return "INTEGER" + cons + " REFERENCES `%s`(`%s`)" \
                                     % (t._spec["name"], t._spec["primary_key"])
         else:
-            return types[t] + cons
+            return self.types[t] + cons
 
     def makeTable(self, t):
         if isinstance(t, query.Table):
@@ -122,8 +148,10 @@ class SQLDB(DB):
         elif isinstance(exp, query.BinaryOp):
             lq, ld = self.makeExpression(exp.left)
             rq, rd = self.makeExpression(exp.right)
-            return ("(%s) %s (%s)" % (lq, self.binaryops[exp.__class__], rq),
-                    ld + rd)
+            return (self.binaryOp(exp, lq, rq), ld + rd)
+        elif isinstance(exp, query.UnaryOp):
+            q, d = self.makeExpression(exp.exp)
+            return (self.unaryOp(exp, q), d)
         elif isinstance(exp, query.Count):
             sql, data = self.makeExpression(exp.column)
             if exp.distinct:
