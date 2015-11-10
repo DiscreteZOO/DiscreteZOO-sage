@@ -4,7 +4,6 @@ from zooobject import ZooObject
 class DB:
     convert_to = None
     convert_from = None
-    rowtype = None
 
     def __init__(self, **kargs):
         self.connect(**kargs)
