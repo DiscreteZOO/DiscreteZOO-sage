@@ -158,12 +158,12 @@ def import_cvt(file, db = None, format = "sparse6", canonical = False,
                 g = g.canonical_label()
             n = g.order()
             if n > previous:
-                if verbose:
+                if verbose and n > 0:
                     print "Imported %d graphs of order %d" % (i, previous)
                 previous = n
                 i = 0
             i += 1
-            CVTGraph(graph = g, vertices = n, index = i, cur = cur)
+            CVTGraph(graph = g, vertices = n, index = i, cur = cur, db = db)
         if verbose:
             print "Imported %d graphs of order %d" % (i, n)
         f.close()

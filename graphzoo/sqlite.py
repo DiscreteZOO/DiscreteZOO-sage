@@ -3,10 +3,11 @@ import os
 import sqlite3
 from sqldb import SQLDB
 
-DBFILE = os.path.join(os.path.expanduser("~"), ".graphzoo", "graphzoo.db")
+DBFILE = os.path.join(os.path.expanduser('~'), '.graphzoo', 'graphzoo.db')
 
 class SQLiteDB(SQLDB):
-    data_string = "?"
+    data_string = '?'
+    ident_quote = '"'
     
     def connect(self, file = DBFILE):
         try:
@@ -19,3 +20,8 @@ class SQLiteDB(SQLDB):
         self.db.row_factory = sqlite3.Row
 
         self.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
+
+    def createIndex(self, cur, name, col):
+        cur.execute('CREATE INDEX IF NOT EXISTS %s ON %s(%s)'
+                        % (self.quoteIdent('idx_%s_%s' % (name, col)),
+                            self.quoteIdent(name), self.quoteIdent(col)))

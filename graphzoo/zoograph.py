@@ -195,7 +195,8 @@ class ZooGraph(Graph, ZooObject):
                             dict(self._props.items() + \
                                  [("id", self._zooid),
                                   ("data", self.sparse6_string())]),
-                            cur = cur)
+                            cur = cur, id = ZooGraph._spec["primary_key"])
+        self._zooid = self._db.lastrowid(cur)
 
     def load_db_data(self):
         self._db_read()

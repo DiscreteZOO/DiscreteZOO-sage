@@ -13,8 +13,9 @@ class SQLDB(DB):
     db = None
     
     data_string = None
+    ident_quote = None
 
-    none_val = "NULL"
+    none_val = 'NULL'
 
     convert_to = {
         Integer: int,
@@ -81,6 +82,9 @@ class SQLDB(DB):
         query.Or: (' OR ', '0')
     }
 
+    def quoteIdent(self, ident):
+        return '%s%s%s' % (self.ident_quote, ident, self.ident_quote)
+
     def binaryOp(self, op, left, right):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
@@ -94,48 +98,53 @@ class SQLDB(DB):
             t, c = t
         else:
             c = set()
-        cons = "".join([" " + self.constraints[x] for x in c])
+        cons = ''.join([' ' + self.constraints[x] for x in c])
         if issubclass(t, ZooObject):
-            return "INTEGER" + cons + " REFERENCES `%s`(`%s`)" \
-                                    % (t._spec["name"], t._spec["primary_key"])
+            return 'INTEGER' + cons + ' REFERENCES %s(%s)' \
+                                % (self.quoteIdent(t._spec['name']),
+                                    self.quoteIdent(t._spec['primary_key']))
         else:
             return self.types[t] + cons
 
     def makeTable(self, t):
         if isinstance(t, query.Table):
-            aliases = ["(%s)" % self.makeTable(x["table"])
-                        if x["alias"] is None else "(%s) AS `%s`" %
-                                    (self.makeTable(x["table"]), x["alias"])
+            aliases = ['%s' % self.makeTable(x['table'])
+                        if x['alias'] is None else '%s AS %s' %
+                                                (self.makeTable(x['table']),
+                                                self.quoteIdent(x['alias']))
                         for x in t.tables]
-            joins = [" %sJOIN " % ("LEFT " if x["left"] else "")
+            joins = [' %sJOIN ' % ('LEFT ' if x['left'] else '')
                         for x in t.tables]
-            using = ["" if len(x["by"]) == 0
-                     else " USING (%s)" % ", ".join(["`%s`" % c
-                                        for c in x["by"]]) for x in t.tables]
-            return aliases[0] + "".join([joins[i] + aliases[i] + using[i]
+            using = ['' if len(x['by']) == 0
+                     else ' USING (%s)' % ', '.join([self.quoteIdent(c)
+                                        for c in x['by']]) for x in t.tables]
+            out = aliases[0] + ''.join([joins[i] + aliases[i] + using[i]
                                          for i in range(1, len(t.tables))])
+            if len(aliases) > 1:
+                out = "(%s)" % out
+            return out
         else:
-            return "`%s`" % t
+            return self.quoteIdent(t)
 
     def makeExpression(self, exp, alias = False):
         if exp is None:
             return (self.none_val, [])
         elif isinstance(exp, query.All):
-            return ("*", [])
+            return ('*', [])
         elif isinstance(exp, query.Table):
-            return ("`%s`.*" % exp.tables[0]["alias"], [])
+            return ('%s.*' % self.quoteIdent(exp.tables[0]['alias']), [])
         else:
             exp = query.makeExpression(exp)
         if isinstance(exp, query.Value):
             return (self.data_string, [self.to_db_type(exp.value)])
         elif isinstance(exp, query.Column):
             if isinstance(exp.column, basestring):
-                sql = "`%s`" % exp.column
+                sql = self.quoteIdent(exp.column)
                 data = []
             else:
                 sql, data = self.makeExpression(exp.column)
             if alias and exp.alias is not None:
-                sql += " AS `%s`" % exp.alias
+                sql += ' AS %s' % self.quoteIdent(exp.alias)
             return (sql, data)
         elif isinstance(exp, query.LogicalExpression):
             word, const = self.logicalexps[exp.__class__]
@@ -143,7 +152,7 @@ class SQLDB(DB):
                 return (const, [])
             else:
                 q = [self.makeExpression(x) for x in exp.terms]
-                return (word.join(["(%s)" % x[0] for x in q]),
+                return (word.join(['(%s)' % x[0] for x in q]),
                         sum([x[1] for x in q], []))
         elif isinstance(exp, query.BinaryOp):
             lq, ld = self.makeExpression(exp.left)
@@ -155,9 +164,9 @@ class SQLDB(DB):
         elif isinstance(exp, query.Count):
             sql, data = self.makeExpression(exp.column)
             if exp.distinct:
-                sql = "COUNT(DISTINCT %s)" % sql
+                sql = 'COUNT(DISTINCT %s)' % sql
             else:
-                sql = "COUNT(%s)" % sql
+                sql = 'COUNT(%s)' % sql
             return (sql, data)
         else:
             raise NotImplementedError
@@ -171,29 +180,39 @@ class SQLDB(DB):
     def rollback(self, **kargs):
         self.db.rollback(**kargs)
 
+    def createIndex(self, cur, name, col):
+        raise NotImplementedError
+
     def init_table(self, spec, commit = False):
-        self.db.execute("CREATE TABLE IF NOT EXISTS `%s` (%s)" %
-                        (spec["name"], ", ".join(["`%s` %s" %
-                                                    (k, self.makeType(v))
-                                        for k, v in spec["fields"].items()])))
-        for col in spec["indices"]:
-            self.db.execute("CREATE INDEX IF NOT EXISTS `idx_%s_%s` ON `%s`(`%s`)"
-                            % (spec["name"], col, spec["name"], col))
+        cur = self.cursor()
+        cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
+                        (self.quoteIdent(spec['name']),
+                        ', '.join(['%s %s' % (self.quoteIdent(k),
+                                                self.makeType(v))
+                                        for k, v in spec['fields'].items()])))
+        for col in spec['indices']:
+            self.createIndex(cur, spec['name'], col)
+        cur.close()
         if commit:
             self.db.commit()
 
-    def insert_row(self, table, row, cur = None, commit = None):
-        cols = row.keys()
+    def returning(self, id):
+        return ''
+
+    def insert_row(self, table, row, cur = None, commit = None, id = None):
+        cols = [c for c in row if row[c] is not None]
         if cur is False:
             cur = None
             ret = False
         else:
             ret = True
         if cur is None:
-            cur = self.db.cursor()
-        cur.execute("INSERT INTO `%s` (%s) VALUES (%s)" %
-                        (table, ", ".join(["`%s`" % c for c in cols]),
-                                ", ".join([self.data_string] * len(cols))),
+            cur = self.cursor()
+        cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
+                        (self.quoteIdent(table),
+                            ', '.join([self.quoteIdent(c) for c in cols]),
+                            ', '.join([self.data_string] * len(cols)),
+                            self.returning(id)),
                     [self.to_db_type(row[c]) for c in cols])
         if ret:
             if commit:
@@ -204,26 +223,29 @@ class SQLDB(DB):
             if commit is not False:
                 self.db.commit()
 
+    def lastrowid(self, cur):
+        return cur.lastrowid
+
     def query(self, columns, table, cond = None, groupby = None,
               orderby = None, limit = None, offset = None, cur = None):
         t = self.makeTable(table)
         cols = [self.makeExpression(col, alias = True) for col in columns]
-        c = ", ".join([x[0] for x in cols])
+        c = ', '.join([x[0] for x in cols])
         data = sum([x[1] for x in cols], [])
         if cond is not None:
             w, d = self.makeExpression(cond)
-            w = " WHERE %s" % w
+            w = ' WHERE %s' % w
             data += d
         if groupby is None or len(groupby) == 0:
-            g = ""
+            g = ''
         else:
             if type(groupby) not in (set, list):
                 groupby = [groupby]
             groups = [self.makeExpression(grp) for grp in groupby]
-            g = " GROUP BY %s" % ", ".join([x[0] for x in groups])
+            g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
             data += sum([x[1] for x in groups], [])
         if orderby is None or len(orderby) == 0:
-            o = ""
+            o = ''
         else:
             if type(orderby) is set:
                 orderby = [(k, True) for k in orderby]
@@ -240,16 +262,16 @@ class SQLDB(DB):
                             False if isinstance(v, basestring)
                                 and v[0].upper() == 'D' else v)
                             for k, v in orderby]
-            o = " ORDER BY %s" % ", ".join("`%s` %s" %
-                        (k, "ASC" if v else "DESC") for (k, _), v in orderby)
+            o = ' ORDER BY %s' % ', '.join('%s %s' % (self.quoteIdent(k),
+                            'ASC' if v else 'DESC') for (k, _), v in orderby)
             data += sum([x[0][1] for x in orderby], [])
         if limit is None:
-            l = ""
+            l = ''
         else:
-            l = " LIMIT %d" % limit
+            l = ' LIMIT %d' % limit
             if offset is not None:
-                l += " OFFSET %d" % offset
+                l += ' OFFSET %d' % offset
         if cur is None:
-            cur = self.db.cursor()
-        cur.execute("SELECT %s FROM %s%s%s%s%s" % (c, t, w, g, o, l), data)
+            cur = self.cursor()
+        cur.execute('SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l), data)
         return cur
