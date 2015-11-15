@@ -37,7 +37,7 @@ _objspec = {
         "is_asteroidal_triple_free": bool,
         "is_bipartite": bool,
         "is_cartesian_product": bool,
-        "is_cayley_graph": bool,
+        "is_cayley": bool,
         "is_chordal": bool,
         "is_circulant": bool,
         "is_circular_planar": bool,
@@ -80,7 +80,7 @@ _objspec = {
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
     },
-    "special": {"is_cayley_graph", "is_regular"}
+    "special": {"is_regular"}
 }
 
 class ZooGraph(Graph, ZooObject):
@@ -223,21 +223,6 @@ class ZooGraph(Graph, ZooObject):
 
     def load_db_data(self):
         self._db_read()
-
-    def is_cayley_graph(self, store = False):
-        try:
-            return lookup(self._props, "is_cayley_graph")
-        except (KeyError, NotImplementedError):
-            A = self.automorphism_group()
-            n = self.order()
-            if A.order() == n:
-                c = A.is_transitive()
-            else:
-                c = any(s.order() == n and s.is_transitive()
-                        for s in A.conjugacy_classes_subgroups())
-            if store:
-                update(self._props, "is_cayley_graph", c)
-            return c
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
