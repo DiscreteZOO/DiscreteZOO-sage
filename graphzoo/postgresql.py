@@ -1,6 +1,8 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
+from query import And
 from query import BitwiseXOr
 from query import Like
+from query import Or
 from query import Power
 from sqldb import SQLDB
 from utility import lookup
@@ -8,6 +10,11 @@ from utility import lookup
 class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
+
+    logicalconsts = {
+        And: 'TRUE',
+        Or: 'FALSE'
+    }
 
     def connect(self, **kargs):
         self.db = psycopg2.connect(**kargs)
