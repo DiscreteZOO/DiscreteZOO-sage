@@ -100,6 +100,13 @@ class ZooInfo:
                                         by = {self.cl._spec["primary_key"]},
                                         *largs, **kargs)
 
+    def props(self, *largs, **kargs):
+        db = lookup(kargs, "db", default = None, destroy = True)
+        if db is None:
+            db = self.getdb()
+        cur = self.query(db = db, *largs, **kargs)
+        return (drop_none(r) for r in cur)
+
     def all(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)
         if db is None:
