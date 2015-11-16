@@ -1,4 +1,7 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
+from sage.rings.integer import Integer
+from sage.rings.rational import Rational
+from sage.rings.real_mpfr import RealNumber
 from query import And
 from query import BitwiseXOr
 from query import Like
