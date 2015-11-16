@@ -8,11 +8,19 @@ import scala.util.matching.Regex
 class ZooGraph(adjacenciesString: String) {
 
   val adjacencyList = build(adjacenciesString)
+  val idsByVertices = adjacencyList.map(_.swap)
   val order = adjacencyList.size
 
   class Vertex {
     val neighbours = mutable.Set[Vertex]()
     def addNeighbour(neighbour: Vertex): Unit = neighbours += neighbour
+    def getId(): Option[Int] = idsByVertices.get(this)
+    def getIdString(): String = this.getId().map(_.toString).getOrElse("#")
+    def getIdInt(): Int = this.getId().getOrElse(0)
+    override def toString(): String = {
+      val sortedNeighbours = neighbours.toSeq.sortWith(_.getIdInt() < _.getIdInt())
+      s"${this.getIdString}: ${sortedNeighbours.drop(1).map(_.getIdString).foldLeft(sortedNeighbours.head.getIdString)((a,b) => s"$a, $b")}"
+    }
   }
 
   private def build(adjacenciesString: String): Map[Int, Vertex] = {
@@ -34,6 +42,6 @@ class ZooGraph(adjacenciesString: String) {
   }
 
   override def toString(): String = {
-    s"An undirected graph of order $order."
+    adjacencyList.map(pair => pair._2.toString()).foldLeft(s"An undirected graph of order $order.\n")((a,b) => s"$a$b\n")
   }
 }
