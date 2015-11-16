@@ -37,3 +37,6 @@ class SQLiteDB(SQLDB):
         self.db.close()
         shutil.copy(file, self.file)
         self.connect(file = self.file)
+
+    def __str__(self):
+        return 'SQLite database in %s' % self.file

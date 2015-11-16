@@ -1,4 +1,5 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
+from types import ModuleType
 from query import And
 from query import BitwiseXOr
 from query import Like
@@ -16,7 +17,21 @@ class PostgreSQLDB(SQLDB):
         Or: 'FALSE'
     }
 
-    def connect(self, **kargs):
+    def connect(self, *largs, **kargs):
+        for arg in largs:
+            d = None
+            if isinstance(arg, basestring):
+                kargs["dsn"] = arg
+            elif isinstance(arg, ModuleType):
+                d = arg.__dict__
+            elif isinstance(arg, dict):
+                d = arg
+            else:
+                raise TypeError("unknown argument: %s" % arg)
+            if d is not None:
+                for k in d:
+                    if k[:1] != '_':
+                        kargs[k] = d[k]
         self.db = psycopg2.connect(**kargs)
 
         self.types[bool] = 'BOOLEAN'
@@ -63,3 +78,12 @@ class PostgreSQLDB(SQLDB):
 
     def lastrowid(self, cur):
         return cur.fetchone()[0]
+
+    def __str__(self):
+        d = dict(x.split('=') for x in self.db.dsn.split())
+        host = d["host"]
+        if "user" in d:
+            host = "%s@%s" % (d["user"], host)
+        if "port" in d:
+            host = "%s:%s" % (host, d["port"])
+        return 'PostgreSQL database "%s" at %s' % (d["dbname"], host)
