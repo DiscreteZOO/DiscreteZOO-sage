@@ -1,6 +1,12 @@
-class All: pass
+class QueryObject:
+    def __repr__(self):
+        return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
 
-class Table:
+class All(QueryObject):
+    def __str__(self):
+        return "All columns"
+
+class Table(QueryObject):
     tables = []
 
     def __init__(self, *args, **kargs):
@@ -24,7 +30,18 @@ class Table:
                             "by": by})
         return self
 
-class Expression:
+    def __str__(self):
+        if len(self.tables) == 0:
+            return 'Empty join'
+        aliases = [('"%s"' % t["table"]) if t["table"] == t["alias"]
+                                            or t["alias"] is None
+                    else ('"%s"->"%s"' % (t["table"], t["alias"]))
+                    for t in self.tables]
+        return "Table %s%s" % (aliases[0], ''.join([' %sjoin %s by (%s)' %
+                ("left " if t["left"] else "", aliases[i], ', '.join(t["by"]))
+                for i, t in enumerate(self.tables) if i > 0]))
+
+class Expression(QueryObject):
     def __init__(self, *args, **kargs):
         raise NotImplementedError
 
@@ -138,8 +155,14 @@ class Value(Expression):
     def __init__(self, value):
         self.value = value
 
-    def getColumns():
+    def getColumns(self):
         return set()
+
+    def __str__(self):
+        if isinstance(self.value, basestring):
+            return "'%s'" % self.value
+        else:
+            return str(self.value)
 
 class Column(Expression):
     column = None
@@ -149,64 +172,132 @@ class Column(Expression):
         self.column = column
         self.alias = alias
 
-    def getColumns():
+    def getColumns(self):
         if isinstance(self.column, Expression):
             return self.column.getColumns()
         else:
             return {self.column}
 
+    def __str__(self):
+        if self.alias is None:
+            return 'Column "%s"' % self.column
+        else:
+            return 'Column "%s"->"%s"' % (self.column, self.alias)
+
 class BinaryOp(Expression):
     left = None
     right = None
+    op = None
 
     def __init__(self, left, right):
         self.left = makeExpression(left)
         self.right = makeExpression(right)
 
-    def getColumns():
+    def getColumns(self):
         return self.left.getColumns().union(self.right.getColumns())
 
-class LessThan(BinaryOp): pass
-class LessEqual(BinaryOp): pass
-class Equal(BinaryOp): pass
-class NotEqual(BinaryOp): pass
-class GreaterThan(BinaryOp): pass
-class GreaterEqual(BinaryOp): pass
-class Plus(BinaryOp): pass
-class Minus(BinaryOp): pass
-class Times(BinaryOp): pass
-class Divide(BinaryOp): pass
-class Modulo(BinaryOp): pass
-class Power(BinaryOp): pass
-class LeftShift(BinaryOp): pass
-class RightShift(BinaryOp): pass
-class BitwiseAnd(BinaryOp): pass
-class BitwiseOr(BinaryOp): pass
-class BitwiseXOr(BinaryOp): pass
-class Concatenate(BinaryOp): pass
-class Is(BinaryOp): pass
-class IsNot(BinaryOp): pass
+    def __str__(self):
+        return "(%s) %s (%s)" % (self.left, self.op, self.right)
+
+class LessThan(BinaryOp):
+    op = "<"
+
+class LessEqual(BinaryOp):
+    op = "<="
+
+class Equal(BinaryOp):
+    op = "="
+
+class NotEqual(BinaryOp):
+    op = "!="
+
+class GreaterThan(BinaryOp):
+    op = ">"
+
+class GreaterEqual(BinaryOp):
+    op = ">="
+
+class Plus(BinaryOp):
+    op = "+"
+
+class Minus(BinaryOp):
+    op = "-"
+
+class Times(BinaryOp):
+    op = "*"
+
+class Divide(BinaryOp):
+    op = "/"
+
+class Modulo(BinaryOp):
+    op = "mod"
+
+class Power(BinaryOp):
+    op = "**"
+
+class LeftShift(BinaryOp):
+    op = "<<"
+
+class RightShift(BinaryOp):
+    op = ">>"
+
+class BitwiseAnd(BinaryOp):
+    op = "&"
+
+class BitwiseOr(BinaryOp):
+    op = "|"
+
+class BitwiseXOr(BinaryOp):
+    op = "^"
+
+class Concatenate(BinaryOp):
+    op = "++"
+
+class Is(BinaryOp):
+    op = "is"
+
+class IsNot(BinaryOp):
+    op = "is not"
 
 class Like(BinaryOp):
+    op = "like"
     case = None
 
     def __init__(self, left, right, case = False):
         BinaryOp.__init__(self, left, right)
         self.case = case
 
+    def __str__(self):
+        out = BinaryOp.__str__(self)
+        if self.case:
+            out += " (case insensitive)"
+        return out
+
 class UnaryOp(Expression):
     exp = None
+    op = None
 
     def __init__(self, exp):
         self.exp = makeExpression(exp)
 
-    def getColumns():
+    def getColumns(self):
         return exp.getColumns()
 
-class Not(UnaryOp): pass
-class Negate(UnaryOp): pass
-class Absolute(UnaryOp): pass
-class Invert(UnaryOp): pass
+    def __str__(self):
+        return "%s (%s)" % (self.op, self.exp)
+
+class Not(UnaryOp):
+    op = "not"
+
+class Negate(UnaryOp):
+    op = "-"
+
+class Absolute(UnaryOp):
+    def __str__(self):
+        return "|%s|" % self.exp
+
+class Invert(UnaryOp):
+    op = "~"
 
 class LogicalExpression(Expression):
     terms = None
@@ -219,8 +310,14 @@ class LogicalExpression(Expression):
         else:
             self.terms = [makeExpression(e) for e in lterms]
 
-class And(LogicalExpression): pass
-class Or(LogicalExpression): pass
+    def __str__(self):
+        return self.op.join("%s" % t for t in self.terms)
+
+class And(LogicalExpression):
+    op = " and "
+
+class Or(LogicalExpression):
+    op = " or "
 
 class Count(Expression):
     column = None
@@ -229,11 +326,15 @@ class Count(Expression):
         self.column = column
         self.distinct = distinct
 
-    def getColumns():
+    def getColumns(self):
         if isinstance(self.column, Expression):
             return self.column.getColumns()
         else:
             return {self.column}
+
+    def __str__(self):
+        return 'Count%s (%s)' % (" distinct" if self.distinct else "",
+                                 self.column)
 
 def makeExpression(val):
     if isinstance(val, Expression):
