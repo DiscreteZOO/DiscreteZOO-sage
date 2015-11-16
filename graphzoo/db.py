@@ -5,8 +5,8 @@ class DB:
     convert_to = None
     convert_from = None
 
-    def __init__(self, **kargs):
-        self.connect(**kargs)
+    def __init__(self, *largs, **kargs):
+        self.connect(*largs, **kargs)
 
     def connect(self, **kargs):
         raise NotImplementedError

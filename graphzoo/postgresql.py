@@ -1,4 +1,5 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
+from types import ModuleType
 from query import And
 from query import BitwiseXOr
 from query import Like
@@ -16,7 +17,21 @@ class PostgreSQLDB(SQLDB):
         Or: 'FALSE'
     }
 
-    def connect(self, **kargs):
+    def connect(self, *largs, **kargs):
+        for arg in largs:
+            d = None
+            if isinstance(arg, basestring):
+                kargs["dsn"] = arg
+            elif isinstance(arg, ModuleType):
+                d = arg.__dict__
+            elif isinstance(arg, dict):
+                d = arg
+            else:
+                raise TypeError("unknown argument: %s" % arg)
+            if d is not None:
+                for k in d:
+                    if k[:1] != '_':
+                        kargs[k] = d[k]
         self.db = psycopg2.connect(**kargs)
 
         self.types[bool] = 'BOOLEAN'
