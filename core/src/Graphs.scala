@@ -8,6 +8,7 @@ object Graphs {
 
     val adjacenciesString = "[[0,1], [1, 2], [2,0]]"
     val c3 = new ZooGraph(adjacenciesString)
+    println(c3)
 
   }
 

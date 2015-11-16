@@ -3,10 +3,12 @@
  */
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 class ZooGraph(adjacenciesString: String) {
 
   val adjacencyList = build(adjacenciesString)
+  val order = adjacencyList.size
 
   class Vertex {
     val neighbours = mutable.Set[Vertex]()
@@ -14,7 +16,9 @@ class ZooGraph(adjacenciesString: String) {
   }
 
   private def build(adjacenciesString: String): Map[Int, Vertex] = {
+
     val verticesById = mutable.Map[Int, Vertex]()
+    val edgePattern = new Regex("""(\d+)[\ ,]+(\d+)""", "vertex1", "vertex2")
 
     def addEdge(vertexNo1: Int, vertexNo2: Int): Unit = {
       val vertex1 = verticesById.getOrElseUpdate(vertexNo1, new Vertex)
@@ -23,12 +27,13 @@ class ZooGraph(adjacenciesString: String) {
       vertex2.addNeighbour(vertex1)
     }
 
-    val edgePairs = """(\d+[\ ,\ ]+\d+)""".r.findAllIn(adjacenciesString).map(s => """(\d+)""".r.findAllIn(s).toSeq match {
-      case Seq(a, b) => (a.toInt, b.toInt)
-    })
-
-    edgePairs.foreach(edge => addEdge(edge._1, edge._2))
+    edgePattern.findAllIn(adjacenciesString).matchData foreach {
+      edge => addEdge(edge.group("vertex1").toInt, edge.group("vertex2").toInt)
+    }
     verticesById.values.zipWithIndex.map(pair => pair._2 -> pair._1).toMap
   }
 
+  override def toString(): String = {
+    s"An undirected graph of order $order."
+  }
 }
