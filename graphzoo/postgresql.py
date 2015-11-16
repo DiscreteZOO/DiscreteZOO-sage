@@ -1,7 +1,4 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
-from sage.rings.integer import Integer
-from sage.rings.rational import Rational
-from sage.rings.real_mpfr import RealNumber
 from query import And
 from query import BitwiseXOr
 from query import Like
@@ -14,14 +11,6 @@ class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
 
-    types = {
-        Integer: 'INTEGER',
-        Rational: 'REAL',
-        RealNumber: 'REAL',
-        str: 'TEXT',
-        bool: 'BOOLEAN'
-    }
-
     logicalconsts = {
         And: 'TRUE',
         Or: 'FALSE'
@@ -30,6 +19,8 @@ class PostgreSQLDB(SQLDB):
     def connect(self, **kargs):
         self.db = psycopg2.connect(**kargs)
 
+        self.types[bool] = 'BOOLEAN'
+        self.convert_to[bool] = bool
         self.binaryops[Power] = '^'
         self.binaryops[BitwiseXOr] = '#'
         self.types[enumerate] = 'SERIAL'
