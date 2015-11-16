@@ -152,7 +152,7 @@ class ZooGraph(Graph, ZooObject):
             except (KeyError, NotImplementedError):
                 a = Graph.__getattribute__(self, name)(*largs, **kargs)
                 if default and store:
-                    update(self._props, attr, d)
+                    update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
         cl = type(self)

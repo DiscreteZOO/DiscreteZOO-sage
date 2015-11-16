@@ -78,8 +78,13 @@ class SQLDB(DB):
     }
 
     logicalexps = {
-        query.And: (' AND ', '1'),
-        query.Or: (' OR ', '0')
+        query.And: ' AND ',
+        query.Or: ' OR '
+    }
+
+    logicalconsts = {
+        query.And: '1',
+        query.Or: '0'
     }
 
     def quoteIdent(self, ident):
@@ -147,7 +152,8 @@ class SQLDB(DB):
                 sql += ' AS %s' % self.quoteIdent(exp.alias)
             return (sql, data)
         elif isinstance(exp, query.LogicalExpression):
-            word, const = self.logicalexps[exp.__class__]
+            word = self.logicalexps[exp.__class__]
+            const = self.logicalconsts[exp.__class__]
             if len(exp.terms) == 0:
                 return (const, [])
             else:
