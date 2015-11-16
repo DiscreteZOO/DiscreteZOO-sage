@@ -264,12 +264,12 @@ class SQLDB(DB):
             else:
                 orderby = [k if type(k) is tuple else (k, True)
                            for k in orderby]
-                orderby = [(self.makeExpression(k),
-                            False if isinstance(v, basestring)
-                                and v[0].upper() == 'D' else v)
-                            for k, v in orderby]
-            o = ' ORDER BY %s' % ', '.join('%s %s' % (self.quoteIdent(k),
-                            'ASC' if v else 'DESC') for (k, _), v in orderby)
+            orderby = [(self.makeExpression(k),
+                        False if isinstance(v, basestring)
+                            and v[0].upper() == 'D' else v)
+                        for k, v in orderby]
+            o = ' ORDER BY %s' % ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
+                                            for (k, _), v in orderby)
             data += sum([x[0][1] for x in orderby], [])
         if limit is None:
             l = ''
