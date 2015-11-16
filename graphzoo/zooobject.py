@@ -64,9 +64,9 @@ class ZooInfo:
             t = t.join(join, by = by)
         if self.cl._parent is None:
             groupby = lookup(kargs, "groupby", default = [], destroy = True)
-            if type(groupby) == set:
+            if isinstance(groupby, set):
                 groupby = list(groupby)
-            elif type(groupby) != list:
+            elif not isinstance(groupby, list):
                 groupby = [groupby]
             cur = db.query(columns = [Count(All())] + groupby, table = t,
                            cond = And(*largs, **kargs), groupby = groupby)

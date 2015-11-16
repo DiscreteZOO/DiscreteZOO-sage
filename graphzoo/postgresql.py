@@ -53,7 +53,7 @@ class PostgreSQLDB(SQLDB):
         return SQLDB.binaryOp(self, op, left, right)
 
     def makeType(self, t):
-        if type(t) == tuple:
+        if isinstance(t, tuple):
             t, c = t
         else:
             c = set()

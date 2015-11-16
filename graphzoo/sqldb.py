@@ -99,7 +99,7 @@ class SQLDB(DB):
         return '%s (%s)' % (self.unaryops[op.__class__], exp)
 
     def makeType(self, t):
-        if type(t) == tuple:
+        if isinstance(t, tuple):
             t, c = t
         else:
             c = set()
@@ -245,7 +245,7 @@ class SQLDB(DB):
         if groupby is None or len(groupby) == 0:
             g = ''
         else:
-            if type(groupby) not in (set, list):
+            if not isinstance(groupby, (set, list)):
                 groupby = [groupby]
             groups = [self.makeExpression(grp) for grp in groupby]
             g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
@@ -253,16 +253,16 @@ class SQLDB(DB):
         if orderby is None or len(orderby) == 0:
             o = ''
         else:
-            if type(orderby) is set:
+            if isinstance(orderby, set):
                 orderby = [(k, True) for k in orderby]
-            elif type(orderby) is dict:
+            elif isinstance(orderby, dict):
                 orderby = orderby.items()
-            if type(orderby) is tuple:
+            if isinstance(orderby, tuple):
                 orderby = [orderby]
-            elif type(orderby) is not list:
+            elif not isinstance(orderby, list):
                 orderby = [(orderby, True)]
             else:
-                orderby = [k if type(k) is tuple else (k, True)
+                orderby = [k if isinstance(k, tuple) else (k, True)
                            for k in orderby]
             orderby = [(self.makeExpression(k),
                         False if isinstance(v, basestring)

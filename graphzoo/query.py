@@ -240,9 +240,9 @@ def makeExpression(val):
         return val
     elif isinstance(val, basestring):
         return Column(val)
-    elif type(val) == dict:
+    elif isinstance(val, dict):
         return And(**val)
-    elif type(val) in [list, set]:
+    elif isinstance(val, (list, set)):
         return And(*list(val))
     else:
         return Value(val)
