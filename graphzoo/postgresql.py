@@ -11,6 +11,14 @@ class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
 
+    types = {
+        Integer: 'INTEGER',
+        Rational: 'REAL',
+        RealNumber: 'REAL',
+        str: 'TEXT',
+        bool: 'BOOLEAN'
+    }
+
     logicalconsts = {
         And: 'TRUE',
         Or: 'FALSE'
