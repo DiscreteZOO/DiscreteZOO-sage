@@ -78,3 +78,12 @@ class PostgreSQLDB(SQLDB):
 
     def lastrowid(self, cur):
         return cur.fetchone()[0]
+
+    def __str__(self):
+        d = dict(x.split('=') for x in self.db.dsn.split())
+        host = d["host"]
+        if "user" in d:
+            host = "%s@%s" % (d["user"], host)
+        if "port" in d:
+            host = "%s:%s" % (host, d["port"])
+        return 'PostgreSQL database "%s" at %s' % (d["dbname"], host)

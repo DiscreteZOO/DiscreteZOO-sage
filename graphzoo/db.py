@@ -48,3 +48,6 @@ class DB:
             return self.convert_from[t](x)
         else:
             return x
+
+    def __repr__(self):
+        return "<database object at 0x%08x: %s>" % (id(self), str(self))
