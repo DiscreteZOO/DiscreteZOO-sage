@@ -28,9 +28,9 @@ def int_or_real(x):
 
 def tomultidict(rows, dims):
     if len(dims) == 0:
-        return rows[0][0]
+        return Integer(rows[0][0])
     elif len(dims) == 1:
-        return {r[1]: r[0] for r in rows}
+        return {r[1]: Integer(r[0]) for r in rows}
     d = {}
     dims = [k.alias if isinstance(k, Column) else str(k) for k in dims]
     for r in rows:
@@ -38,12 +38,13 @@ def tomultidict(rows, dims):
         for i in range(len(dims)):
             v = r[dims[i]]
             if i == len(dims)-1:
-                dd[v] = r[0]
+                dd[v] = Integer(r[0])
             else:
                 if v not in dd:
                     dd[v] = (dims[i+1], {})
                 dd = dd[v][1]
     return (dims[0], d)
 
-def drop_none(r):
-    return {k: v for k, v in dict(r).items() if v is not None}
+def todict(r, db):
+    return {k: db.from_db_type(v, type(v))
+            for k, v in dict(r).items() if v is not None}

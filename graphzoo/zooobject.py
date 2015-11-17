@@ -4,8 +4,8 @@ from query import And
 from query import Column
 from query import Count
 from query import Table
-from utility import drop_none
 from utility import lookup
+from utility import todict
 from utility import tomultidict
 
 class ZooObject:
@@ -107,14 +107,14 @@ class ZooInfo:
         if db is None:
             db = self.getdb()
         cur = self.query(db = db, *largs, **kargs)
-        return (drop_none(r) for r in cur)
+        return (todict(r, db) for r in cur)
 
     def all(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)
         if db is None:
             db = self.getdb()
         cur = self.query(db = db, *largs, **kargs)
-        return (self.cl(drop_none(r), db = db) for r in cur)
+        return (self.cl(todict(r, db), db = db) for r in cur)
 
     def one(self, *largs, **kargs):
         kargs["limit"] = 1
@@ -125,4 +125,4 @@ class ZooInfo:
         r = cur.fetchone()
         if r is None:
             raise KeyError(kargs)
-        return self.cl(drop_none(r), db = db)
+        return self.cl(todict(r, db), db = db)

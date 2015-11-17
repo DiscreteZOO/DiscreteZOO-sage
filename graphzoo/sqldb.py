@@ -28,6 +28,8 @@ class SQLDB(DB):
     }
 
     convert_from = {
+        int: Integer,
+        float: create_RealNumber,
         Integer: Integer,
         Rational: int_or_real,
         RealNumber: create_RealNumber,
