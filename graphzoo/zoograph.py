@@ -4,6 +4,7 @@ from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from query import Table
+from query import Column
 from utility import isinteger
 from utility import lookup
 from utility import update
@@ -82,6 +83,10 @@ _objspec = {
     },
     "special": {"is_regular"}
 }
+
+for k in _objspec["fields"]:
+    exec('%s = Column("%s")' % (k, k))
+del k
 
 class ZooGraph(Graph, ZooObject):
     _props = None
