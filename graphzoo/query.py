@@ -115,16 +115,16 @@ class Expression(QueryObject):
         return RightShift(other, self)
 
     def __and__(self, other):
-        return BitwiseAnd(self, other)
+        return And(self, other)
 
     def __rand__(self, other):
-        return BitwiseAnd(other, self)
+        return And(other, self)
 
     def __or__(self, other):
-        return BitwiseOr(self, other)
+        return Or(self, other)
 
     def __ror__(self, other):
-        return BitwiseOr(other, self)
+        return Or(other, self)
 
     def __xor__(self, other):
         return BitwiseXOr(self, other)
@@ -142,7 +142,7 @@ class Expression(QueryObject):
         return Absolute(self)
 
     def __invert__(self):
-        return Invert(self)
+        return Not(self)
 
     __floordiv__ = __div__
     __truediv__ = __div__
