@@ -9,6 +9,7 @@ DBFILE = os.path.join(os.path.expanduser('~'), '.graphzoo', 'graphzoo.db')
 class SQLiteDB(SQLDB):
     data_string = '?'
     ident_quote = '"'
+    exceptions = sqlite3.Error
     file = None
     
     def connect(self, file = DBFILE):

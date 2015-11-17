@@ -11,6 +11,7 @@ from utility import lookup
 class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
+    exceptions = psycopg2.Error
 
     logicalconsts = {
         And: 'TRUE',
@@ -64,12 +65,16 @@ class PostgreSQLDB(SQLDB):
         return SQLDB.makeType(self, (t, c))
 
     def createIndex(self, cur, name, col):
-        idxname = 'idx_%s_%s' % (name, col)
-        cur.execute('SELECT to_regclass(%s)', ['public.%s' % idxname])
-        if cur.fetchone()[0] is None:
-            cur.execute('CREATE INDEX %s ON %s(%s)' %
-                            (self.quoteIdent(idxname), self.quoteIdent(name),
-                                self.quoteIdent(col)))
+        try:
+            idxname = 'idx_%s_%s' % (name, col)
+            cur.execute('SELECT to_regclass(%s)', ['public.%s' % idxname])
+            if cur.fetchone()[0] is None:
+                cur.execute('CREATE INDEX %s ON %s(%s)' %
+                                (self.quoteIdent(idxname), self.quoteIdent(name),
+                                    self.quoteIdent(col)))
+        except psycopg2.ProgrammingError as ex:
+            self.db.rollback()
+            raise ex
 
     def returning(self, id):
         if id is not None:
