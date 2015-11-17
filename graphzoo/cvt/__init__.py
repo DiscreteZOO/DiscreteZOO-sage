@@ -1,12 +1,14 @@
+__all__ = ['fields', 'CVTGraph', 'info']
+
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
-from query import Table
-from utility import isinteger
-from utility import lookup
-from zoograph import ZooGraph
-from zooobject import ZooInfo
-from zooobject import ZooObject
+from ..query import Table
+from ..utility import isinteger
+from ..utility import lookup
+from ..zoograph import ZooGraph
+from ..zooobject import ZooInfo
+from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph_cvt",
