@@ -115,16 +115,16 @@ class Expression(QueryObject):
         return RightShift(other, self)
 
     def __and__(self, other):
-        return BitwiseAnd(self, other)
+        return And(self, other)
 
     def __rand__(self, other):
-        return BitwiseAnd(other, self)
+        return And(other, self)
 
     def __or__(self, other):
-        return BitwiseOr(self, other)
+        return Or(self, other)
 
     def __ror__(self, other):
-        return BitwiseOr(other, self)
+        return Or(other, self)
 
     def __xor__(self, other):
         return BitwiseXOr(self, other)
@@ -142,7 +142,7 @@ class Expression(QueryObject):
         return Absolute(self)
 
     def __invert__(self):
-        return Invert(self)
+        return Not(self)
 
     __floordiv__ = __div__
     __truediv__ = __div__
@@ -170,7 +170,10 @@ class Column(Expression):
 
     def __init__(self, column, alias = None):
         self.column = column
-        self.alias = alias
+        if alias is True:
+            self.alias = str(column)
+        else:
+            self.alias = alias
 
     def getColumns(self):
         if isinstance(self.column, Expression):
@@ -180,9 +183,9 @@ class Column(Expression):
 
     def __str__(self):
         if self.alias is None:
-            return 'Column "%s"' % self.column
+            return '%s' % self.column
         else:
-            return 'Column "%s"->"%s"' % (self.column, self.alias)
+            return '%s->%s' % (self.column, self.alias)
 
 class BinaryOp(Expression):
     left = None
@@ -336,6 +339,33 @@ class Count(Expression):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
                                  self.column)
 
+class Order(QueryObject):
+    exp = None
+    order = None
+
+    def __init__(self, exp = None):
+        if isinstance(exp, Order):
+            self.exp = exp.exp
+            self.order = exp.order
+        elif isinstance(exp, tuple):
+            self.exp = makeExpression(exp[0])
+            self.order = False if isinstance(exp[1], basestring) \
+                                and exp[1].upper() == 'D' else exp[1]
+        else:
+            self.exp = makeExpression(exp)
+            if self.order is None:
+                self.order = True
+
+    def __str__(self):
+        return "%s order on %s" % ("Ascending" if self.order else "Descending",
+                                    self.exp)
+
+class Ascending(Order):
+    order = True
+
+class Descending(Order):
+    order = False
+
 def makeExpression(val):
     if isinstance(val, Expression):
         return val
@@ -343,10 +373,13 @@ def makeExpression(val):
         return Column(val)
     elif isinstance(val, dict):
         return And(**val)
-    elif isinstance(val, (list, set)):
+    elif isinstance(val, (list, set, tuple)):
         return And(*list(val))
     else:
         return Value(val)
 
+A = All()
 C = Column
 V = Value
+Asc = Ascending
+Desc = Descending

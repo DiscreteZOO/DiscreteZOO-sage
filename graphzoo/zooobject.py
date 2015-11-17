@@ -1,10 +1,11 @@
 import graphzoo
-from query import All
+from query import A as All
 from query import And
+from query import Column
 from query import Count
 from query import Table
-from utility import drop_none
 from utility import lookup
+from utility import todict
 from utility import tomultidict
 
 class ZooObject:
@@ -39,6 +40,12 @@ class ZooInfo:
     def __init__(self, cl, db = None):
         self.cl = cl
 
+    def __repr__(self):
+        return "<%s at 0x%08x>" % (str(self), id(self))
+
+    def __str__(self):
+        return "Info object for %s" % self.cl
+
     def getdb(self):
         if self.cl._db is not None:
             return self.cl._db
@@ -68,11 +75,12 @@ class ZooInfo:
                 groupby = list(groupby)
             elif not isinstance(groupby, list):
                 groupby = [groupby]
-            cur = db.query(columns = [Count(All())] + groupby, table = t,
+            groupbycols = [Column(x, alias = True) for x in groupby]
+            cur = db.query(columns = [Count(All)] + groupbycols, table = t,
                            cond = And(*largs, **kargs), groupby = groupby)
             n = cur.fetchall()
             cur.close()
-            return tomultidict(n, groupby)
+            return tomultidict(n, groupbycols)
         else:
             return ZooInfo(self.cl._parent).count(db = db, join = t,
                                         by = {self.cl._spec["primary_key"]},
@@ -92,7 +100,7 @@ class ZooInfo:
             orderby = lookup(kargs, "orderby", default = [], destroy = True)
             limit = lookup(kargs, "limit", default = None, destroy = True)
             offset = lookup(kargs, "offset", default = None, destroy = True)
-            return db.query(columns = [All()], table = t,
+            return db.query(columns = [All], table = t,
                             cond = And(*largs, **kargs), orderby = orderby,
                             limit = limit,  offset = offset, cur = cur)
         else:
@@ -105,14 +113,14 @@ class ZooInfo:
         if db is None:
             db = self.getdb()
         cur = self.query(db = db, *largs, **kargs)
-        return (drop_none(r) for r in cur)
+        return (todict(r, db) for r in cur)
 
     def all(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)
         if db is None:
             db = self.getdb()
         cur = self.query(db = db, *largs, **kargs)
-        return (self.cl(drop_none(r), db = db) for r in cur)
+        return (self.cl(todict(r, db), db = db) for r in cur)
 
     def one(self, *largs, **kargs):
         kargs["limit"] = 1
@@ -123,4 +131,4 @@ class ZooInfo:
         r = cur.fetchone()
         if r is None:
             raise KeyError(kargs)
-        return self.cl(drop_none(r), db = db)
+        return self.cl(todict(r, db), db = db)

@@ -1,14 +1,16 @@
+__all__ = ['fields', 'ZooGraph', 'info']
+
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
-from query import Table
-from utility import isinteger
-from utility import lookup
-from utility import update
-from zooobject import ZooInfo
-from zooobject import ZooObject
+from ..query import Table
+from ..utility import isinteger
+from ..utility import lookup
+from ..utility import update
+from ..zooobject import ZooInfo
+from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph",

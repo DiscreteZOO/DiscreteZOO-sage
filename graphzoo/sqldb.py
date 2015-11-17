@@ -28,6 +28,8 @@ class SQLDB(DB):
     }
 
     convert_from = {
+        int: Integer,
+        float: create_RealNumber,
         Integer: Integer,
         Rational: int_or_real,
         RealNumber: create_RealNumber,
@@ -95,7 +97,7 @@ class SQLDB(DB):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
     def unaryOp(self, op, exp):
-        if op == query.Absolute:
+        if isinstance(op, query.Absolute):
             return 'abs(%s)' % exp
         return '%s (%s)' % (self.unaryops[op.__class__], exp)
 
@@ -254,35 +256,28 @@ class SQLDB(DB):
                 w, d = self.makeExpression(cond)
                 w = ' WHERE %s' % w
                 data += d
-            if groupby is None or len(groupby) == 0:
-                g = ''
-            else:
+            g = ''
+            if groupby is not None:
                 if not isinstance(groupby, (set, list)):
                     groupby = [groupby]
-                groups = [self.makeExpression(grp) for grp in groupby]
-                g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
-                data += sum([x[1] for x in groups], [])
-            if orderby is None or len(orderby) == 0:
-                o = ''
-            else:
-                if isinstance(orderby, set):
-                    orderby = [(k, True) for k in orderby]
-                elif isinstance(orderby, dict):
+                if len(groupby) > 0:
+                    groups = [self.makeExpression(grp) for grp in groupby]
+                    g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
+                    data += sum([x[1] for x in groups], [])
+            o = ''
+            if orderby is not None:
+                if isinstance(orderby, dict):
                     orderby = orderby.items()
-                if isinstance(orderby, tuple):
+                elif not isinstance(orderby, (list, set)):
                     orderby = [orderby]
-                elif not isinstance(orderby, list):
-                    orderby = [(orderby, True)]
-                else:
-                    orderby = [k if isinstance(k, tuple) else (k, True)
-                               for k in orderby]
-                orderby = [(self.makeExpression(k),
-                            False if isinstance(v, basestring)
-                                and v[0].upper() == 'D' else v)
-                            for k, v in orderby]
-                o = ' ORDER BY %s' % ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
-                                                for (k, _), v in orderby)
-                data += sum([x[0][1] for x in orderby], [])
+                if len(orderby) > 0:
+                    orderby = [query.Order(x) for x in orderby]
+                    orderby = [(self.makeExpression(v.exp), v.order)
+                                for v in orderby]
+                    o = ' ORDER BY %s' % \
+                            ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
+                                        for (k, _), v in orderby)
+                    data += sum([x[0][1] for x in orderby], [])
             if limit is None:
                 l = ''
             else:
