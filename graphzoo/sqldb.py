@@ -14,6 +14,7 @@ class SQLDB(DB):
     
     data_string = None
     ident_quote = None
+    exceptions = ()
 
     none_val = 'NULL'
 
@@ -186,98 +187,111 @@ class SQLDB(DB):
     def rollback(self, **kargs):
         self.db.rollback(**kargs)
 
+    def handle_exception(self, ex):
+        self.rollback()
+        raise ex
+
     def createIndex(self, cur, name, col):
         raise NotImplementedError
 
     def init_table(self, spec, commit = False):
-        cur = self.cursor()
-        cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
-                        (self.quoteIdent(spec['name']),
-                        ', '.join(['%s %s' % (self.quoteIdent(k),
-                                                self.makeType(v))
+        try:
+            cur = self.cursor()
+            cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
+                            (self.quoteIdent(spec['name']),
+                            ', '.join(['%s %s' % (self.quoteIdent(k),
+                                                    self.makeType(v))
                                         for k, v in spec['fields'].items()])))
-        for col in spec['indices']:
-            self.createIndex(cur, spec['name'], col)
-        cur.close()
-        if commit:
-            self.db.commit()
+            for col in spec['indices']:
+                self.createIndex(cur, spec['name'], col)
+            cur.close()
+            if commit:
+                self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
 
     def returning(self, id):
         return ''
 
     def insert_row(self, table, row, cur = None, commit = None, id = None):
-        cols = [c for c in row if row[c] is not None]
-        if cur is False:
-            cur = None
-            ret = False
-        else:
-            ret = True
-        if cur is None:
-            cur = self.cursor()
-        cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
-                        (self.quoteIdent(table),
-                            ', '.join([self.quoteIdent(c) for c in cols]),
-                            ', '.join([self.data_string] * len(cols)),
-                            self.returning(id)),
-                    [self.to_db_type(row[c]) for c in cols])
-        if ret:
-            if commit:
-                self.db.commit()
-            return cur
-        else:
-            cur.close()
-            if commit is not False:
-                self.db.commit()
+        try:
+            cols = [c for c in row if row[c] is not None]
+            if cur is False:
+                cur = None
+                ret = False
+            else:
+                ret = True
+            if cur is None:
+                cur = self.cursor()
+            cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
+                            (self.quoteIdent(table),
+                                ', '.join([self.quoteIdent(c) for c in cols]),
+                                ', '.join([self.data_string] * len(cols)),
+                                self.returning(id)),
+                        [self.to_db_type(row[c]) for c in cols])
+            if ret:
+                if commit:
+                    self.db.commit()
+                return cur
+            else:
+                cur.close()
+                if commit is not False:
+                    self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
 
     def lastrowid(self, cur):
         return cur.lastrowid
 
     def query(self, columns, table, cond = None, groupby = None,
               orderby = None, limit = None, offset = None, cur = None):
-        t = self.makeTable(table)
-        cols = [self.makeExpression(col, alias = True) for col in columns]
-        c = ', '.join([x[0] for x in cols])
-        data = sum([x[1] for x in cols], [])
-        if cond is not None:
-            w, d = self.makeExpression(cond)
-            w = ' WHERE %s' % w
-            data += d
-        if groupby is None or len(groupby) == 0:
-            g = ''
-        else:
-            if not isinstance(groupby, (set, list)):
-                groupby = [groupby]
-            groups = [self.makeExpression(grp) for grp in groupby]
-            g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
-            data += sum([x[1] for x in groups], [])
-        if orderby is None or len(orderby) == 0:
-            o = ''
-        else:
-            if isinstance(orderby, set):
-                orderby = [(k, True) for k in orderby]
-            elif isinstance(orderby, dict):
-                orderby = orderby.items()
-            if isinstance(orderby, tuple):
-                orderby = [orderby]
-            elif not isinstance(orderby, list):
-                orderby = [(orderby, True)]
+        try:
+            t = self.makeTable(table)
+            cols = [self.makeExpression(col, alias = True) for col in columns]
+            c = ', '.join([x[0] for x in cols])
+            data = sum([x[1] for x in cols], [])
+            if cond is not None:
+                w, d = self.makeExpression(cond)
+                w = ' WHERE %s' % w
+                data += d
+            if groupby is None or len(groupby) == 0:
+                g = ''
             else:
-                orderby = [k if isinstance(k, tuple) else (k, True)
-                           for k in orderby]
-            orderby = [(self.makeExpression(k),
-                        False if isinstance(v, basestring)
-                            and v[0].upper() == 'D' else v)
-                        for k, v in orderby]
-            o = ' ORDER BY %s' % ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
-                                            for (k, _), v in orderby)
-            data += sum([x[0][1] for x in orderby], [])
-        if limit is None:
-            l = ''
-        else:
-            l = ' LIMIT %d' % limit
-            if offset is not None:
-                l += ' OFFSET %d' % offset
-        if cur is None:
-            cur = self.cursor()
-        cur.execute('SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l), data)
-        return cur
+                if not isinstance(groupby, (set, list)):
+                    groupby = [groupby]
+                groups = [self.makeExpression(grp) for grp in groupby]
+                g = ' GROUP BY %s' % ', '.join([x[0] for x in groups])
+                data += sum([x[1] for x in groups], [])
+            if orderby is None or len(orderby) == 0:
+                o = ''
+            else:
+                if isinstance(orderby, set):
+                    orderby = [(k, True) for k in orderby]
+                elif isinstance(orderby, dict):
+                    orderby = orderby.items()
+                if isinstance(orderby, tuple):
+                    orderby = [orderby]
+                elif not isinstance(orderby, list):
+                    orderby = [(orderby, True)]
+                else:
+                    orderby = [k if isinstance(k, tuple) else (k, True)
+                               for k in orderby]
+                orderby = [(self.makeExpression(k),
+                            False if isinstance(v, basestring)
+                                and v[0].upper() == 'D' else v)
+                            for k, v in orderby]
+                o = ' ORDER BY %s' % ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
+                                                for (k, _), v in orderby)
+                data += sum([x[0][1] for x in orderby], [])
+            if limit is None:
+                l = ''
+            else:
+                l = ' LIMIT %d' % limit
+                if offset is not None:
+                    l += ' OFFSET %d' % offset
+            if cur is None:
+                cur = self.cursor()
+            cur.execute('SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l), data)
+            return cur
+        except self.exceptions as ex:
+            self.handle_exception(ex)
