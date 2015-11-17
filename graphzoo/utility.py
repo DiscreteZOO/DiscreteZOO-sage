@@ -1,5 +1,6 @@
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
+from query import Column
 
 def lookup(d, k, destroy = False, **kargs):
     if k in d:
@@ -31,6 +32,7 @@ def tomultidict(rows, dims):
     elif len(dims) == 1:
         return {r[1]: r[0] for r in rows}
     d = {}
+    dims = [k.alias if isinstance(k, Column) else str(k) for k in dims]
     for r in rows:
         dd = d
         for i in range(len(dims)):

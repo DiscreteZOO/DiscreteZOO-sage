@@ -170,7 +170,10 @@ class Column(Expression):
 
     def __init__(self, column, alias = None):
         self.column = column
-        self.alias = alias
+        if alias is True:
+            self.alias = str(column)
+        else:
+            self.alias = alias
 
     def getColumns(self):
         if isinstance(self.column, Expression):
@@ -180,9 +183,9 @@ class Column(Expression):
 
     def __str__(self):
         if self.alias is None:
-            return 'Column "%s"' % self.column
+            return '%s' % self.column
         else:
-            return 'Column "%s"->"%s"' % (self.column, self.alias)
+            return '%s->%s' % (self.column, self.alias)
 
 class BinaryOp(Expression):
     left = None
@@ -375,6 +378,7 @@ def makeExpression(val):
     else:
         return Value(val)
 
+A = All()
 C = Column
 V = Value
 Asc = Ascending

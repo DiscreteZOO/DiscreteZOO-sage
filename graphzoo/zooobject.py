@@ -1,6 +1,7 @@
 import graphzoo
-from query import All
+from query import A as All
 from query import And
+from query import Column
 from query import Count
 from query import Table
 from utility import drop_none
@@ -68,11 +69,12 @@ class ZooInfo:
                 groupby = list(groupby)
             elif not isinstance(groupby, list):
                 groupby = [groupby]
-            cur = db.query(columns = [Count(All())] + groupby, table = t,
+            groupbycols = [Column(x, alias = True) for x in groupby]
+            cur = db.query(columns = [Count(All)] + groupbycols, table = t,
                            cond = And(*largs, **kargs), groupby = groupby)
             n = cur.fetchall()
             cur.close()
-            return tomultidict(n, groupby)
+            return tomultidict(n, groupbycols)
         else:
             return ZooInfo(self.cl._parent).count(db = db, join = t,
                                         by = {self.cl._spec["primary_key"]},
@@ -92,7 +94,7 @@ class ZooInfo:
             orderby = lookup(kargs, "orderby", default = [], destroy = True)
             limit = lookup(kargs, "limit", default = None, destroy = True)
             offset = lookup(kargs, "offset", default = None, destroy = True)
-            return db.query(columns = [All()], table = t,
+            return db.query(columns = [All], table = t,
                             cond = And(*largs, **kargs), orderby = orderby,
                             limit = limit,  offset = offset, cur = cur)
         else:
