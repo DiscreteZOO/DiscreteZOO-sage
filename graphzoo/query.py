@@ -373,7 +373,7 @@ def makeExpression(val):
         return Column(val)
     elif isinstance(val, dict):
         return And(**val)
-    elif isinstance(val, (list, set)):
+    elif isinstance(val, (list, set, tuple)):
         return And(*list(val))
     else:
         return Value(val)
