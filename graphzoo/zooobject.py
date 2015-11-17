@@ -40,6 +40,12 @@ class ZooInfo:
     def __init__(self, cl, db = None):
         self.cl = cl
 
+    def __repr__(self):
+        return "<%s at 0x%08x>" % (str(self), id(self))
+
+    def __str__(self):
+        return "Info object for %s" % self.cl
+
     def getdb(self):
         if self.cl._db is not None:
             return self.cl._db
