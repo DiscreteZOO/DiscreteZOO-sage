@@ -336,6 +336,33 @@ class Count(Expression):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
                                  self.column)
 
+class Order(QueryObject):
+    exp = None
+    order = None
+
+    def __init__(self, exp = None):
+        if isinstance(exp, Order):
+            self.exp = exp.exp
+            self.order = exp.order
+        elif isinstance(exp, tuple):
+            self.exp = makeExpression(exp[0])
+            self.order = False if isinstance(exp[1], basestring) \
+                                and exp[1].upper() == 'D' else exp[1]
+        else:
+            self.exp = makeExpression(exp)
+            if self.order is None:
+                self.order = True
+
+    def __str__(self):
+        return "%s order on %s" % ("Ascending" if self.order else "Descending",
+                                    self.exp)
+
+class Ascending(Order):
+    order = True
+
+class Descending(Order):
+    order = False
+
 def makeExpression(val):
     if isinstance(val, Expression):
         return val
@@ -350,3 +377,5 @@ def makeExpression(val):
 
 C = Column
 V = Value
+Asc = Ascending
+Desc = Descending
