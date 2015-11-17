@@ -95,7 +95,7 @@ class SQLDB(DB):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
     def unaryOp(self, op, exp):
-        if op == query.Absolute:
+        if isinstance(op, query.Absolute):
             return 'abs(%s)' % exp
         return '%s (%s)' % (self.unaryops[op.__class__], exp)
 
