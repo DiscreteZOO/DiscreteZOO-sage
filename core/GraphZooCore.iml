@@ -8,6 +8,6 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-sdk-2.11.7" level="application" />
-    <orderEntry type="library" name="org.spire-math:spire_2.11:0.10.1" level="project" />
+    <orderEntry type="module" module-name="ScalaNauty" />
   </component>
 </module>
