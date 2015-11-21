@@ -12,12 +12,23 @@ from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph_cvt",
+    "dict": "_cvtprops",
     "primary_key": "id",
     "indices": {"cvt_index"},
     "skip": {"id"},
     "fields" : {
         "cvt_index": Integer,
         "id": (ZooGraph, {"primary_key"})
+    },
+    "compute": {},
+    "default": {
+        "_props": {
+            "average_degree": 3,
+            "is_regular": True,
+            "is_tree": False,
+            "is_vertex_transitive": True,
+            "number_of_loops": 0
+        }
     }
 }
 
@@ -30,6 +41,7 @@ class CVTGraph(ZooGraph):
                  zooid = None, props = None, graph = None, name = None,
                  cur = None, db = None, **kargs):
         ZooObject.__init__(self, db)
+        cl = CVTGraph
         kargs["loops"] = False
         kargs["multiedges"] = False
         if isinteger(data):
@@ -38,55 +50,16 @@ class CVTGraph(ZooGraph):
             else:
                 vertices = Integer(data)
             data = None
-        elif isinstance(data, GenericGraph):
-            graph = data
-            data = None
-        elif isinstance(data, dict):
-            props = data
-            data = None
-        if props is not None:
-            if "id" in props:
-                zooid = props["id"]
-            if "data" in props:
-                data = props["data"]
-            props = {k: v for k, v in props.items() if k not in ["id", "data"]}
+        else:
+            data, props, graph = self._init_params(data, props, graph)
 
         if graph is not None:
-            if not isinstance(graph, GenericGraph):
-                raise TypeError("not a graph")
-            if name is None:
-                name = graph.name()
-            if isinstance(graph, ZooGraph):
-                zooid = graph._zooid
-                self._props = graph._props
-            if isinstance(graph, CVTGraph):
-                self._cvtprops = graph._cvtprops
-            if cur is not None:
-                if self._props is None:
-                    self._props = {}
-                if self._cvtprops is None:
-                    self._cvtprops = {}
-                self._cvtprops["cvt_index"] = index
-                self._props["average_degree"] = 3
-                self._props["is_regular"] = True
-                self._props["is_tree"] = False
-                self._props["is_vertex_transitive"] = True
-                if vertices is not None:
-                    self._props["size"] = 3*vertices/2
-                self._props["number_of_loops"] = 0
-            elif zooid is None:
-                raise IndexError("graph id not given")
-            data = None
+            data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
             vertices = None
             index = None
         else:
             cur = None
-            if props is not None:
-                self._cvtprops = self._todict(props,
-                                            skip = CVTGraph._spec["skip"],
-                                            fields = CVTGraph._spec["fields"])
-                props = {k: v for k, v in props.items()
-                         if k not in self._spec["fields"]}
+            props = self._init_props(cl, props)
 
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),

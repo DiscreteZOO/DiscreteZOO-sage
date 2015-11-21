@@ -15,6 +15,7 @@ from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph",
+    "dict": "_props",
     "primary_key": "id",
     "indices": {"average_degree", "order"},
     "skip": {"id", "data"},
@@ -82,23 +83,44 @@ _objspec = {
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
-    }
+    },
+    "compute": {"_props": {"diameter", "girth", "name", "order", "size"}},
+    "default": {}
 }
 
 class ZooGraph(Graph, ZooObject):
     _props = None
     _spec = _objspec
-    
+
     def __init__(self, data = None, zooid = None, props = None, graph = None,
                  vertex_labels = None, name = None, cur = None, db = None,
                  **kargs):
         ZooObject.__init__(self, db)
+        cl = ZooGraph
         kargs["immutable"] = True
         kargs["data_structure"] = "static_sparse"
         if isinteger(data):
             zooid = Integer(data)
             data = None
-        elif isinstance(data, GenericGraph):
+        else:
+            data, props, graph = self._init_params(data, props, graph)
+
+        if graph is not None:
+            data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
+        else:
+            cur = None
+            props = self._init_props(cl, props)
+        self._zooid = zooid
+        if data is None:
+            data = self._db_read()["data"]
+        if vertex_labels is not None:
+            data = Graph(data).relabel(vertex_labels, inplace = False)
+        Graph.__init__(self, data = data, name = name, **kargs)
+        if cur is not None:
+            self._db_write(cur)
+
+    def _init_params(self, data, props, graph):
+        if isinstance(data, GenericGraph):
             graph = data
             data = None
         elif isinstance(data, dict):
@@ -110,39 +132,49 @@ class ZooGraph(Graph, ZooObject):
             if "data" in props:
                 data = props["data"]
             props = {k: v for k, v in props.items() if k not in ["id", "data"]}
+        return (data, props, graph)
 
-        if graph is not None:
-            if not isinstance(graph, GenericGraph):
-                raise TypeError("not a graph")
-            data = graph
-            if name is None:
-                name = graph.name()
-            if isinstance(graph, ZooGraph):
-                zooid = graph._zooid
-                self._props = graph._props
-            if cur is not None:
-                if self._props is None:
-                    self._props = {}
-                self._props["diameter"] = graph.diameter()
-                self._props["girth"] = graph.girth()
-                self._props["order"] = graph.order()
-            elif zooid is None:
-                raise IndexError("graph id not given")
-        else:
-            cur = None
-            if props is not None:
-                self._props = self._todict(props,
-                                           skip = ZooGraph._spec["skip"],
-                                           fields = ZooGraph._spec["fields"])
-
-        self._zooid = zooid
-        if data is None:
-            data = self._db_read()["data"]
-        if vertex_labels is not None:
-            data = Graph(data).relabel(vertex_labels, inplace = False)
-        Graph.__init__(self, data = data, name = name, **kargs)
+    def _init_graph(self, cl, graph, name, cur, zooid):
+        if not isinstance(graph, GenericGraph):
+            raise TypeError("not a graph")
+        if name is None:
+            name = graph.name()
+        if isinstance(graph, ZooGraph):
+            zooid = graph._zooid
+            c = cl
+            while c is not None:
+                if isinstance(graph, c):
+                    self._setprops(c, graph._getprops(c))
+                c = c._parent
         if cur is not None:
-            self._db_write(cur)
+            c = cl
+            while c is not None:
+                if self._getprops(c) is None:
+                   self._setprops(c, {})
+                c = c._parent
+            for f, d in cl._spec["default"].items():
+                for k, v in d.items():
+                    self.__getattribute__(f)[k] = v
+            for f, s in cl._spec["compute"].items():
+                for k in s:
+                    self.__getattribute__(f)[k] = graph.__getattribute__(k)()
+        elif zooid is None:
+            raise IndexError("graph id not given")
+        return (graph, name, zooid)
+
+    def _init_props(self, cl, props):
+        if props is not None:
+            self._setprops(self._todict(props, skip = cl._spec["skip"],
+                                        fields = cl._spec["fields"]))
+            props = {k: v for k, v in props.items()
+                     if k not in cl._spec["fields"]}
+        return props
+
+    def _getprops(self, cl):
+        return self.__getattribute__(cl._spec["dict"])
+
+    def _setprops(self, cl, d):
+        return self.__setattr__(cl._spec["dict"], d)
 
     def __getattribute__(self, name):
         def _graphattr(store = False, *largs, **kargs):
