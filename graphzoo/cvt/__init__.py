@@ -18,8 +18,7 @@ _objspec = {
     "fields" : {
         "cvt_index": Integer,
         "id": (ZooGraph, {"primary_key"})
-    },
-    "special": {"cvt_index"}
+    }
 }
 
 class CVTGraph(ZooGraph):

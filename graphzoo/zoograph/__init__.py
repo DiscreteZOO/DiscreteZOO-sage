@@ -5,6 +5,7 @@ from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
+from types import MethodType
 from ..query import Table
 from ..utility import isinteger
 from ..utility import lookup
@@ -81,8 +82,7 @@ _objspec = {
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
-    },
-    "special": {"is_regular"}
+    }
 }
 
 class ZooGraph(Graph, ZooObject):
@@ -157,14 +157,15 @@ class ZooGraph(Graph, ZooObject):
                     update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
-        cl = type(self)
-        while cl is not None:
-            if name in cl._spec["fields"] and name not in cl._spec["skip"] \
-                    and name not in cl._spec["special"]:
-                _graphattr.func_name = name
-                _graphattr.func_doc = attr.func_doc
-                return _graphattr
-            cl = cl._parent
+        if isinstance(attr, MethodType) and \
+                not attr.func_globals["__package__"].startswith("graphzoo."):
+            cl = type(self)
+            while cl is not None:
+                if name in cl._spec["fields"] and name not in cl._spec["skip"]:
+                    _graphattr.func_name = name
+                    _graphattr.func_doc = attr.func_doc
+                    return _graphattr
+                cl = cl._parent
         return attr
 
     def copy(self, weighted = None, implementation = 'c_graph',
