@@ -113,6 +113,11 @@ class ZooGraph(Graph, ZooObject):
         self._zooid = zooid
         if data is None:
             data = self._db_read()["data"]
+        propname = lookup(self._props, "name", default = None)
+        if not name:
+            name = propname
+        elif not propname:
+            self._props["name"] = name
         if vertex_labels is not None:
             data = Graph(data).relabel(vertex_labels, inplace = False)
         Graph.__init__(self, data = data, name = name, **kargs)
@@ -177,7 +182,8 @@ class ZooGraph(Graph, ZooObject):
         return self.__setattr__(cl._spec["dict"], d)
 
     def __getattribute__(self, name):
-        def _graphattr(store = False, *largs, **kargs):
+        def _graphattr(*largs, **kargs):
+            store = lookup(kargs, "store", default = False, destroy = True)
             default = len(largs) + len(kargs) == 0
             try:
                 if not default:
