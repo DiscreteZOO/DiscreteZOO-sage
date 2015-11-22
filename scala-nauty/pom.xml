@@ -37,11 +37,6 @@
     <build>
         <sourceDirectory>.</sourceDirectory>
         <plugins>
-            <!--<plugin>-->
-                <!--<groupId>org.scala-tools</groupId>-->
-                <!--<artifactId>maven-scala-plugin</artifactId>-->
-                <!--<version>2.15.2</version>-->
-            <!--</plugin>-->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -62,22 +57,6 @@
                 </configuration>
             </plugin>
 
-            <!--<plugin>-->
-                <!--<groupId>org.scala-tools</groupId>-->
-                <!--<artifactId>maven-scala-plugin</artifactId>-->
-                <!--<version>2.15.2</version>-->
-                <!--<executions>-->
-                    <!--<execution>-->
-                        <!--<goals>-->
-                            <!--<goal>compile</goal>-->
-                        <!--</goals>-->
-                    <!--</execution>-->
-                <!--</executions>-->
-                <!--<configuration>-->
-                    <!--<scalaVersion>${scala.version}</scalaVersion>-->
-                <!--</configuration>-->
-            <!--</plugin>-->
-
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>native-maven-plugin</artifactId>
@@ -87,24 +66,24 @@
                     <javahOS>darwin</javahOS>
 
                     <compilerProvider>generic-classic</compilerProvider>
-                    <compilerExecutable>cc</compilerExecutable>
+                    <compilerExecutable>g++</compilerExecutable>
 
-                    <linkerExecutable>cc</linkerExecutable>
+                    <linkerExecutable>g++</linkerExecutable>
                     <sources>
                         <source>
                             <directory>.</directory>
                             <fileNames>
-                                <fileName>binding.c</fileName>
+                                <fileName>binding.cpp</fileName>
                             </fileNames>
                         </source>
                     </sources>
 
                     <compilerStartOptions>
-                        <compilerStartOption>-c</compilerStartOption>
+                        <compilerStartOption>-c -I/Users/katja/Nauty -std=c++11</compilerStartOption>
                     </compilerStartOptions>
 
                     <linkerStartOptions>
-                        <linkerStartOption>-shared</linkerStartOption>
+                        <linkerStartOption>-shared /Users/katja/Nauty/nauty.a</linkerStartOption>
                     </linkerStartOptions>
 
                 </configuration>

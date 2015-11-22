@@ -4,15 +4,17 @@ import scala.util.matching.Regex
 /**
   * Created by katja on 17/11/15.
   */
-object IO {
+object Util {
 
-  def edgeListStringToGraph(adjacenciesString: String): Map[Int, Vertex] = {
+  def commaJoin(a: Any, b: Any): String = s"$a, $b"
 
-    val verticesByIds = mutable.Map[Int, Vertex]()
+  def edgeListStringToAdjacencyList(adjacenciesString: String): Map[Int, LabelledVertex] = {
+
+    val verticesByIds = mutable.Map[Int, LabelledVertex]()
 
     def addEdge(vertexNo1: Int, vertexNo2: Int): Unit = {
-      val vertex1 = verticesByIds.getOrElseUpdate(vertexNo1, new Vertex())
-      val vertex2 = verticesByIds.getOrElseUpdate(vertexNo2, new Vertex())
+      val vertex1 = verticesByIds.getOrElseUpdate(vertexNo1, new LabelledVertex(vertexNo1))
+      val vertex2 = verticesByIds.getOrElseUpdate(vertexNo2, new LabelledVertex(vertexNo2))
       vertex1.addNeighbour(vertex2)
       vertex2.addNeighbour(vertex1)
     }
