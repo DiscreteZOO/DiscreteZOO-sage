@@ -57,6 +57,18 @@ class ZooObject:
                                         fields = cl._spec["fields"]))
         return r
 
+    def _db_write(self, cl, cur):
+        id = None
+        if cl._parent is None:
+            id = cl._spec["primary_key"]
+        self._db.insert_row(cl._spec["name"],
+                            dict(self._getprops(cl).items() + \
+                                 [(k, self.__getattribute__(k)())
+                                  for k in cl._spec["skip"]]),
+                            cur = cur, id = id)
+        if id is not None:
+            self._zooid = self._db.lastrowid(cur)
+
     def _todict(self, r, skip = [], fields = None):
         if fields is None:
             fields = self._spec["fields"]
@@ -70,6 +82,9 @@ class ZooObject:
         while cl is not None:
             cl._db_read(self)
             cl = cl._parent
+
+    def id(self):
+        return self._zooid
 
 class ZooInfo:
     cl = None

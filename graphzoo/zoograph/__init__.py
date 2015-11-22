@@ -122,7 +122,7 @@ class ZooGraph(Graph, ZooObject):
             data = Graph(data).relabel(vertex_labels, inplace = False)
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
-            self._db_write(cur)
+            self._db_write(cl, cur)
 
     def _init_params(self, data, props, graph):
         if isinstance(data, GenericGraph):
@@ -223,13 +223,12 @@ class ZooGraph(Graph, ZooObject):
         else:
             return G
 
-    def _db_write(self, cur):
-        self._db.insert_row(ZooGraph._spec["name"],
-                            dict(self._props.items() + \
-                                 [("id", self._zooid),
-                                  ("data", self.sparse6_string())]),
-                            cur = cur, id = ZooGraph._spec["primary_key"])
-        self._zooid = self._db.lastrowid(cur)
+    def data(self):
+        try:
+            return lookup(self._props, "data")
+        except (KeyError, TypeError):
+            # TODO: determine the most appropriate way of representing the graph
+            return self.sparse6_string()
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0

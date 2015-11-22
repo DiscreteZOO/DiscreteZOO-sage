@@ -77,7 +77,7 @@ class CVTGraph(ZooGraph):
         if self._cvtprops is None:
             self._db_read(cl)
         if cur is not None:
-            self._db_write_cvt(cur)
+            self._db_write_cvt(cl, cur)
 
     def _repr_(self):
         name = "Cubic vertex-transitive graph on %d vertices, number %d" \
@@ -85,11 +85,6 @@ class CVTGraph(ZooGraph):
         if self.name() != '':
             name = self.name() + ": " + name
         return name
-
-    def _db_write_cvt(self, cur):
-        self._db.insert_row(CVTGraph._spec["name"],
-                            dict(self._cvtprops.items() + \
-                                 [("id", self._zooid)]), cur = cur)
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")
