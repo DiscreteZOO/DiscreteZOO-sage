@@ -12,6 +12,7 @@ from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph_cvt",
+    "dict": "_cvtprops",
     "primary_key": "id",
     "indices": {"cvt_index"},
     "skip": {"id"},
@@ -19,7 +20,16 @@ _objspec = {
         "cvt_index": Integer,
         "id": (ZooGraph, {"primary_key"})
     },
-    "special": {"cvt_index"}
+    "compute": {},
+    "default": {
+        "_props": {
+            "average_degree": 3,
+            "is_regular": True,
+            "is_tree": False,
+            "is_vertex_transitive": True,
+            "number_of_loops": 0
+        }
+    }
 }
 
 class CVTGraph(ZooGraph):
@@ -31,6 +41,7 @@ class CVTGraph(ZooGraph):
                  zooid = None, props = None, graph = None, name = None,
                  cur = None, db = None, **kargs):
         ZooObject.__init__(self, db)
+        cl = CVTGraph
         kargs["loops"] = False
         kargs["multiedges"] = False
         if isinteger(data):
@@ -39,60 +50,22 @@ class CVTGraph(ZooGraph):
             else:
                 vertices = Integer(data)
             data = None
-        elif isinstance(data, GenericGraph):
-            graph = data
-            data = None
-        elif isinstance(data, dict):
-            props = data
-            data = None
-        if props is not None:
-            if "id" in props:
-                zooid = props["id"]
-            if "data" in props:
-                data = props["data"]
-            props = {k: v for k, v in props.items() if k not in ["id", "data"]}
+        else:
+            data, props, graph = self._init_params(data, props, graph)
 
         if graph is not None:
-            if not isinstance(graph, GenericGraph):
-                raise TypeError("not a graph")
-            if name is None:
-                name = graph.name()
-            if isinstance(graph, ZooGraph):
-                zooid = graph._zooid
-                self._props = graph._props
-            if isinstance(graph, CVTGraph):
-                self._cvtprops = graph._cvtprops
-            if cur is not None:
-                if self._props is None:
-                    self._props = {}
-                if self._cvtprops is None:
-                    self._cvtprops = {}
-                self._cvtprops["cvt_index"] = index
-                self._props["average_degree"] = 3
-                self._props["is_regular"] = True
-                self._props["is_tree"] = False
-                self._props["is_vertex_transitive"] = True
-                if vertices is not None:
-                    self._props["size"] = 3*vertices/2
-                self._props["number_of_loops"] = 0
-            elif zooid is None:
-                raise IndexError("graph id not given")
-            data = None
+            data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
             vertices = None
             index = None
         else:
             cur = None
-            if props is not None:
-                self._cvtprops = self._todict(props,
-                                            skip = CVTGraph._spec["skip"],
-                                            fields = CVTGraph._spec["fields"])
-                props = {k: v for k, v in props.items()
-                         if k not in self._spec["fields"]}
+            props = self._init_props(cl, props)
 
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
                          by = {self._spec["primary_key"]})
-            r = self._db_read(join, {"order": vertices, "cvt_index": index})
+            r = self._db_read(self._parent, join,
+                                {"order": vertices, "cvt_index": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
                               props = props, name = name, db = db, **kargs)
         else:
@@ -102,9 +75,9 @@ class CVTGraph(ZooGraph):
         if vertices is not None:
             assert(vertices == self._props["order"])
         if self._cvtprops is None:
-            self._db_read_cvt()
+            self._db_read(cl)
         if cur is not None:
-            self._db_write_cvt(cur)
+            self._db_write_cvt(cl, cur)
 
     def _repr_(self):
         name = "Cubic vertex-transitive graph on %d vertices, number %d" \
@@ -112,31 +85,6 @@ class CVTGraph(ZooGraph):
         if self.name() != '':
             name = self.name() + ": " + name
         return name
-
-    def _db_read_cvt(self, join = None, query = None):
-        if query is None:
-            if self._zooid is None:
-                raise IndexError("graph id not given")
-            query = {"id": self._zooid}
-        t = Table(CVTGraph._spec["name"])
-        if join is None:
-            join = t
-        cur = self._db.query([t], join, query)
-        r = cur.fetchone()
-        cur.close()
-        if r is None:
-            raise KeyError(query)
-        self._cvtprops = self._todict(r, skip = CVTGraph._spec["skip"],
-                                      fields = CVTGraph._spec["fields"])
-
-    def _db_write_cvt(self, cur):
-        self._db.insert_row(CVTGraph._spec["name"],
-                            dict(self._cvtprops.items() + \
-                                 [("id", self._zooid)]), cur = cur)
-
-    def load_db_data(self):
-        ZooGraph.load_db_data(self)
-        self._db_read_cvt()
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")
