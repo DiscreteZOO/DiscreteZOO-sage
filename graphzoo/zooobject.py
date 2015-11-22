@@ -26,6 +26,37 @@ class ZooObject:
     def initdb(self, db = None):
         _initdb(self.__class__, self._db)
 
+    def _getprops(self, cl):
+        return self.__getattribute__(cl._spec["dict"])
+
+    def _setprops(self, cl, d):
+        return self.__setattr__(cl._spec["dict"], d)
+
+    def _init_props(self, cl, props):
+        if props is not None:
+            self._setprops(self._todict(props, skip = cl._spec["skip"],
+                                        fields = cl._spec["fields"]))
+            props = {k: v for k, v in props.items()
+                     if k not in cl._spec["fields"]}
+        return props
+
+    def _db_read(self, cl, join = None, query = None):
+        if query is None:
+            if self._zooid is None:
+                raise IndexError("graph id not given")
+            query = {"id": self._zooid}
+        t = Table(cl._spec["name"])
+        if join is None:
+            join = t
+        cur = self._db.query([t], join, query)
+        r = cur.fetchone()
+        cur.close()
+        if r is None:
+            raise KeyError(query)
+        self._setprops(cl, self._todict(r, skip = cl._spec["skip"],
+                                        fields = cl._spec["fields"]))
+        return r
+
     def _todict(self, r, skip = [], fields = None):
         if fields is None:
             fields = self._spec["fields"]
@@ -33,6 +64,12 @@ class ZooObject:
                                 lookup(fields, k, default = type(r[k])))
                 for k in r.keys() if k in fields and k not in skip
                                      and r[k] is not None}
+
+    def load_db_data(self):
+        cl = self.__class__
+        while cl is not None:
+            cl._db_read(self)
+            cl = cl._parent
 
 class ZooInfo:
     cl = None

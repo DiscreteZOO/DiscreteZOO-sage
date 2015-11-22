@@ -64,7 +64,8 @@ class CVTGraph(ZooGraph):
         if vertices is not None and index is not None:
             join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
                          by = {self._spec["primary_key"]})
-            r = self._db_read(join, {"order": vertices, "cvt_index": index})
+            r = self._db_read(self._parent, join,
+                                {"order": vertices, "cvt_index": index})
             ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
                               props = props, name = name, db = db, **kargs)
         else:
@@ -74,7 +75,7 @@ class CVTGraph(ZooGraph):
         if vertices is not None:
             assert(vertices == self._props["order"])
         if self._cvtprops is None:
-            self._db_read_cvt()
+            self._db_read(cl)
         if cur is not None:
             self._db_write_cvt(cur)
 
@@ -85,30 +86,10 @@ class CVTGraph(ZooGraph):
             name = self.name() + ": " + name
         return name
 
-    def _db_read_cvt(self, join = None, query = None):
-        if query is None:
-            if self._zooid is None:
-                raise IndexError("graph id not given")
-            query = {"id": self._zooid}
-        t = Table(CVTGraph._spec["name"])
-        if join is None:
-            join = t
-        cur = self._db.query([t], join, query)
-        r = cur.fetchone()
-        cur.close()
-        if r is None:
-            raise KeyError(query)
-        self._cvtprops = self._todict(r, skip = CVTGraph._spec["skip"],
-                                      fields = CVTGraph._spec["fields"])
-
     def _db_write_cvt(self, cur):
         self._db.insert_row(CVTGraph._spec["name"],
                             dict(self._cvtprops.items() + \
                                  [("id", self._zooid)]), cur = cur)
-
-    def load_db_data(self):
-        ZooGraph.load_db_data(self)
-        self._db_read_cvt()
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")

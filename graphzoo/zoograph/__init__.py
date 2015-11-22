@@ -112,7 +112,7 @@ class ZooGraph(Graph, ZooObject):
             props = self._init_props(cl, props)
         self._zooid = zooid
         if data is None:
-            data = self._db_read()["data"]
+            data = self._db_read(cl)["data"]
         propname = lookup(self._props, "name", default = None)
         if not name:
             name = propname
@@ -166,20 +166,6 @@ class ZooGraph(Graph, ZooObject):
         elif zooid is None:
             raise IndexError("graph id not given")
         return (graph, name, zooid)
-
-    def _init_props(self, cl, props):
-        if props is not None:
-            self._setprops(self._todict(props, skip = cl._spec["skip"],
-                                        fields = cl._spec["fields"]))
-            props = {k: v for k, v in props.items()
-                     if k not in cl._spec["fields"]}
-        return props
-
-    def _getprops(self, cl):
-        return self.__getattribute__(cl._spec["dict"])
-
-    def _setprops(self, cl, d):
-        return self.__setattr__(cl._spec["dict"], d)
 
     def __getattribute__(self, name):
         def _graphattr(*largs, **kargs):
@@ -237,23 +223,6 @@ class ZooGraph(Graph, ZooObject):
         else:
             return G
 
-    def _db_read(self, join = None, query = None):
-        if query is None:
-            if self._zooid is None:
-                raise IndexError("graph id not given")
-            query = {"id": self._zooid}
-        t = Table(ZooGraph._spec["name"])
-        if join is None:
-            join = t
-        cur = self._db.query([t], join, query)
-        r = cur.fetchone()
-        cur.close()
-        if r is None:
-            raise KeyError(query)
-        self._props = self._todict(r, skip = ZooGraph._spec["skip"],
-                                   fields = ZooGraph._spec["fields"])
-        return r
-
     def _db_write(self, cur):
         self._db.insert_row(ZooGraph._spec["name"],
                             dict(self._props.items() + \
@@ -261,9 +230,6 @@ class ZooGraph(Graph, ZooObject):
                                   ("data", self.sparse6_string())]),
                             cur = cur, id = ZooGraph._spec["primary_key"])
         self._zooid = self._db.lastrowid(cur)
-
-    def load_db_data(self):
-        self._db_read()
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0
