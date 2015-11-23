@@ -107,7 +107,8 @@ class ZooGraph(Graph, ZooObject):
             zooid = Integer(data)
             data = None
         else:
-            data, props, graph = self._init_params(data, props, graph)
+            data, props, graph, zooid = self._init_params(data, props, graph,
+                                                          zooid)
 
         if graph is not None:
             data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
@@ -130,7 +131,7 @@ class ZooGraph(Graph, ZooObject):
         if cur is not None:
             self._db_write(cl, cur)
 
-    def _init_params(self, data, props, graph):
+    def _init_params(self, data, props, graph, zooid):
         if isinstance(data, GenericGraph):
             graph = data
             data = None
@@ -143,7 +144,7 @@ class ZooGraph(Graph, ZooObject):
             if "data" in props:
                 data = props["data"]
             props = {k: v for k, v in props.items() if k not in ["id", "data"]}
-        return (data, props, graph)
+        return (data, props, graph, zooid)
 
     def _init_graph(self, cl, graph, name, cur, zooid):
         if not isinstance(graph, GenericGraph):

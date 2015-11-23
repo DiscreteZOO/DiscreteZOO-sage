@@ -37,7 +37,7 @@ class ZooObject:
             self._setprops(cl, self._todict(props, skip = cl._spec["skip"],
                                             fields = cl._spec["fields"]))
             props = {k: v for k, v in props.items()
-                     if k not in cl._spec["fields"]}
+                     if k not in cl._spec["fields"] or k in cl._spec["skip"]}
         return props
 
     def _db_read(self, cl, join = None, query = None):

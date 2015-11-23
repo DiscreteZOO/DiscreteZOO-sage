@@ -48,7 +48,8 @@ class CVTGraph(ZooGraph):
                 vertices = Integer(data)
             data = None
         else:
-            data, props, graph = self._init_params(data, props, graph)
+            data, props, graph, zooid = self._init_params(data, props, graph,
+                                                          zooid)
 
         if graph is not None:
             data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
