@@ -5,6 +5,7 @@ from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
+from hashlib import sha256
 from types import MethodType
 from ..query import Table
 from ..utility import isinteger
@@ -36,6 +37,7 @@ _objspec = {
         "fractional_chromatic_index": Integer,
         "genus": Integer,
         "girth": Integer,
+        "has_multiple_edges": bool,
         "id": (Integer, {"autoincrement"}),
         "is_arc_transitive": bool,
         "is_asteroidal_triple_free": bool,
@@ -69,7 +71,7 @@ _objspec = {
         "is_vertex_transitive": bool,
         "lovasz_theta": RealNumber,
         "maximum_average_degree": Rational,
-        "name": str,
+        "name": (str, {"unique"}),
         "number_of_loops": Integer,
         "odd_girth": Integer,
         "order": Integer,
@@ -79,12 +81,14 @@ _objspec = {
         "szeged_index": Integer,
         "triangles_count": Integer,
         "treewidth": Integer,
+        "unique_id": (str, {"unique"}),
         "vertex_connectivity": Integer,
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer
     },
-    "compute": {"_props": {"diameter", "girth", "name", "order", "size"}},
+    "compute": {"_props": {"diameter", "girth", "has_multiple_edges", "name",
+                           "number_of_loops", "order", "size", "unique_id"}},
     "default": {}
 }
 
@@ -114,12 +118,14 @@ class ZooGraph(Graph, ZooObject):
         if data is None:
             data = self._db_read(cl)["data"]
         propname = lookup(self._props, "name", default = None)
-        if not name:
-            name = propname
-        elif not propname:
+        if name:
             self._props["name"] = name
+        elif propname:
+            name = propname
         if vertex_labels is not None:
             data = Graph(data).relabel(vertex_labels, inplace = False)
+        kargs["loops"] = self._props["number_of_loops"] > 0
+        kargs["multiedges"] = self._props["has_multiple_edges"]
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
             self._db_write(cl, cur)
@@ -158,11 +164,16 @@ class ZooGraph(Graph, ZooObject):
                    self._setprops(c, {})
                 c = c._parent
             for f, d in cl._spec["default"].items():
+                props = self.__getattribute__(f)
                 for k, v in d.items():
-                    self.__getattribute__(f)[k] = v
+                    props[k] = v
             for f, s in cl._spec["compute"].items():
+                props = self.__getattribute__(f)
                 for k in s:
-                    self.__getattribute__(f)[k] = graph.__getattribute__(k)()
+                    try:
+                        lookup(props, k)
+                    except KeyError:
+                        props[k] = graph.__getattribute__(k)()
         elif zooid is None:
             raise IndexError("graph id not given")
         return (graph, name, zooid)
@@ -229,6 +240,12 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             # TODO: determine the most appropriate way of representing the graph
             return self.sparse6_string()
+
+    def unique_id(self):
+        try:
+            return lookup(self._props, "unique_id")
+        except (KeyError, TypeError):
+            return sha256(self.sparse6_string()).hexdigest()
 
     def is_regular(self, k = None, store = False, **kargs):
         default = len(kargs) == 0

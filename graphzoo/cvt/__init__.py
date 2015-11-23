@@ -26,8 +26,7 @@ _objspec = {
             "average_degree": 3,
             "is_regular": True,
             "is_tree": False,
-            "is_vertex_transitive": True,
-            "number_of_loops": 0
+            "is_vertex_transitive": True
         }
     }
 }
@@ -42,8 +41,6 @@ class CVTGraph(ZooGraph):
                  cur = None, db = None, **kargs):
         ZooObject.__init__(self, db)
         cl = CVTGraph
-        kargs["loops"] = False
-        kargs["multiedges"] = False
         if isinteger(data):
             if index is None:
                 zooid = Integer(data)

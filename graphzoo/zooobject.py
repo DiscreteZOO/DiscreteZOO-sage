@@ -34,8 +34,8 @@ class ZooObject:
 
     def _init_props(self, cl, props):
         if props is not None:
-            self._setprops(self._todict(props, skip = cl._spec["skip"],
-                                        fields = cl._spec["fields"]))
+            self._setprops(cl, self._todict(props, skip = cl._spec["skip"],
+                                            fields = cl._spec["fields"]))
             props = {k: v for k, v in props.items()
                      if k not in cl._spec["fields"]}
         return props
