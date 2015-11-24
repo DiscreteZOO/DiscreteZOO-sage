@@ -69,15 +69,16 @@ class SQLDB(DB):
         query.BitwiseAnd: '&',
         query.BitwiseOr: '|',
         query.Concatenate: '||',
-        query.Is: 'IS',
-        query.IsNot: 'IS NOT',
         query.Like: 'LIKE'
     }
 
     unaryops = {
-        query.Not: 'NOT',
-        query.Negate: '-',
-        query.Invert: '~'
+        query.Not: ('NOT', True),
+        query.Absolute: ('abs', None),
+        query.Negate: ('-', True),
+        query.Invert: ('~', True),
+        query.IsNull: ('IS NULL', False),
+        query.IsNotNull: ('IS NOT NULL', False)
     }
 
     logicalexps = {
@@ -97,9 +98,13 @@ class SQLDB(DB):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
     def unaryOp(self, op, exp):
-        if isinstance(op, query.Absolute):
-            return 'abs(%s)' % exp
-        return '%s (%s)' % (self.unaryops[op.__class__], exp)
+        k, p = self.unaryops[op.__class__]
+        if p is True:
+            return '%s (%s)' % (k, exp)
+        elif p is False:
+            return '(%s) %s' % (exp, k)
+        else:
+            return '%s(%s)' % (k, exp)
 
     def makeType(self, t):
         if isinstance(t, tuple):
