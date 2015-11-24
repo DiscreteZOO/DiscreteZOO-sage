@@ -194,7 +194,7 @@ class ZooGraph(Graph, ZooObject):
                 return a
         attr = Graph.__getattribute__(self, name)
         if isinstance(attr, MethodType) and \
-                not attr.func_globals["__package__"].startswith("graphzoo."):
+                attr.func_globals["__package__"].startswith("sage."):
             cl = type(self)
             while cl is not None:
                 if name in cl._spec["fields"] and name not in cl._spec["skip"]:
