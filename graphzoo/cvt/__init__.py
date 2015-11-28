@@ -4,6 +4,7 @@ from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 from ..query import Table
+from ..utility import default
 from ..utility import isinteger
 from ..utility import lookup
 from ..zoograph import ZooGraph
@@ -36,46 +37,45 @@ class CVTGraph(ZooGraph):
     _spec = _objspec
     _parent = ZooGraph
 
-    def __init__(self, data = None, index = None, vertices = None,
-                 zooid = None, props = None, graph = None, name = None,
-                 cur = None, db = None, **kargs):
-        ZooObject.__init__(self, db)
+    def __init__(self, data = None, index = None, **kargs):
         cl = CVTGraph
-        if isinteger(data):
-            if index is None:
-                zooid = Integer(data)
+        self._init_defaults(kargs, data)
+        default(kargs, "order")
+        kargs["index"] = index
+        ZooObject.__init__(self, kargs["db"])
+
+        if isinteger(kargs["data"]):
+            if kargs["index"] is None:
+                kargs["zooid"] = Integer(kargs["data"])
             else:
-                vertices = Integer(data)
-            data = None
+                kargs["order"] = Integer(kargs["data"])
+            kargs["data"] = None
         else:
-            data, props, graph, zooid = self._init_params(data, props, graph,
-                                                          zooid)
+            self._init_params(kargs)
 
-        if graph is not None:
-            data, name, zooid = self._init_graph(cl, graph, name, cur, zooid)
-            vertices = None
-            index = None
+        if kargs["graph"] is not None:
+            self._init_graph(cl, kargs)
+            kargs["order"] = None
+            kargs["index"] = None
         else:
-            cur = None
-            props = self._init_props(cl, props)
+            kargs["cur"] = None
+            self._init_props(cl, kargs)
 
-        if vertices is not None and index is not None:
-            join = Table(self._spec["name"]).join(Table(self._parent._spec["name"]),
-                         by = {self._spec["primary_key"]})
-            r = self._db_read(self._parent, join,
-                                {"order": vertices, "cvt_index": index})
-            ZooGraph.__init__(self, zooid = r["id"], data = r["data"],
-                              props = props, name = name, db = db, **kargs)
-        else:
-            ZooGraph.__init__(self, zooid = zooid, data = data, graph = graph,
-                              props = props, name = name, cur = cur, db = db,
-                              **kargs)
-        if vertices is not None:
-            assert(vertices == self._props["order"])
+        if kargs["order"] is not None and kargs["index"] is not None:
+            join = Table(cl._spec["name"]).join(Table(cl._parent._spec["name"]),
+                         by = {cl._spec["primary_key"]})
+            r = self._db_read(cl._parent, join, {"order": kargs["order"],
+                                                 "cvt_index": kargs["index"]})
+            kargs["zooid"] = r["id"]
+            kargs["graph"] = None
+        ZooGraph.__init__(self, **kargs)
+
+        if kargs["order"] is not None:
+            assert(kargs["order"] == self._props["order"])
         if self._cvtprops is None:
             self._db_read(cl)
-        if cur is not None:
-            self._db_write_cvt(cl, cur)
+        if kargs["cur"] is not None:
+            self._db_write_cvt(cl, kargs["cur"])
 
     def _repr_(self):
         name = "Cubic vertex-transitive graph on %d vertices, number %d" \

@@ -32,13 +32,18 @@ class ZooObject:
     def _setprops(self, cl, d):
         return self.__setattr__(cl._spec["dict"], d)
 
-    def _init_props(self, cl, props):
-        if props is not None:
-            self._setprops(cl, self._todict(props, skip = cl._spec["skip"],
+    def _init_skip(self, d):
+        pass
+
+    def _init_props(self, cl, d):
+        if d["props"] is not None:
+            self._init_skip(d)
+            self._setprops(cl, self._todict(d["props"],
+                                            skip = cl._spec["skip"],
                                             fields = cl._spec["fields"]))
-            props = {k: v for k, v in props.items()
-                     if k not in cl._spec["fields"] or k in cl._spec["skip"]}
-        return props
+            d["props"] = {k: v for k, v in d["props"].items()
+                            if k not in cl._spec["fields"]
+                                or k in cl._spec["skip"]}
 
     def _db_read(self, cl, join = None, query = None):
         if query is None:
