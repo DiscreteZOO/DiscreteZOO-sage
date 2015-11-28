@@ -104,7 +104,7 @@ def import_cvt(file, db = None, format = "sparse6", canonical = False,
                 data = eval(data)
             g = Graph(data)
             if canonical:
-                g = g.canonical_label()
+                g = g.canonical_label(algorithm = "sage")
             n = g.order()
             if n > previous:
                 if verbose and n > 0:
