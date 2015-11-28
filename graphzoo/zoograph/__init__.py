@@ -125,8 +125,14 @@ class ZooGraph(Graph, ZooObject):
             name = propname
         if vertex_labels is not None:
             data = Graph(data).relabel(vertex_labels, inplace = False)
-        kargs["loops"] = self._props["number_of_loops"] > 0
-        kargs["multiedges"] = self._props["has_multiple_edges"]
+        try:
+            lookup(kargs, "loops")
+        except KeyError:
+            kargs["loops"] = self._props["number_of_loops"] > 0
+        try:
+            lookup(kargs, "multiedges")
+        except KeyError:
+            kargs["multiedges"] = self._props["has_multiple_edges"]
         Graph.__init__(self, data = data, name = name, **kargs)
         if cur is not None:
             self._db_write(cl, cur)
