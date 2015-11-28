@@ -100,10 +100,10 @@ class ZooGraph(Graph, ZooObject):
 
     def __init__(self, data = None, **kargs):
         cl = ZooGraph
-        self._init_(cl, kargs, defNone = ["vertex_labels"],
-                    setVal = {"data": data,
-                              "immutable": True,
-                              "data_structure": "static_sparse"})
+        ZooObject.__init__(self, cl, kargs, defNone = ["vertex_labels"],
+                           setVal = {"data": data,
+                                     "immutable": True,
+                                     "data_structure": "static_sparse"})
 
         self._zooid = kargs["zooid"]
         if kargs["data"] is None:

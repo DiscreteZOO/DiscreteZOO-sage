@@ -15,11 +15,23 @@ class ZooObject:
     _zooid = None
     _parent = None
 
-    def __init__(self, db = None):
-        if db is None:
+    def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
+                 setProp = {}):
+        self._init_defaults(d)
+        for k in defNone:
+            default(d, k)
+        for k, v in defVal.items():
+            default(d, k, v)
+        for k, v in setVal.items():
+            d[k] = v
+        default(d, "db")
+        if d["db"] is None:
             self._db = graphzoo.DEFAULT_DB
         else:
-            self._db = db
+            self._db = d["db"]
+        if not cl._parse_params(self, d):
+            self._init_params(d)
+        self._init_object(cl, d, setProp)
 
     def setdb(self, db):
         self._db = db
@@ -32,21 +44,6 @@ class ZooObject:
 
     def _setprops(self, cl, d):
         return self.__setattr__(cl._spec["dict"], d)
-
-    def _init_(self, cl, d, defNone = [], defVal = {}, setVal = {},
-               setProp = {}):
-        self._init_defaults(d)
-        for k in defNone:
-            default(d, k)
-        for k, v in defVal.items():
-            default(d, k, v)
-        for k, v in setVal.items():
-            d[k] = v
-        default(d, "db")
-        ZooObject.__init__(self, d["db"])
-        if not cl._parse_params(self, d):
-            self._init_params(d)
-        self._init_object(cl, d, setProp)
 
     def _init_defaults(self, d):
         pass

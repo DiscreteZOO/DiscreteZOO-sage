@@ -8,6 +8,7 @@ from ..utility import lookup
 from ..zoograph import ZooGraph
 from ..zoograph import canonical_label
 from ..zooobject import ZooInfo
+from ..zooobject import ZooObject
 
 _objspec = {
     "name": "graph_cvt",
@@ -37,9 +38,9 @@ class CVTGraph(ZooGraph):
 
     def __init__(self, data = None, index = None, **kargs):
         cl = CVTGraph
-        self._init_(cl, kargs, defNone = ["order"],
-                    setVal = {"data": data, "index": index},
-                    setProp = {"cvt_index": "index"})
+        ZooObject.__init__(self, cl, kargs, defNone = ["order"],
+                           setVal = {"data": data, "index": index},
+                           setProp = {"cvt_index": "index"})
 
         if kargs["order"] is not None and kargs["index"] is not None:
             join = Table(cl._spec["name"]).join(Table(cl._parent._spec["name"]),
