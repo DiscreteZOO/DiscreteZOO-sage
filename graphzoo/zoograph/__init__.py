@@ -7,7 +7,6 @@ from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from hashlib import sha256
 from types import MethodType
-from ..query import Table
 from ..query import Value
 from ..utility import construct
 from ..utility import default
@@ -22,7 +21,7 @@ _objspec = {
     "dict": "_props",
     "primary_key": "id",
     "indices": {"average_degree", "order"},
-    "skip": {"id", "data"},
+    "skip": {"id", "data", "unique_id"},
     "fields" : {
         #"automorphism_group": ZooGroup,
         "average_degree": Rational,
@@ -91,7 +90,7 @@ _objspec = {
         "zagreb2_index": Integer
     },
     "compute": {"_props": {"diameter", "girth", "has_multiple_edges", "name",
-                           "number_of_loops", "order", "size", "unique_id"}},
+                           "number_of_loops", "order", "size"}},
     "default": {}
 }
 
@@ -101,23 +100,11 @@ class ZooGraph(Graph, ZooObject):
 
     def __init__(self, data = None, **kargs):
         cl = ZooGraph
-        self._init_defaults(kargs, data)
-        default(kargs, "vertex_labels")
-        kargs["immutable"] = True
-        kargs["data_structure"] = "static_sparse"
-        ZooObject.__init__(self, kargs["db"])
+        self._init_(cl, kargs, defNone = ["vertex_labels"],
+                    setVal = {"data": data,
+                              "immutable": True,
+                              "data_structure": "static_sparse"})
 
-        if isinteger(kargs["data"]):
-            kargs["zooid"] = Integer(kargs["data"])
-            kargs["data"] = None
-        else:
-            self._init_params(kargs)
-
-        if kargs["graph"] is not None:
-            self._init_graph(cl, kargs)
-        else:
-            kargs["cur"] = None
-            self._init_props(cl, kargs)
         self._zooid = kargs["zooid"]
         if kargs["data"] is None:
             kargs["data"] = self._db_read(cl)["data"]
@@ -126,6 +113,8 @@ class ZooGraph(Graph, ZooObject):
             self._props["name"] = kargs["name"]
         elif propname:
             kargs["name"] = propname
+        if propname == '':
+            del self._props["name"]
         if kargs["vertex_labels"] is not None:
             kargs["data"] = Graph(kargs["data"]).relabel(kargs["vertex_labels"],
                                                          inplace = False)
@@ -137,16 +126,22 @@ class ZooGraph(Graph, ZooObject):
         if kargs["cur"] is not None:
             self._db_write(cl, kargs["cur"])
 
-    def _init_defaults(self, d, data):
-        d["data"] = data
+    def _init_defaults(self, d):
         default(d, "zooid")
         default(d, "props")
         default(d, "graph")
         default(d, "name")
         default(d, "cur")
-        default(d, "db")
         default(d, "loops")
         default(d, "multiedges")
+
+    def _parse_params(self, d):
+        if isinteger(d["data"]):
+            d["zooid"] = Integer(d["data"])
+            d["data"] = None
+            return True
+        else:
+            return False
 
     def _init_params(self, d):
         if isinstance(d["data"], GenericGraph):
@@ -165,7 +160,18 @@ class ZooGraph(Graph, ZooObject):
                 d["data"] = d["props"]["data"]
                 del d["props"]["data"]
 
-    def _init_graph(self, cl, d):
+    def _clear_params(self, d):
+        pass
+
+    def _init_object(self, cl, d, setProp = {}):
+        if d["graph"] is not None:
+            self._init_graph(cl, d, setProp)
+            cl._clear_params(self, d)
+        else:
+            d["cur"] = None
+            self._init_props(cl, d)
+
+    def _init_graph(self, cl, d, setProp = {}):
         if not isinstance(d["graph"], GenericGraph):
             raise TypeError("not a graph")
         if d["name"] is None:
@@ -178,22 +184,9 @@ class ZooGraph(Graph, ZooObject):
                     self._setprops(c, d["graph"]._getprops(c))
                 c = c._parent
         if d["cur"] is not None:
-            c = cl
-            while c is not None:
-                if self._getprops(c) is None:
-                   self._setprops(c, {})
-                c = c._parent
-            for f, m in cl._spec["default"].items():
-                p = self.__getattribute__(f)
-                for k, v in m.items():
-                    p[k] = v
-            for f, s in cl._spec["compute"].items():
-                p = self.__getattribute__(f)
-                for k in s:
-                    try:
-                        lookup(p, k)
-                    except KeyError:
-                        p[k] = d["graph"].__getattribute__(k)()
+            self._compute_props(cl, d)
+            for k, v in setProp.items():
+                self._getprops(cl)[k] = d[v]
         elif d["zooid"] is None:
             uid = unique_id(d["graph"])
             d["props"] = next(ZooInfo(cl).props(fields.unique_id == Value(uid),
