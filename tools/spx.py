@@ -18,23 +18,22 @@ def spx_adj(x, y):
     else:
         return yv[1:] == xv[:-1]
 
-max = 1280
-spx = {}
-for r in range(3, max/4+1):
-    spx[r] = {}
-    s = 1
-    n = 4*r
-    while n <= max:
-        c = sum([[(tuple(v), n) for n in Integers(r)] for v in Integers(2)**Integer(s)], [])
-        c = [(v, n, Integer(1)) for v, n in c] + [(v, n, Integer(-1)) for v, n in c]
-        spx[r][s] = Graph([c, spx_adj])
-        s += 1
-        n *= 2
-    print "Finished r = %d, constructed %d graphs" % (r, len(spr[r]))
+def construct_spx(spx, max = 1280):
+    for r in range(3, max/4+1):
+        spx[r] = {}
+        s = 1
+        n = 4*r
+        while n <= max:
+            c = sum([[(tuple(v), n) for n in Integers(r)] for v in Integers(2)**Integer(s)], [])
+            c = [(v, n, Integer(1)) for v, n in c] + [(v, n, Integer(-1)) for v, n in c]
+            spx[r][s] = Graph([c, spx_adj])
+            s += 1
+            n *= 2
+        print "Finished r = %d, constructed %d graphs" % (r, len(spr[r]))
 
-spx_uid = {}
-for r, d in spx.items():
-    spx_uid[r] = {}
-    for s, G in d.items():
-        spx_uid[r][s] = unique_id(G)
-    print "Finished r = %d" % r
+def get_uids(spx, spx_uid):
+    for r, d in spx.items():
+        spx_uid[r] = {}
+        for s, G in d.items():
+            spx_uid[r][s] = unique_id(G)
+        print "Finished r = %d" % r
