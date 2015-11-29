@@ -24,8 +24,8 @@ for r in range(3, max/4+1):
     s = 1
     n = 4*r
     while n <= max:
-        c = cartesian_product([Integers(2)**Integer(s), Integers(r)])
-        c = [(tuple(v), n, Integer(1)) for v, n in c] + [(tuple(v), n, Integer(-1)) for v, n in c]
+        c = sum([[(tuple(v), n) for n in Integers(r)] for v in Integers(2)**Integer(s)], [])
+        c = [(v, n, Integer(1)) for v, n in c] + [(v, n, Integer(-1)) for v, n in c]
         spx[r][s] = Graph([c, spx_adj])
         s += 1
         n *= 2
