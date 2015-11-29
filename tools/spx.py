@@ -1,3 +1,5 @@
+from sage.categories.cartesian_product import cartesian_product
+from sage.rings.finite_rings.integer_mod_ring import IntegerModFactory as Integers
 from graphzoo.zoograph import unique_id
 
 def spx_adj(x, y):
