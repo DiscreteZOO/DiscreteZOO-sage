@@ -76,12 +76,12 @@ class ZooObject:
             if self._getprops(c) is None:
                self._setprops(c, {})
             c = c._parent
-        for f, m in cl._spec["default"].items():
-            p = self.__getattribute__(f)
+        for c, m in cl._spec["default"].items():
+            p = self._getprops(c)
             for k, v in m.items():
                 p[k] = v
-        for f, s in cl._spec["compute"].items():
-            p = self.__getattribute__(f)
+        for c, s in cl._spec["compute"].items():
+            p = self._getprops(c)
             for k in s:
                 try:
                     lookup(p, k)
