@@ -18,17 +18,17 @@ def spx_adj(x, y):
     else:
         return yv[1:] == xv[:-1]
 
-def construct_spx(spx, max = 1280):
+def construct_spx(spx, max = Integer(1280)):
     for r in range(3, max/4+1):
         spx[r] = {}
-        s = 1
-        n = 4*r
-        while n <= max:
+        s = Integer(1)
+        m = Integer(4)*r
+        while m <= max:
             c = sum([[(tuple(v), n) for n in Integers(r)] for v in Integers(2)**Integer(s)], [])
             c = [(v, n, Integer(1)) for v, n in c] + [(v, n, Integer(-1)) for v, n in c]
             spx[r][s] = Graph([c, spx_adj])
             s += 1
-            n *= 2
+            m *= 2
         print "Finished r = %d, constructed %d graphs" % (r, len(spr[r]))
 
 def get_uids(spx, spx_uid):
