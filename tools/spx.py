@@ -1,5 +1,6 @@
 from sage.categories.cartesian_product import cartesian_product
 from sage.rings.finite_rings.integer_mod_ring import IntegerModFactory as Integers
+from sage.rings.integer import Integer
 from graphzoo.zoograph import unique_id
 
 def spx_adj(x, y):
@@ -24,8 +25,8 @@ for r in range(3, max/4+1):
     n = 4*r
     while n <= max:
         c = [tuple(x) for x
-             in cartesian_product([[tuple(y) for y in Integers(2)^s],
-                                   Integers(r), [1, -1]])]
+             in cartesian_product([[tuple(y) for y in Integers(2)^Integer(s)],
+                                   Integers(r), [Integer(1), Integer(-1)]])]
         spx[r][s] = Graph([c, spx_adj])
         s += 1
         n *= 2
