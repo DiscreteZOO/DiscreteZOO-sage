@@ -1,5 +1,6 @@
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
+from inspect import getargspec
 from query import Column
 
 def lookup(d, k, destroy = False, **kargs):
@@ -12,6 +13,10 @@ def lookup(d, k, destroy = False, **kargs):
     if "default" in kargs:
         return kargs["default"]
     raise KeyError(k)
+
+def default(d, k, v = None):
+    if k not in d:
+        d[k] = v
 
 def update(d, k, v):
     d[k] = v
@@ -48,3 +53,9 @@ def tomultidict(rows, dims):
 def todict(r, db):
     return {k: db.from_db_type(v, type(v))
             for k, v in dict(r).items() if v is not None}
+
+def construct(cl, self, d):
+    argspec = getargspec(cl.__init__)
+    if argspec[2] is None:
+        d = {k: v for k, v in d.items() if k in argspec[0]}
+    return cl.__init__(self, **d)

@@ -4,6 +4,7 @@ from query import And
 from query import Column
 from query import Count
 from query import Table
+from utility import default
 from utility import lookup
 from utility import todict
 from utility import tomultidict
@@ -14,11 +15,23 @@ class ZooObject:
     _zooid = None
     _parent = None
 
-    def __init__(self, db = None):
-        if db is None:
+    def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
+                 setProp = {}):
+        self._init_defaults(d)
+        for k in defNone:
+            default(d, k)
+        for k, v in defVal.items():
+            default(d, k, v)
+        for k, v in setVal.items():
+            d[k] = v
+        default(d, "db")
+        if d["db"] is None:
             self._db = graphzoo.DEFAULT_DB
         else:
-            self._db = db
+            self._db = d["db"]
+        if not cl._parse_params(self, d):
+            self._init_params(d)
+        self._init_object(cl, d, setProp)
 
     def setdb(self, db):
         self._db = db
@@ -32,13 +45,48 @@ class ZooObject:
     def _setprops(self, cl, d):
         return self.__setattr__(cl._spec["dict"], d)
 
-    def _init_props(self, cl, props):
-        if props is not None:
-            self._setprops(self._todict(props, skip = cl._spec["skip"],
-                                        fields = cl._spec["fields"]))
-            props = {k: v for k, v in props.items()
-                     if k not in cl._spec["fields"]}
-        return props
+    def _init_defaults(self, d):
+        pass
+
+    def _parse_params(self, d):
+        raise NotImplementedError
+
+    def _init_params(self, d):
+        pass
+
+    def _init_skip(self, d):
+        pass
+
+    def _init_object(self, cl, d):
+        raise NotImplementedError
+
+    def _init_props(self, cl, d):
+        if d["props"] is not None:
+            self._init_skip(d)
+            self._setprops(cl, self._todict(d["props"],
+                                            skip = cl._spec["skip"],
+                                            fields = cl._spec["fields"]))
+            d["props"] = {k: v for k, v in d["props"].items()
+                            if k not in cl._spec["fields"]
+                                or k in cl._spec["skip"]}
+
+    def _compute_props(self, cl, d):
+        c = cl
+        while c is not None:
+            if self._getprops(c) is None:
+               self._setprops(c, {})
+            c = c._parent
+        for c, m in cl._spec["default"].items():
+            p = self._getprops(c)
+            for k, v in m.items():
+                p[k] = v
+        for c, s in cl._spec["compute"].items():
+            p = self._getprops(c)
+            for k in s:
+                try:
+                    lookup(p, k)
+                except KeyError:
+                    p[k] = d["graph"].__getattribute__(k)()
 
     def _db_read(self, cl, join = None, query = None):
         if query is None:
@@ -179,8 +227,8 @@ class ZooInfo:
         db = lookup(kargs, "db", default = None, destroy = True)
         if db is None:
             db = self.getdb()
-        cur = self.query(db =db, *largs, **kargs)
+        cur = self.query(db = db, *largs, **kargs)
         r = cur.fetchone()
         if r is None:
-            raise KeyError(kargs)
+            raise KeyError(largs, kargs)
         return self.cl(todict(r, db), db = db)

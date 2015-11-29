@@ -256,12 +256,6 @@ class BitwiseXOr(BinaryOp):
 class Concatenate(BinaryOp):
     op = "++"
 
-class Is(BinaryOp):
-    op = "is"
-
-class IsNot(BinaryOp):
-    op = "is not"
-
 class Like(BinaryOp):
     op = "like"
     case = None
@@ -301,6 +295,14 @@ class Absolute(UnaryOp):
 
 class Invert(UnaryOp):
     op = "~"
+
+class IsNull(UnaryOp):
+    def __str__(self):
+        return "%s is null" % self.exp
+
+class IsNotNull(UnaryOp):
+    def __str__(self):
+        return "%s is not null" % self.exp
 
 class LogicalExpression(Expression):
     terms = None
