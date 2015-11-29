@@ -29,7 +29,7 @@ def construct_spx(spx, max = Integer(1280)):
             spx[r][s] = Graph([c, spx_adj])
             s += 1
             m *= 2
-        print "Finished r = %d, constructed %d graphs" % (r, len(spr[r]))
+        print "Finished r = %d, constructed %d graphs" % (r, len(spx[r]))
 
 def get_uids(spx, spx_uid):
     for r, d in spx.items():
