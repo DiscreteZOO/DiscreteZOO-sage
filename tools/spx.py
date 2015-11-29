@@ -1,5 +1,5 @@
 from sage.categories.cartesian_product import cartesian_product
-from sage.rings.finite_rings.integer_mod_ring import IntegerModFactory as Integers
+from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from graphzoo.zoograph import unique_id
 
