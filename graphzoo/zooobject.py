@@ -227,8 +227,8 @@ class ZooInfo:
         db = lookup(kargs, "db", default = None, destroy = True)
         if db is None:
             db = self.getdb()
-        cur = self.query(db =db, *largs, **kargs)
+        cur = self.query(db = db, *largs, **kargs)
         r = cur.fetchone()
         if r is None:
-            raise KeyError(kargs)
+            raise KeyError(largs, kargs)
         return self.cl(todict(r, db), db = db)
