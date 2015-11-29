@@ -2,6 +2,7 @@ __all__ = ['fields', 'SPXGraph', 'info']
 
 from sage.rings.integer import Integer
 from .spxgraph import *
+from ..zoograph import ZooGraph
 from ..cvt import CVTGraph
 
 objspec = {
@@ -16,7 +17,7 @@ objspec = {
         "spx_s": Integer
     },
     "compute": {},
-    "default": {}
+    "default": {ZooGraph: {"is_bipartite": True}}
 }
 
 SPXGraph._spec = objspec
