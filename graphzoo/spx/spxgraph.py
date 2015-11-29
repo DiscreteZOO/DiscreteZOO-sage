@@ -1,13 +1,13 @@
 from sage.rings.integer import Integer
-from ..cvt import CVTGraph
 from ..utility import isinteger
 from ..utility import lookup
+from ..zoograph import ZooGraph
 from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
 
-class SPXGraph(CVTGraph):
+class SPXGraph(ZooGraph):
     _spxprops = None
-    _parent = CVTGraph
+    _parent = ZooGraph
     _spec = None
 
     def __init__(self, data = None, s = None, **kargs):
@@ -21,7 +21,7 @@ class SPXGraph(CVTGraph):
                                            "spx_s": kargs["s"]})
             kargs["zooid"] = r["id"]
             kargs["graph"] = None
-        CVTGraph.__init__(self, **kargs)
+        ZooGraph.__init__(self, **kargs)
 
         if kargs["r"] is not None and kargs["s"] is not None:
             assert(kargs["r"] * 2**(kargs["s"]+1) == self._props["order"])
