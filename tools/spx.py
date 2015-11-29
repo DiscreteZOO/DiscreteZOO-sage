@@ -1,4 +1,5 @@
 from sage.categories.cartesian_product import cartesian_product
+from sage.graphs.graph import Graph
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from graphzoo.zoograph import unique_id
