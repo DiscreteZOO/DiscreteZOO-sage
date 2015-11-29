@@ -1,3 +1,4 @@
+from types import MethodType
 import graphzoo
 from query import A as All
 from query import And
@@ -14,6 +15,7 @@ class ZooObject:
     _db = None
     _zooid = None
     _parent = None
+    _extra_props = set()
 
     def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
                  setProp = {}):
@@ -43,7 +45,7 @@ class ZooObject:
         return self.__getattribute__(cl._spec["dict"])
 
     def _setprops(self, cl, d):
-        return self.__setattr__(cl._spec["dict"], d)
+        self.__setattr__(cl._spec["dict"], d)
 
     def _init_defaults(self, d):
         pass
@@ -87,6 +89,30 @@ class ZooObject:
                     lookup(p, k)
                 except KeyError:
                     p[k] = d["graph"].__getattribute__(k)()
+
+    def _copy_props(self, cl, obj):
+        c = cl
+        while c is not None:
+            if isinstance(obj, c):
+                self._setprops(c, obj._getprops(c))
+            c = c._parent
+        c = obj.__class__
+        cl = self.__class__
+        while c is not None and not issubclass(cl, c):
+            self._setprops(c, obj._getprops(c))
+            self._extra_props.add(c._spec["dict"])
+            c = c._parent
+        for p in obj._extra_props:
+            try:
+                self.__getattribute__(p)
+            except AttributeError:
+                self.__setattr__(p, obj.__getattribute__(p))
+                self._extra_props.add(p)
+        for a in dir(obj):
+            if a not in dir(self):
+                attr = obj.__getattribute__(a)
+                if isinstance(attr, MethodType):
+                    self.__setattr__(a, MethodType(attr.im_func, self, cl))
 
     def _db_read(self, cl, join = None, query = None):
         if query is None:

@@ -96,11 +96,7 @@ class ZooGraph(Graph, ZooObject):
             d["name"] = d["graph"].name()
         if isinstance(d["graph"], ZooGraph):
             d["zooid"] = d["graph"]._zooid
-            c = cl
-            while c is not None:
-                if isinstance(d["graph"], c):
-                    self._setprops(c, d["graph"]._getprops(c))
-                c = c._parent
+            self._copy_props(cl, d["graph"])
         if d["cur"] is not None:
             self._compute_props(cl, d)
             for k, v in setProp.items():
@@ -127,15 +123,19 @@ class ZooGraph(Graph, ZooObject):
                     update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
-        if isinstance(attr, MethodType) and \
-                attr.func_globals["__package__"].startswith("sage."):
-            cl = type(self)
-            while cl is not None:
-                if name in cl._spec["fields"] and name not in cl._spec["skip"]:
-                    _graphattr.func_name = name
-                    _graphattr.func_doc = attr.func_doc
-                    return _graphattr
-                cl = cl._parent
+        try:
+            if isinstance(attr, MethodType) and \
+                    attr.func_globals["__package__"].startswith("sage."):
+                cl = type(self)
+                while cl is not None:
+                    if name in cl._spec["fields"] and \
+                            name not in cl._spec["skip"]:
+                        _graphattr.func_name = name
+                        _graphattr.func_doc = attr.func_doc
+                        return _graphattr
+                    cl = cl._parent
+        except AttributeError:
+            pass
         return attr
 
     def copy(self, weighted = None, implementation = 'c_graph',
