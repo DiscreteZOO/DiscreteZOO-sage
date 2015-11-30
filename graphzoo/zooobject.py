@@ -1,3 +1,4 @@
+from types import MethodType
 import graphzoo
 from query import A as All
 from query import And
@@ -14,9 +15,11 @@ class ZooObject:
     _db = None
     _zooid = None
     _parent = None
+    _extra_props = None
 
     def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
                  setProp = {}):
+        self._extra_props = set()
         self._init_defaults(d)
         for k in defNone:
             default(d, k)
@@ -32,6 +35,9 @@ class ZooObject:
         if not cl._parse_params(self, d):
             self._init_params(d)
         self._init_object(cl, d, setProp)
+        self._default_props(cl)
+        if d["cur"] is not None:
+            self._db_write(cl, d["cur"])
 
     def setdb(self, db):
         self._db = db
@@ -43,7 +49,11 @@ class ZooObject:
         return self.__getattribute__(cl._spec["dict"])
 
     def _setprops(self, cl, d):
-        return self.__setattr__(cl._spec["dict"], d)
+        props = self.__getattribute__(cl._spec["dict"])
+        if props is None:
+            self.__setattr__(cl._spec["dict"], d)
+        else:
+            props.update(d)
 
     def _init_defaults(self, d):
         pass
@@ -70,16 +80,15 @@ class ZooObject:
                             if k not in cl._spec["fields"]
                                 or k in cl._spec["skip"]}
 
-    def _compute_props(self, cl, d):
+    def _default_props(self, cl):
         c = cl
         while c is not None:
-            if self._getprops(c) is None:
-               self._setprops(c, {})
+            self._setprops(c, {})
             c = c._parent
         for c, m in cl._spec["default"].items():
-            p = self._getprops(c)
-            for k, v in m.items():
-                p[k] = v
+            self._getprops(c).update(m)
+
+    def _compute_props(self, cl, d):
         for c, s in cl._spec["compute"].items():
             p = self._getprops(c)
             for k in s:
@@ -87,6 +96,30 @@ class ZooObject:
                     lookup(p, k)
                 except KeyError:
                     p[k] = d["graph"].__getattribute__(k)()
+
+    def _copy_props(self, cl, obj):
+        c = cl
+        while c is not None:
+            if isinstance(obj, c):
+                self._setprops(c, obj._getprops(c))
+            c = c._parent
+        c = obj.__class__
+        cl = self.__class__
+        while c is not None and not issubclass(cl, c):
+            self.__setattr__(c._spec["dict"], obj._getprops(c))
+            self._extra_props.add(c._spec["dict"])
+            c = c._parent
+        for p in obj._extra_props:
+            try:
+                self.__getattribute__(p)
+            except AttributeError:
+                self.__setattr__(p, obj.__getattribute__(p))
+                self._extra_props.add(p)
+        for a in dir(obj):
+            if a not in dir(self):
+                attr = obj.__getattribute__(a)
+                if isinstance(attr, MethodType):
+                    self.__setattr__(a, MethodType(attr.im_func, self, cl))
 
     def _db_read(self, cl, join = None, query = None):
         if query is None:

@@ -1,5 +1,7 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.rings.infinity import PlusInfinity
+from sage.rings.integer import Integer
 from hashlib import sha256
 from types import MethodType
 from ..query import Column
@@ -17,32 +19,10 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
 
     def __init__(self, data = None, **kargs):
-        cl = ZooGraph
-        ZooObject.__init__(self, cl, kargs, defNone = ["vertex_labels"],
+        ZooObject.__init__(self, ZooGraph, kargs, defNone = ["vertex_labels"],
                            setVal = {"data": data,
                                      "immutable": True,
                                      "data_structure": "static_sparse"})
-
-        self._zooid = kargs["zooid"]
-        if kargs["data"] is None:
-            kargs["data"] = self._db_read(cl)["data"]
-        propname = lookup(self._props, "name", default = None)
-        if kargs["name"]:
-            self._props["name"] = kargs["name"]
-        elif propname:
-            kargs["name"] = propname
-        if propname == '':
-            del self._props["name"]
-        if kargs["vertex_labels"] is not None:
-            kargs["data"] = Graph(kargs["data"]).relabel(kargs["vertex_labels"],
-                                                         inplace = False)
-        if kargs["loops"] is None:
-            kargs["loops"] = self._props["number_of_loops"] > 0
-        if kargs["multiedges"] is None:
-            kargs["multiedges"] = self._props["has_multiple_edges"]
-        construct(Graph, self, kargs)
-        if kargs["cur"] is not None:
-            self._db_write(cl, kargs["cur"])
 
     def _init_defaults(self, d):
         default(d, "zooid")
@@ -88,6 +68,7 @@ class ZooGraph(Graph, ZooObject):
         else:
             d["cur"] = None
             self._init_props(cl, d)
+        cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
         if not isinstance(d["graph"], GenericGraph):
@@ -96,11 +77,7 @@ class ZooGraph(Graph, ZooObject):
             d["name"] = d["graph"].name()
         if isinstance(d["graph"], ZooGraph):
             d["zooid"] = d["graph"]._zooid
-            c = cl
-            while c is not None:
-                if isinstance(d["graph"], c):
-                    self._setprops(c, d["graph"]._getprops(c))
-                c = c._parent
+            self._copy_props(cl, d["graph"])
         if d["cur"] is not None:
             self._compute_props(cl, d)
             for k, v in setProp.items():
@@ -112,6 +89,49 @@ class ZooGraph(Graph, ZooObject):
         self._init_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
+
+    def _construct_object(self, cl, d):
+        self._zooid = d["zooid"]
+        if d["data"] is None:
+            d["data"] = self._db_read(cl)["data"]
+        propname = lookup(self._props, "name", default = None)
+        if d["name"]:
+            self._props["name"] = d["name"]
+        elif propname:
+            d["name"] = propname
+        if propname == '':
+            del self._props["name"]
+        if d["vertex_labels"] is not None:
+            d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
+                                                 inplace = False)
+        if d["loops"] is None:
+            d["loops"] = self._props["number_of_loops"] > 0
+        if d["multiedges"] is None:
+            d["multiedges"] = self._props["has_multiple_edges"]
+        construct(Graph, self, d)
+
+    def _repr_generic(self):
+        name = ""
+        if self.allows_loops():
+            name += "looped "
+        if self.allows_multiple_edges():
+            name += "multi-"
+        if self._directed:
+            name += "di"
+        name += "graph on %d vert"%self.order()
+        if self.order() == 1:
+            name += "ex"
+        else:
+            name += "ices"
+        return name
+
+    def _repr_(self):
+        name = self._repr_generic()
+        if self.name() != '':
+            name = self.name() + ": " + name
+        else:
+            name = name.capitalize()
+        return name
 
     def __getattribute__(self, name):
         def _graphattr(*largs, **kargs):
@@ -127,15 +147,19 @@ class ZooGraph(Graph, ZooObject):
                     update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
-        if isinstance(attr, MethodType) and \
-                attr.func_globals["__package__"].startswith("sage."):
-            cl = type(self)
-            while cl is not None:
-                if name in cl._spec["fields"] and name not in cl._spec["skip"]:
-                    _graphattr.func_name = name
-                    _graphattr.func_doc = attr.func_doc
-                    return _graphattr
-                cl = cl._parent
+        try:
+            if isinstance(attr, MethodType) and \
+                    attr.func_globals["__package__"].startswith("sage."):
+                cl = type(self)
+                while cl is not None:
+                    if name in cl._spec["fields"] and \
+                            name not in cl._spec["skip"]:
+                        _graphattr.func_name = name
+                        _graphattr.func_doc = attr.func_doc
+                        return _graphattr
+                    cl = cl._parent
+        except AttributeError:
+            pass
         return attr
 
     def copy(self, weighted = None, implementation = 'c_graph',
@@ -181,8 +205,8 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return unique_id(self)
 
-    def is_regular(self, k = None, store = False, **kargs):
-        default = len(kargs) == 0
+    def is_regular(self, k = None, store = False, *largs, **kargs):
+        default = len(largs) + len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
@@ -190,13 +214,31 @@ class ZooGraph(Graph, ZooObject):
             return r and (True if k is None
                           else k == self.average_degree(store = store))
         except (KeyError, NotImplementedError):
-            r = Graph.is_regular(self, k, **kargs)
+            r = Graph.is_regular(self, k, *largs, **kargs)
             if default and store:
                 update(self._props, "is_regular", r)
                 if r and k is not None:
                     update(self._props, "average_degree", k)
             return r
     is_regular.func_doc = Graph.is_regular.func_doc
+
+    def odd_girth(self, store = False, *largs, **kargs):
+        default = len(largs) + len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            try:
+                if lookup(self._props, "is_bipartite"):
+                    return PlusInfinity()
+            except KeyError:
+                pass
+            return lookup(self._props, "odd_girth")
+        except (KeyError, NotImplementedError):
+            o = Graph.odd_girth(*largs, **kargs)
+            if default and store:
+                update(self._props, "odd_girth", o)
+            return a
+    odd_girth.func_doc = Graph.odd_girth.func_doc
 
 def canonical_label(graph):
     return graph.canonical_label(algorithm = "sage")

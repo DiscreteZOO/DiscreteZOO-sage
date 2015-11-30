@@ -12,7 +12,10 @@ objspec = {
     "skip": {"id"},
     "fields" : {
         "cvt_index": Integer,
-        "id": (ZooGraph, {"primary_key"})
+        "id": (ZooGraph, {"primary_key"}),
+        "is_moebius_ladder": bool,
+        "is_prism": bool,
+        "is_spx": bool
     },
     "compute": {},
     "default": {
