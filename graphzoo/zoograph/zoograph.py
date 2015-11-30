@@ -1,5 +1,6 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
 from types import MethodType
@@ -204,8 +205,8 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return unique_id(self)
 
-    def is_regular(self, k = None, store = False, **kargs):
-        default = len(kargs) == 0
+    def is_regular(self, k = None, store = False, *largs, **kargs):
+        default = len(largs) + len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
@@ -213,13 +214,31 @@ class ZooGraph(Graph, ZooObject):
             return r and (True if k is None
                           else k == self.average_degree(store = store))
         except (KeyError, NotImplementedError):
-            r = Graph.is_regular(self, k, **kargs)
+            r = Graph.is_regular(self, k, *largs, **kargs)
             if default and store:
                 update(self._props, "is_regular", r)
                 if r and k is not None:
                     update(self._props, "average_degree", k)
             return r
     is_regular.func_doc = Graph.is_regular.func_doc
+
+    def odd_girth(self, store = False, *largs, **kargs):
+        default = len(largs) + len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            try:
+                if lookup(self._props, "is_bipartite"):
+                    return PlusInfinity()
+            except KeyError:
+                pass
+            return lookup(self._props, "odd_girth")
+        except (KeyError, NotImplementedError):
+            o = Graph.odd_girth(*largs, **kargs)
+            if default and store:
+                update(self._props, "odd_girth", o)
+            return a
+    odd_girth.func_doc = Graph.odd_girth.func_doc
 
 def canonical_label(graph):
     return graph.canonical_label(algorithm = "sage")
