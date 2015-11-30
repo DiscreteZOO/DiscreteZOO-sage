@@ -45,12 +45,9 @@ class SPXGraph(ZooGraph):
         d["r"] = None
         d["s"] = None
 
-    def _repr_(self):
-        name = "Split Praeger-Xu(2, %d, %d) graph on %d vertices" \
+    def _repr_generic(self):
+        return "split Praeger-Xu(2, %d, %d) graph on %d vertices" \
                                 % (self.spx_r(), self.spx_s(), self.order())
-        if self.name() != '':
-            name = self.name() + ": " + name
-        return name
 
     def spx_r(self):
         return lookup(self._spxprops, "spx_r")

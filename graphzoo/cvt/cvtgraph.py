@@ -50,12 +50,9 @@ class CVTGraph(ZooGraph):
         d["order"] = None
         d["index"] = None
 
-    def _repr_(self):
-        name = "Cubic vertex-transitive graph on %d vertices, number %d" \
+    def _repr_generic(self):
+        return "cubic vertex-transitive graph on %d vertices, number %d" \
                                             % (self.order(), self.cvt_index())
-        if self.name() != '':
-            name = self.name() + ": " + name
-        return name
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")

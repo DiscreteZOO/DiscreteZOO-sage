@@ -109,6 +109,29 @@ class ZooGraph(Graph, ZooObject):
         d["data"] = d["graph"]
         d["graph"] = None
 
+    def _repr_generic(self):
+        name = ""
+        if self.allows_loops():
+            name += "looped "
+        if self.allows_multiple_edges():
+            name += "multi-"
+        if self._directed:
+            name += "di"
+        name += "graph on %d vert"%self.order()
+        if self.order() == 1:
+            name += "ex"
+        else:
+            name += "ices"
+        return name
+
+    def _repr_(self):
+        name = self._repr_generic()
+        if self.name() != '':
+            name = self.name() + ": " + name
+        else:
+            name = name.capitalize()
+        return name
+
     def __getattribute__(self, name):
         def _graphattr(*largs, **kargs):
             store = lookup(kargs, "store", default = False, destroy = True)
