@@ -15,10 +15,11 @@ class ZooObject:
     _db = None
     _zooid = None
     _parent = None
-    _extra_props = set()
+    _extra_props = None
 
     def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
                  setProp = {}):
+        self._extra_props = set()
         self._init_defaults(d)
         for k in defNone:
             default(d, k)
