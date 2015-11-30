@@ -1,5 +1,6 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.rings.integer import Integer
 from hashlib import sha256
 from types import MethodType
 from ..query import Column
@@ -17,32 +18,10 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
 
     def __init__(self, data = None, **kargs):
-        cl = ZooGraph
-        ZooObject.__init__(self, cl, kargs, defNone = ["vertex_labels"],
+        ZooObject.__init__(self, ZooGraph, kargs, defNone = ["vertex_labels"],
                            setVal = {"data": data,
                                      "immutable": True,
                                      "data_structure": "static_sparse"})
-
-        self._zooid = kargs["zooid"]
-        if kargs["data"] is None:
-            kargs["data"] = self._db_read(cl)["data"]
-        propname = lookup(self._props, "name", default = None)
-        if kargs["name"]:
-            self._props["name"] = kargs["name"]
-        elif propname:
-            kargs["name"] = propname
-        if propname == '':
-            del self._props["name"]
-        if kargs["vertex_labels"] is not None:
-            kargs["data"] = Graph(kargs["data"]).relabel(kargs["vertex_labels"],
-                                                         inplace = False)
-        if kargs["loops"] is None:
-            kargs["loops"] = self._props["number_of_loops"] > 0
-        if kargs["multiedges"] is None:
-            kargs["multiedges"] = self._props["has_multiple_edges"]
-        construct(Graph, self, kargs)
-        if kargs["cur"] is not None:
-            self._db_write(cl, kargs["cur"])
 
     def _init_defaults(self, d):
         default(d, "zooid")
@@ -88,6 +67,7 @@ class ZooGraph(Graph, ZooObject):
         else:
             d["cur"] = None
             self._init_props(cl, d)
+        cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
         if not isinstance(d["graph"], GenericGraph):
@@ -108,6 +88,26 @@ class ZooGraph(Graph, ZooObject):
         self._init_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
+
+    def _construct_object(self, cl, d):
+        self._zooid = d["zooid"]
+        if d["data"] is None:
+            d["data"] = self._db_read(cl)["data"]
+        propname = lookup(self._props, "name", default = None)
+        if d["name"]:
+            self._props["name"] = d["name"]
+        elif propname:
+            d["name"] = propname
+        if propname == '':
+            del self._props["name"]
+        if d["vertex_labels"] is not None:
+            d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
+                                                 inplace = False)
+        if d["loops"] is None:
+            d["loops"] = self._props["number_of_loops"] > 0
+        if d["multiedges"] is None:
+            d["multiedges"] = self._props["has_multiple_edges"]
+        construct(Graph, self, d)
 
     def _repr_generic(self):
         name = ""

@@ -11,24 +11,9 @@ class SPXGraph(ZooGraph):
     _spec = None
 
     def __init__(self, data = None, s = None, **kargs):
-        cl = SPXGraph
-        ZooObject.__init__(self, cl, kargs, defNone = ["r"],
+        ZooObject.__init__(self, SPXGraph, kargs, defNone = ["r"],
                            setVal = {"data": data, "s": s},
                            setProp = {"spx_r": "r", "spx_s": "s"})
-
-        if kargs["r"] is not None and kargs["s"] is not None:
-            r = self._db_read(cl, query = {"spx_r": kargs["r"],
-                                           "spx_s": kargs["s"]})
-            kargs["zooid"] = r["id"]
-            kargs["graph"] = None
-        ZooGraph.__init__(self, **kargs)
-
-        if kargs["r"] is not None and kargs["s"] is not None:
-            assert(kargs["r"] * 2**(kargs["s"]+1) == self._props["order"])
-        if self._spxprops is None:
-            self._db_read(cl)
-        if kargs["cur"] is not None:
-            self._db_write(cl, kargs["cur"])
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
@@ -44,6 +29,19 @@ class SPXGraph(ZooGraph):
     def _clear_params(self, d):
         d["r"] = None
         d["s"] = None
+
+    def _construct_object(self, cl, d):
+        if d["r"] is not None and d["s"] is not None:
+            r = self._db_read(cl, query = {"spx_r": d["r"],
+                                           "spx_s": d["s"]})
+            d["zooid"] = r["id"]
+            d["graph"] = None
+        ZooGraph.__init__(self, **d)
+
+        if d["r"] is not None and d["s"] is not None:
+            assert(d["r"] * 2**(d["s"]+1) == self._props["order"])
+        if self._spxprops is None:
+            self._db_read(cl)
 
     def _repr_generic(self):
         return "split Praeger-Xu(2, %d, %d) graph on %d vertices" \
