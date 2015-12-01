@@ -53,7 +53,6 @@ objspec = {
         "is_odd_hole_free": bool,
         "is_overfull": bool,
         "is_perfect": bool,
-        "is_planar": bool,
         "is_prime": bool,
         "is_regular": bool,
         "is_split": bool,

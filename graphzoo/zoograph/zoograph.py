@@ -3,6 +3,7 @@ from sage.graphs.graph import Graph
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
+from types import BuiltinFunctionType
 from types import MethodType
 from ..query import Column
 from ..query import Value
@@ -147,19 +148,20 @@ class ZooGraph(Graph, ZooObject):
                     update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
-        try:
-            if isinstance(attr, MethodType) and \
-                    attr.func_globals["__package__"].startswith("sage."):
-                cl = type(self)
-                while cl is not None:
-                    if name in cl._spec["fields"] and \
-                            name not in cl._spec["skip"]:
-                        _graphattr.func_name = name
+        if isinstance(attr, MethodType) and \
+                (isinstance(attr.im_func, BuiltinFunctionType) or
+                    attr.func_globals["__package__"].startswith("sage.")):
+            cl = type(self)
+            while cl is not None:
+                if name in cl._spec["fields"] and \
+                        name not in cl._spec["skip"]:
+                    _graphattr.func_name = name
+                    try:
                         _graphattr.func_doc = attr.func_doc
-                        return _graphattr
-                    cl = cl._parent
-        except AttributeError:
-            pass
+                    except AttributeError:
+                        pass
+                    return _graphattr
+                cl = cl._parent
         return attr
 
     def copy(self, weighted = None, implementation = 'c_graph',
@@ -205,7 +207,32 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return unique_id(self)
 
-    def is_regular(self, k = None, store = False, *largs, **kargs):
+    def is_half_transitive(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
+        if len(largs) + len(kargs) == 0:
+            return (self.is_edge_transitive(store = store) and
+                self.is_vertex_transitive(store = store) and
+                not self.is_arc_transitive(store = store))
+        else:
+            return Graph.is_half_transitive(*largs, **kargs)
+    is_half_transitive.func_doc = Graph.is_half_transitive.func_doc
+
+    def is_planar(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
+        default = len(largs) + len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            return lookup(self._props, "genus") == 0
+        except (KeyError, NotImplementedError):
+            p = Graph.is_planar(self, *largs, **kargs)
+            if p and default and store:
+                update(self._props, "genus", Integer(0))
+            return p
+    is_planar.func_doc = Graph.is_planar.func_doc
+
+    def is_regular(self, k = None, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
         default = len(largs) + len(kargs) == 0
         try:
             if not default:
@@ -222,7 +249,43 @@ class ZooGraph(Graph, ZooObject):
             return r
     is_regular.func_doc = Graph.is_regular.func_doc
 
-    def odd_girth(self, store = False, *largs, **kargs):
+    def is_semi_symmetric(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
+        if len(largs) + len(kargs) == 0:
+            if not self.is_bipartite(store = store):
+                return False
+
+            return (self.is_regular(store = store) and
+                    self.is_edge_transitive(store = store) and
+                    not self.is_vertex_transitive(store = store))
+        else:
+            return Graph.is_semi_symmetric(*largs, **kargs)
+    is_semi_symmetric.func_doc = Graph.is_semi_symmetric.func_doc
+
+    def is_triangle_free(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
+        default = len(largs) + len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            return lookup(self._props, "triangles_count") == 0
+        except (KeyError, NotImplementedError):
+            t = Graph.is_triangle_free(self, *largs, **kargs)
+            if t and default and store:
+                update(self._props, "triangles_count", Integer(0))
+            return t
+    is_triangle_free.func_doc = Graph.is_triangle_free.func_doc
+
+    def is_weakly_chordal(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
+        if len(largs) + len(kargs) == 0:
+            return self.is_long_hole_free(store = store) \
+                and self.is_long_antihole_free(store = store)
+        else:
+            return Graph.is_weakly_chordal(*largs, **kargs)
+
+    def odd_girth(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
         default = len(largs) + len(kargs) == 0
         try:
             if not default:
