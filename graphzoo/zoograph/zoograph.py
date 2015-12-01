@@ -5,6 +5,7 @@ from sage.rings.integer import Integer
 from hashlib import sha256
 from types import BuiltinFunctionType
 from types import MethodType
+from ..decorators import ZooDecorator
 from ..query import Column
 from ..query import Value
 from ..utility import construct
@@ -14,6 +15,8 @@ from ..utility import lookup
 from ..utility import update
 from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
+
+_override = ZooDecorator(Graph)
 
 class ZooGraph(Graph, ZooObject):
     _props = None
@@ -207,30 +210,17 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return unique_id(self)
 
-    def is_half_transitive(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        if len(largs) + len(kargs) == 0:
-            return (self.is_edge_transitive(store = store) and
-                self.is_vertex_transitive(store = store) and
-                not self.is_arc_transitive(store = store))
-        else:
-            return Graph.is_half_transitive(*largs, **kargs)
-    is_half_transitive.func_doc = Graph.is_half_transitive.func_doc
+    @_override.derived
+    def is_half_transitive(self, store = False):
+        return (self.is_edge_transitive(store = store) and
+            self.is_vertex_transitive(store = store) and
+            not self.is_arc_transitive(store = store))
 
-    def is_planar(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "genus") == 0
-        except (KeyError, NotImplementedError):
-            p = Graph.is_planar(self, *largs, **kargs)
-            if p and default and store:
-                update(self._props, "genus", Integer(0))
-            return p
-    is_planar.func_doc = Graph.is_planar.func_doc
+    @_override.implied("_props", {"genus": Integer(0)})
+    def is_planar(self, store = False):
+        pass
 
+    @_override.documented
     def is_regular(self, k = None, *largs, **kargs):
         store = lookup(kargs, "store", default = False, destroy = True)
         default = len(largs) + len(kargs) == 0
@@ -247,61 +237,27 @@ class ZooGraph(Graph, ZooObject):
                 if r and k is not None:
                     update(self._props, "average_degree", k)
             return r
-    is_regular.func_doc = Graph.is_regular.func_doc
 
-    def is_semi_symmetric(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        if len(largs) + len(kargs) == 0:
-            if not self.is_bipartite(store = store):
-                return False
+    @_override.derived
+    def is_semi_symmetric(self, store = False):
+        if not self.is_bipartite(store = store):
+            return False
+        return (self.is_regular(store = store) and
+                self.is_edge_transitive(store = store) and
+                not self.is_vertex_transitive(store = store))
 
-            return (self.is_regular(store = store) and
-                    self.is_edge_transitive(store = store) and
-                    not self.is_vertex_transitive(store = store))
-        else:
-            return Graph.is_semi_symmetric(*largs, **kargs)
-    is_semi_symmetric.func_doc = Graph.is_semi_symmetric.func_doc
+    @_override.implied("_props", {"triangles_count": Integer(0)})
+    def is_triangle_free(self, store = False):
+        pass
 
-    def is_triangle_free(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            return lookup(self._props, "triangles_count") == 0
-        except (KeyError, NotImplementedError):
-            t = Graph.is_triangle_free(self, *largs, **kargs)
-            if t and default and store:
-                update(self._props, "triangles_count", Integer(0))
-            return t
-    is_triangle_free.func_doc = Graph.is_triangle_free.func_doc
+    @_override.derived
+    def is_weakly_chordal(self, store = False):
+        return self.is_long_hole_free(store = store) \
+            and self.is_long_antihole_free(store = store)
 
-    def is_weakly_chordal(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        if len(largs) + len(kargs) == 0:
-            return self.is_long_hole_free(store = store) \
-                and self.is_long_antihole_free(store = store)
-        else:
-            return Graph.is_weakly_chordal(*largs, **kargs)
-
-    def odd_girth(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            try:
-                if lookup(self._props, "is_bipartite"):
-                    return PlusInfinity()
-            except KeyError:
-                pass
-            return lookup(self._props, "odd_girth")
-        except (KeyError, NotImplementedError):
-            o = Graph.odd_girth(*largs, **kargs)
-            if default and store:
-                update(self._props, "odd_girth", o)
-            return a
-    odd_girth.func_doc = Graph.odd_girth.func_doc
+    @_override.determined("_props", {"is_bipartite": PlusInfinity()})
+    def odd_girth(self, store = False):
+        pass
 
 def canonical_label(graph):
     return graph.canonical_label(algorithm = "sage")

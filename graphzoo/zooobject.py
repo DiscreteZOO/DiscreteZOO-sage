@@ -15,6 +15,7 @@ class ZooObject:
     _db = None
     _zooid = None
     _parent = None
+    _sage_parent = None
     _extra_props = None
 
     def __init__(self, cl, d, defNone = [], defVal = {}, setVal = {},
