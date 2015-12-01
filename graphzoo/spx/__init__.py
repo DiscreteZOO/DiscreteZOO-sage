@@ -2,7 +2,9 @@ __all__ = ['fields', 'SPXGraph', 'info']
 
 from sage.rings.integer import Integer
 from .spxgraph import *
+from ..query import makeFields
 from ..zoograph import ZooGraph
+import fields
 
 objspec = {
     "name": "graph_spx",
@@ -27,4 +29,4 @@ objspec = {
 }
 
 SPXGraph._spec = objspec
-import fields
+makeFields(objspec, fields)

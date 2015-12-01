@@ -3,7 +3,9 @@ __all__ = ['fields', 'ZooGraph', 'info']
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
+from ..query import makeFields
 from .zoograph import *
+import fields
 
 objspec = {
     "name": "graph",
@@ -83,4 +85,4 @@ objspec = {
 }
 
 ZooGraph._spec = objspec
-import fields
+makeFields(objspec, fields)
