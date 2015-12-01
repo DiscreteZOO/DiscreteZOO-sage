@@ -160,7 +160,7 @@ class ZooGraph(Graph, ZooObject):
                         name not in cl._spec["skip"]:
                     _graphattr.func_name = name
                     try:
-                        _graphattr.func_doc = attr.func_doc
+                        _graphattr.__doc__ = attr.__doc__
                     except AttributeError:
                         pass
                     return _graphattr
