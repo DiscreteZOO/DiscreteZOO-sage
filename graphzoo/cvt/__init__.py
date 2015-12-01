@@ -2,7 +2,9 @@ __all__ = ['fields', 'CVTGraph', 'info']
 
 from sage.rings.integer import Integer
 from .cvtgraph import *
+from ..query import makeFields
 from ..zoograph import ZooGraph
+import fields
 
 objspec = {
     "name": "graph_cvt",
@@ -29,4 +31,4 @@ objspec = {
 }
 
 CVTGraph._spec = objspec
-import fields
+makeFields(objspec, fields)

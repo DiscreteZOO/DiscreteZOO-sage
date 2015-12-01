@@ -1,3 +1,5 @@
+from types import ModuleType
+
 class QueryObject:
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
@@ -379,6 +381,10 @@ def makeExpression(val):
         return And(*list(val))
     else:
         return Value(val)
+
+def makeFields(spec, module):
+    for k in spec["fields"]:
+        ModuleType.__setattr__(module, k, Column(k))
 
 A = All()
 C = Column

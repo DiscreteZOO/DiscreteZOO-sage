@@ -1,4 +1,4 @@
-__all__ = ["zoograph", "cvt", "sqlite", "query"]
+__all__ = ["zoograph", "cvt", "spx", "sqlite", "query"]
 DEFAULT_DB = None
 from . import *
 
