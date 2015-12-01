@@ -3,7 +3,9 @@ from sage.graphs.graph import Graph
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
+from types import BuiltinFunctionType
 from types import MethodType
+from ..decorators import ZooDecorator
 from ..query import Column
 from ..query import Value
 from ..utility import construct
@@ -13,6 +15,8 @@ from ..utility import lookup
 from ..utility import update
 from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
+
+_override = ZooDecorator(Graph)
 
 class ZooGraph(Graph, ZooObject):
     _props = None
@@ -147,19 +151,20 @@ class ZooGraph(Graph, ZooObject):
                     update(self._props, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
-        try:
-            if isinstance(attr, MethodType) and \
-                    attr.func_globals["__package__"].startswith("sage."):
-                cl = type(self)
-                while cl is not None:
-                    if name in cl._spec["fields"] and \
-                            name not in cl._spec["skip"]:
-                        _graphattr.func_name = name
+        if isinstance(attr, MethodType) and \
+                (isinstance(attr.im_func, BuiltinFunctionType) or
+                    attr.func_globals["__package__"].startswith("sage.")):
+            cl = type(self)
+            while cl is not None:
+                if name in cl._spec["fields"] and \
+                        name not in cl._spec["skip"]:
+                    _graphattr.func_name = name
+                    try:
                         _graphattr.func_doc = attr.func_doc
-                        return _graphattr
-                    cl = cl._parent
-        except AttributeError:
-            pass
+                    except AttributeError:
+                        pass
+                    return _graphattr
+                cl = cl._parent
         return attr
 
     def copy(self, weighted = None, implementation = 'c_graph',
@@ -205,7 +210,19 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return unique_id(self)
 
-    def is_regular(self, k = None, store = False, *largs, **kargs):
+    @_override.derived
+    def is_half_transitive(self, store = False):
+        return (self.is_edge_transitive(store = store) and
+            self.is_vertex_transitive(store = store) and
+            not self.is_arc_transitive(store = store))
+
+    @_override.implied("_props", {"genus": Integer(0)})
+    def is_planar(self, store = False):
+        pass
+
+    @_override.documented
+    def is_regular(self, k = None, *largs, **kargs):
+        store = lookup(kargs, "store", default = False, destroy = True)
         default = len(largs) + len(kargs) == 0
         try:
             if not default:
@@ -220,25 +237,27 @@ class ZooGraph(Graph, ZooObject):
                 if r and k is not None:
                     update(self._props, "average_degree", k)
             return r
-    is_regular.func_doc = Graph.is_regular.func_doc
 
-    def odd_girth(self, store = False, *largs, **kargs):
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            try:
-                if lookup(self._props, "is_bipartite"):
-                    return PlusInfinity()
-            except KeyError:
-                pass
-            return lookup(self._props, "odd_girth")
-        except (KeyError, NotImplementedError):
-            o = Graph.odd_girth(*largs, **kargs)
-            if default and store:
-                update(self._props, "odd_girth", o)
-            return a
-    odd_girth.func_doc = Graph.odd_girth.func_doc
+    @_override.derived
+    def is_semi_symmetric(self, store = False):
+        if not self.is_bipartite(store = store):
+            return False
+        return (self.is_regular(store = store) and
+                self.is_edge_transitive(store = store) and
+                not self.is_vertex_transitive(store = store))
+
+    @_override.implied("_props", {"triangles_count": Integer(0)})
+    def is_triangle_free(self, store = False):
+        pass
+
+    @_override.derived
+    def is_weakly_chordal(self, store = False):
+        return self.is_long_hole_free(store = store) \
+            and self.is_long_antihole_free(store = store)
+
+    @_override.determined("_props", {"is_bipartite": PlusInfinity()})
+    def odd_girth(self, store = False):
+        pass
 
 def canonical_label(graph):
     return graph.canonical_label(algorithm = "sage")
