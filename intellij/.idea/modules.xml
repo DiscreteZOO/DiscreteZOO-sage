@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/../core/GraphZooCore.iml" filepath="$PROJECT_DIR$/../core/GraphZooCore.iml" />
-      <module fileurl="file://$PROJECT_DIR$/../scala-nauty/ScalaNauty.iml" filepath="$PROJECT_DIR$/../scala-nauty/ScalaNauty.iml" />
-    </modules>
-  </component>
-</project>
