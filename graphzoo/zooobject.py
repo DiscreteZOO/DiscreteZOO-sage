@@ -47,12 +47,12 @@ class ZooObject:
         _initdb(self.__class__, self._db)
 
     def _getprops(self, cl):
-        return self.__getattribute__(cl._spec["dict"])
+        return self.__getattribute__(cl._dict)
 
     def _setprops(self, cl, d):
-        props = self.__getattribute__(cl._spec["dict"])
+        props = self.__getattribute__(cl._dict)
         if props is None:
-            self.__setattr__(cl._spec["dict"], d)
+            self.__setattr__(cl._dict, d)
         else:
             props.update(d)
 
@@ -107,8 +107,8 @@ class ZooObject:
         c = obj.__class__
         cl = self.__class__
         while c is not None and not issubclass(cl, c):
-            self.__setattr__(c._spec["dict"], obj._getprops(c))
-            self._extra_props.add(c._spec["dict"])
+            self.__setattr__(c._dict, obj._getprops(c))
+            self._extra_props.add(c._dict)
             c = c._parent
         for p in obj._extra_props:
             try:

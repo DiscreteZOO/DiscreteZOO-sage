@@ -9,6 +9,7 @@ class SPXGraph(ZooGraph):
     _spxprops = None
     _parent = ZooGraph
     _spec = None
+    _dict = "_spxprops"
 
     def __init__(self, data = None, s = None, **kargs):
         ZooObject.__init__(self, SPXGraph, kargs, defNone = ["r"],

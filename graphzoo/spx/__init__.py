@@ -8,7 +8,6 @@ import fields
 
 objspec = {
     "name": "graph_spx",
-    "dict": "_spxprops",
     "primary_key": "id",
     "indices": {"spx_r", "spx_s"},
     "skip": {"id"},

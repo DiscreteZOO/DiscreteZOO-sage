@@ -9,7 +9,6 @@ import fields
 
 objspec = {
     "name": "graph",
-    "dict": "_props",
     "primary_key": "id",
     "indices": {"average_degree", "order"},
     "skip": {"id", "data", "unique_id"},

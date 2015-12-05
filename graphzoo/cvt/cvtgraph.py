@@ -12,6 +12,7 @@ class CVTGraph(ZooGraph):
     _cvtprops = None
     _parent = ZooGraph
     _spec = None
+    _dict = "_cvtprops"
 
     def __init__(self, data = None, index = None, **kargs):
         ZooObject.__init__(self, CVTGraph, kargs, defNone = ["order"],

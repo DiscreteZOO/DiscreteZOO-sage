@@ -8,7 +8,6 @@ import fields
 
 objspec = {
     "name": "graph_cvt",
-    "dict": "_cvtprops",
     "primary_key": "id",
     "indices": {"cvt_index"},
     "skip": {"id"},

@@ -21,6 +21,7 @@ _override = ZooDecorator(Graph)
 class ZooGraph(Graph, ZooObject):
     _props = None
     _spec = None
+    _dict = "_props"
 
     def __init__(self, data = None, **kargs):
         ZooObject.__init__(self, ZooGraph, kargs, defNone = ["vertex_labels"],
@@ -216,7 +217,7 @@ class ZooGraph(Graph, ZooObject):
             self.is_vertex_transitive(store = store) and
             not self.is_arc_transitive(store = store))
 
-    @_override.implied("_props", {"genus": Integer(0)})
+    @_override.implied(_dict, {"genus": Integer(0)})
     def is_planar(self, store = False):
         pass
 
@@ -246,7 +247,7 @@ class ZooGraph(Graph, ZooObject):
                 self.is_edge_transitive(store = store) and
                 not self.is_vertex_transitive(store = store))
 
-    @_override.implied("_props", {"triangles_count": Integer(0)})
+    @_override.implied(_dict, {"triangles_count": Integer(0)})
     def is_triangle_free(self, store = False):
         pass
 
@@ -255,7 +256,7 @@ class ZooGraph(Graph, ZooObject):
         return self.is_long_hole_free(store = store) \
             and self.is_long_antihole_free(store = store)
 
-    @_override.determined("_props", {"is_bipartite": PlusInfinity()})
+    @_override.determined(_dict, {"is_bipartite": PlusInfinity()})
     def odd_girth(self, store = False):
         pass
 
