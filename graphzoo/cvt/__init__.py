@@ -30,4 +30,4 @@ objspec = {
 }
 
 CVTGraph._spec = objspec
-makeFields(objspec, fields)
+makeFields(CVTGraph, fields)

@@ -28,4 +28,4 @@ objspec = {
 }
 
 SPXGraph._spec = objspec
-makeFields(objspec, fields)
+makeFields(SPXGraph, fields)

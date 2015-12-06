@@ -1,8 +1,8 @@
 from sage.rings.integer import Integer
 from ..utility import isinteger
 from ..utility import lookup
+from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
-from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
 
 class SPXGraph(ZooGraph):
@@ -12,9 +12,9 @@ class SPXGraph(ZooGraph):
     _dict = "_spxprops"
 
     def __init__(self, data = None, s = None, **kargs):
-        ZooObject.__init__(self, SPXGraph, kargs, defNone = ["r"],
-                           setVal = {"data": data, "s": s},
-                           setProp = {"spx_r": "r", "spx_s": "s"})
+        ZooObject._init_(self, SPXGraph, kargs, defNone = ["r"],
+                         setVal = {"data": data, "s": s},
+                         setProp = {"spx_r": "r", "spx_s": "s"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):

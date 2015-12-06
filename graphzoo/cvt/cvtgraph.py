@@ -3,9 +3,9 @@ from sage.rings.integer import Integer
 from ..query import Table
 from ..utility import isinteger
 from ..utility import lookup
+from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zoograph import canonical_label
-from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
 
 class CVTGraph(ZooGraph):
@@ -15,9 +15,9 @@ class CVTGraph(ZooGraph):
     _dict = "_cvtprops"
 
     def __init__(self, data = None, index = None, **kargs):
-        ZooObject.__init__(self, CVTGraph, kargs, defNone = ["order"],
-                           setVal = {"data": data, "index": index},
-                           setProp = {"cvt_index": "index"})
+        ZooObject._init_(self, CVTGraph, kargs, defNone = ["order"],
+                         setVal = {"data": data, "index": index},
+                         setProp = {"cvt_index": "index"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
@@ -45,7 +45,7 @@ class CVTGraph(ZooGraph):
         ZooGraph.__init__(self, **d)
 
         if d["order"] is not None:
-            assert(d["order"] == self._props["order"])
+            assert(d["order"] == self._graphprops["order"])
         if self._cvtprops is None:
             self._db_read(cl)
 

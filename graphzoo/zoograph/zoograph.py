@@ -10,41 +10,34 @@ from ..query import Column
 from ..query import Value
 from ..utility import construct
 from ..utility import default
-from ..utility import isinteger
 from ..utility import lookup
 from ..utility import update
-from ..zooobject import ZooInfo
+from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
 
 _override = ZooDecorator(Graph)
 
 class ZooGraph(Graph, ZooObject):
-    _props = None
+    _graphprops = None
     _spec = None
-    _dict = "_props"
+    _parent = ZooObject
+    _dict = "_graphprops"
 
     def __init__(self, data = None, **kargs):
-        ZooObject.__init__(self, ZooGraph, kargs, defNone = ["vertex_labels"],
-                           setVal = {"data": data,
-                                     "immutable": True,
-                                     "data_structure": "static_sparse"})
+        ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
+                         setVal = {"data": data,
+                                   "immutable": True,
+                                   "data_structure": "static_sparse"})
 
     def _init_defaults(self, d):
         default(d, "zooid")
+        default(d, "unique_id")
         default(d, "props")
         default(d, "graph")
         default(d, "name")
         default(d, "cur")
         default(d, "loops")
         default(d, "multiedges")
-
-    def _parse_params(self, d):
-        if isinteger(d["data"]):
-            d["zooid"] = Integer(d["data"])
-            d["data"] = None
-            return True
-        else:
-            return False
 
     def _init_params(self, d):
         if isinstance(d["data"], GenericGraph):
@@ -82,37 +75,47 @@ class ZooGraph(Graph, ZooObject):
             d["name"] = d["graph"].name()
         if isinstance(d["graph"], ZooGraph):
             d["zooid"] = d["graph"]._zooid
+            d["unique_id"] = d["graph"]._unique_id
             self._copy_props(cl, d["graph"])
         if d["cur"] is not None:
             self._compute_props(cl, d)
             for k, v in setProp.items():
                 self._getprops(cl)[k] = d[v]
         elif d["zooid"] is None:
-            uid = unique_id(d["graph"])
-            d["props"] = next(ZooInfo(cl).props(Column("unique_id") == Value(uid),
+            self._unique_id = unique_id(d["graph"])
+            d["props"] = next(ZooInfo(cl).props(Column("unique_id") == Value(self._unique_id),
                                                 cur = d["cur"]))
         self._init_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
 
+    def _compute_props(self, cl, d):
+        for c, s in cl._spec["compute"].items():
+            p = self._getprops(c)
+            for k in s:
+                try:
+                    lookup(p, k)
+                except KeyError:
+                    p[k] = d["graph"].__getattribute__(k)()
+
     def _construct_object(self, cl, d):
-        self._zooid = d["zooid"]
+        ZooObject.__init__(self, **d)
         if d["data"] is None:
             d["data"] = self._db_read(cl)["data"]
-        propname = lookup(self._props, "name", default = None)
+        propname = lookup(self._graphprops, "name", default = None)
         if d["name"]:
-            self._props["name"] = d["name"]
+            self._graphprops["name"] = d["name"]
         elif propname:
             d["name"] = propname
         if propname == '':
-            del self._props["name"]
+            del self._graphprops["name"]
         if d["vertex_labels"] is not None:
             d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
                                                  inplace = False)
         if d["loops"] is None:
-            d["loops"] = self._props["number_of_loops"] > 0
+            d["loops"] = self._graphprops["number_of_loops"] > 0
         if d["multiedges"] is None:
-            d["multiedges"] = self._props["has_multiple_edges"]
+            d["multiedges"] = self._graphprops["has_multiple_edges"]
         construct(Graph, self, d)
 
     def _repr_generic(self):
@@ -145,11 +148,11 @@ class ZooGraph(Graph, ZooObject):
             try:
                 if not default:
                     raise NotImplementedError
-                return lookup(self._props, name)
+                return lookup(self._graphprops, name)
             except (KeyError, NotImplementedError):
                 a = Graph.__getattribute__(self, name)(*largs, **kargs)
                 if default and store:
-                    update(self._props, name, a)
+                    update(self._graphprops, name, a)
                 return a
         attr = Graph.__getattribute__(self, name)
         if isinstance(attr, MethodType) and \
@@ -201,15 +204,16 @@ class ZooGraph(Graph, ZooObject):
 
     def data(self):
         try:
-            return lookup(self._props, "data")
+            return lookup(self._graphprops, "data")
         except (KeyError, TypeError):
             return data(self)
 
     def unique_id(self):
         try:
-            return lookup(self._props, "unique_id")
-        except (KeyError, TypeError):
-            return unique_id(self)
+            return ZooObject.unique_id(self)
+        except NotImplementedError:
+            self._unique_id = unique_id(self)
+            return self._unique_id
 
     @_override.derived
     def is_half_transitive(self, store = False):

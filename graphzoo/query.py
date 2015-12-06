@@ -382,9 +382,15 @@ def makeExpression(val):
     else:
         return Value(val)
 
-def makeFields(spec, module):
-    for k in spec["fields"]:
+def makeFields(cl, module):
+    for k in cl._spec["fields"]:
         ModuleType.__setattr__(module, k, Column(k))
+    if cl._parent is not None:
+        for k in dir(cl._parent._fields):
+            if not k.startswith("_"):
+                ModuleType.__setattr__(module, k,
+                            ModuleType.__getattribute__(cl._parent._fields, k))
+    cl._fields = module
 
 A = All()
 C = Column
