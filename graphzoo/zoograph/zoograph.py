@@ -15,7 +15,7 @@ from ..utility import update
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
 
-_override = ZooDecorator(Graph)
+override = ZooDecorator(Graph)
 
 class ZooGraph(Graph, ZooObject):
     _graphprops = None
@@ -222,17 +222,17 @@ class ZooGraph(Graph, ZooObject):
             self._unique_id = unique_id(self)
             return self._unique_id
 
-    @_override.derived
+    @override.derived
     def is_half_transitive(self, store = False):
         return (self.is_edge_transitive(store = store) and
             self.is_vertex_transitive(store = store) and
             not self.is_arc_transitive(store = store))
 
-    @_override.implied(_dict, {"genus": Integer(0)})
+    @override.implied(_dict, {"genus": Integer(0)})
     def is_planar(self, store = False):
         pass
 
-    @_override.documented
+    @override.documented
     def is_regular(self, k = None, *largs, **kargs):
         store = lookup(kargs, "store", default = False, destroy = True)
         default = len(largs) + len(kargs) == 0
@@ -250,7 +250,7 @@ class ZooGraph(Graph, ZooObject):
                     update(self._graphprops, "average_degree", k)
             return r
 
-    @_override.derived
+    @override.derived
     def is_semi_symmetric(self, store = False):
         if not self.is_bipartite(store = store):
             return False
@@ -258,16 +258,16 @@ class ZooGraph(Graph, ZooObject):
                 self.is_edge_transitive(store = store) and
                 not self.is_vertex_transitive(store = store))
 
-    @_override.implied(_dict, {"triangles_count": Integer(0)})
+    @override.implied(_dict, {"triangles_count": Integer(0)})
     def is_triangle_free(self, store = False):
         pass
 
-    @_override.derived
+    @override.derived
     def is_weakly_chordal(self, store = False):
         return self.is_long_hole_free(store = store) \
             and self.is_long_antihole_free(store = store)
 
-    @_override.determined(_dict, {"is_bipartite": PlusInfinity()})
+    @override.determined(_dict, {"is_bipartite": PlusInfinity()})
     def odd_girth(self, store = False):
         pass
 

@@ -6,6 +6,7 @@ from ..utility import lookup
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zoograph import canonical_label
+from ..zoograph import override
 from ..zooobject import ZooObject
 
 class CVTGraph(ZooGraph):
@@ -55,6 +56,38 @@ class CVTGraph(ZooGraph):
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")
+
+    @override.derived
+    def is_moebius_ladder(self, store = False):
+        g = self.girth(store = store)
+        if g != 4:
+            return False
+        o = self.order(store = store)
+        b = self.is_bipartite(store = store)
+        if o == 6:
+            return b
+        d = self.diameter(store = store)
+        og = self.odd_girth(store = store)
+        return ((o % 4 == 0 and 4*d == o and og == 2*d+1) or
+                    (o % 4 == 2 and 4*d == o+2 and b)) and \
+                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
+
+    @override.derived
+    def is_prism(self, store = False):
+        o = self.order(store = store)
+        b = self.is_bipartite(store = store)
+        if o == 6:
+            return not b
+        if o == 8:
+            return b
+        g = self.girth(store = store)
+        if g != 4:
+            return False
+        d = self.diameter(store = store)
+        og = self.odd_girth(store = store)
+        return ((o % 4 == 0 and 4*d == o+4 and b) or
+                    (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
+                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
 info = ZooInfo(CVTGraph)
 
