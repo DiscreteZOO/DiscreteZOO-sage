@@ -84,13 +84,13 @@ class ZooGraph(Graph, ZooObject):
                 d["props"] = next(ZooInfo(cl).props(Column("unique_id") == \
                                                         Value(d["unique_id"]),
                                                     cur = d["cur"]))
-        except StopIteration as ex:
+        except StopIteration:
             if d["cur"] is not None:
                 self._compute_props(cl, d)
                 for k, v in setProp.items():
                     self._getprops(cl)[k] = d[v]
             else:
-                raise ex
+                raise KeyError("graph not found in database")
 
         self._init_props(cl, d)
         d["data"] = d["graph"]
