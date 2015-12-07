@@ -37,6 +37,9 @@ class ZooEntity:
         else:
             props.update(d)
 
+    def _init_skip(self, d):
+        pass
+
     def _init_props(self, cl, d):
         if d["props"] is not None:
             self._init_skip(d)

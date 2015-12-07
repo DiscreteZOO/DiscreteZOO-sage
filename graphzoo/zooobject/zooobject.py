@@ -34,8 +34,8 @@ class ZooObject(ZooEntity):
         ZooEntity.__init__(self, d["db"])
         if not cl._parse_params(self, d):
             self._init_params(d)
-        cl._init_object(self, cl, d, setProp)
         self._default_props(cl)
+        cl._init_object(self, cl, d, setProp)
         if d["cur"] is not None:
             self._db_write(cl, d["cur"])
 
@@ -58,13 +58,16 @@ class ZooObject(ZooEntity):
     def _init_params(self, d):
         pass
 
-    def _init_skip(self, d):
-        pass
-
     def _init_object(self, cl, d, setProp = {}):
-        self._zooid = d["zooid"]
-        self._unique_id = d["unique_id"]
-        self._unique_id = self._db_read(cl)["unique_id"]
+        if self._zooid is None:
+            self._zooid = d["zooid"]
+        if self._unique_id is None:
+            self._unique_id = d["unique_id"]
+        if self._zooid is None or self._unique_id is None:
+            if d["cur"] is None:
+                r = self._db_read(cl)
+                self._zooid = r["id"]
+                self._unique_id = r["unique_id"]
 
     def _default_props(self, cl):
         c = cl

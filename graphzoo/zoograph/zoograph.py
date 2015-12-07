@@ -75,16 +75,23 @@ class ZooGraph(Graph, ZooObject):
             d["name"] = d["graph"].name()
         if isinstance(d["graph"], ZooGraph):
             d["zooid"] = d["graph"]._zooid
-            d["unique_id"] = d["graph"]._unique_id
+            d["unique_id"] = d["graph"].unique_id()
             self._copy_props(cl, d["graph"])
-        if d["cur"] is not None:
-            self._compute_props(cl, d)
-            for k, v in setProp.items():
-                self._getprops(cl)[k] = d[v]
-        elif d["zooid"] is None:
-            self._unique_id = unique_id(d["graph"])
-            d["props"] = next(ZooInfo(cl).props(Column("unique_id") == Value(self._unique_id),
-                                                cur = d["cur"]))
+        else:
+            d["unique_id"] = unique_id(d["graph"])
+        try:
+            if d["zooid"] is None:
+                d["props"] = next(ZooInfo(cl).props(Column("unique_id") == \
+                                                        Value(d["unique_id"]),
+                                                    cur = d["cur"]))
+        except StopIteration as ex:
+            if d["cur"] is not None:
+                self._compute_props(cl, d)
+                for k, v in setProp.items():
+                    self._getprops(cl)[k] = d[v]
+            else:
+                raise ex
+
         self._init_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
@@ -232,15 +239,15 @@ class ZooGraph(Graph, ZooObject):
         try:
             if not default:
                 raise NotImplementedError
-            r = lookup(self._props, "is_regular")
+            r = lookup(self._graphprops, "is_regular")
             return r and (True if k is None
                           else k == self.average_degree(store = store))
         except (KeyError, NotImplementedError):
             r = Graph.is_regular(self, k, *largs, **kargs)
             if default and store:
-                update(self._props, "is_regular", r)
+                update(self._graphprops, "is_regular", r)
                 if r and k is not None:
-                    update(self._props, "average_degree", k)
+                    update(self._graphprops, "average_degree", k)
             return r
 
     @_override.derived

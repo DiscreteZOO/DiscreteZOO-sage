@@ -230,6 +230,12 @@ class SQLDB(DB):
                 ret = True
             if cur is None:
                 cur = self.cursor()
+            print 'INSERT INTO %s (%s) VALUES (%s)%s' % \
+                            (self.quoteIdent(table),
+                                ', '.join([self.quoteIdent(c) for c in cols]),
+                                ', '.join([self.data_string] * len(cols)),
+                                self.returning(id))
+            print [self.to_db_type(row[c]) for c in cols]
             cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
                             (self.quoteIdent(table),
                                 ', '.join([self.quoteIdent(c) for c in cols]),

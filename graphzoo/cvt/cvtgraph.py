@@ -46,7 +46,7 @@ class CVTGraph(ZooGraph):
 
         if d["order"] is not None:
             assert(d["order"] == self._graphprops["order"])
-        if self._cvtprops is None:
+        if len(self._cvtprops) == 0:
             self._db_read(cl)
 
     def _repr_generic(self):

@@ -41,7 +41,7 @@ class SPXGraph(ZooGraph):
 
         if d["r"] is not None and d["s"] is not None:
             assert(d["r"] * 2**(d["s"]+1) == self._props["order"])
-        if self._spxprops is None:
+        if len(self._spxprops) == 0:
             self._db_read(cl)
 
     def _repr_generic(self):
