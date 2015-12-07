@@ -145,7 +145,7 @@ class ZooGraph(Graph, ZooObject):
         if self.name() != '':
             name = self.name() + ": " + name
         else:
-            name = name.capitalize()
+            name = name[0].capitalize() + name[1:]
         return name
 
     def __getattribute__(self, name):
