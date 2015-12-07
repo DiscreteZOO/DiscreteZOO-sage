@@ -49,9 +49,9 @@ class ZooGraph(Graph, ZooObject):
 
     def _init_skip(self, d):
         if d["props"] is not None:
-            if "id" in d["props"]:
-                d["zooid"] = d["props"]["id"]
-                del d["props"]["id"]
+            if "zooid" in d["props"]:
+                d["zooid"] = d["props"]["zooid"]
+                del d["props"]["zooid"]
             if "data" in d["props"]:
                 d["data"] = d["props"]["data"]
                 del d["props"]["data"]

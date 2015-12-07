@@ -7,12 +7,12 @@ import fields
 
 objspec = {
     "name": "object",
-    "primary_key": "id",
+    "primary_key": "zooid",
     "indices": {},
-    "skip": {"id", "unique_id"},
+    "skip": {"unique_id", "zooid"},
     "fields" : {
-        "id": (Integer, {"autoincrement"}),
-        "unique_id": (str, {"unique"})
+        "unique_id": (str, {"unique"}),
+        "zooid": (Integer, {"autoincrement"})
     },
     "compute": {},
     "default": {}

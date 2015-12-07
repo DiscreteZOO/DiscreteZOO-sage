@@ -10,9 +10,9 @@ import fields
 
 objspec = {
     "name": "graph",
-    "primary_key": "id",
+    "primary_key": "zooid",
     "indices": {"average_degree", "order"},
-    "skip": {"id", "data"},
+    "skip": {"data", "zooid"},
     "fields" : {
         #"automorphism_group": ZooGroup,
         "average_degree": Rational,
@@ -31,7 +31,6 @@ objspec = {
         "genus": Integer,
         "girth": Integer,
         "has_multiple_edges": bool,
-        "id": (ZooObject, {"primary_key"}),
         "is_arc_transitive": bool,
         "is_asteroidal_triple_free": bool,
         "is_bipartite": bool,
@@ -76,7 +75,8 @@ objspec = {
         "vertex_connectivity": Integer,
         "wiener_index": Integer,
         "zagreb1_index": Integer,
-        "zagreb2_index": Integer
+        "zagreb2_index": Integer,
+        "zooid": (ZooObject, {"primary_key"})
     },
     "compute": {ZooGraph: {"diameter", "girth", "has_multiple_edges",
                            "name", "number_of_loops", "order", "size"}},

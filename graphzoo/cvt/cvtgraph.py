@@ -40,7 +40,7 @@ class CVTGraph(ZooGraph):
                          by = {cl._spec["primary_key"]})
             r = self._db_read(cl._parent, join, {"order": d["order"],
                                                  "cvt_index": d["index"]})
-            d["zooid"] = r["id"]
+            d["zooid"] = r["zooid"]
             d["graph"] = None
         ZooGraph.__init__(self, **d)
 

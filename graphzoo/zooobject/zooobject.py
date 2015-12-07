@@ -66,7 +66,7 @@ class ZooObject(ZooEntity):
         if self._zooid is None or self._unique_id is None:
             if d["cur"] is None:
                 r = self._db_read(cl)
-                self._zooid = r["id"]
+                self._zooid = r["zooid"]
                 self._unique_id = r["unique_id"]
 
     def _default_props(self, cl):
@@ -114,7 +114,7 @@ class ZooObject(ZooEntity):
                         raise KeyError(query)
                     self._zooid = r[0]
                 raise IndexError("object id not given")
-            query = {"id": self._zooid}
+            query = {"zooid": self._zooid}
         t = Table(cl._spec["name"])
         if join is None:
             join = t
@@ -145,12 +145,12 @@ class ZooObject(ZooEntity):
             cl._db_read(self)
             cl = cl._parent
 
-    def id(self):
-        return self._zooid
-
     def unique_id(self):
         if self._unique_id is None:
             raise NotImplementedError
         return self._unique_id
+
+    def zooid(self):
+        return self._zooid
 
 info = ZooInfo(ZooObject)

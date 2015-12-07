@@ -35,7 +35,7 @@ class SPXGraph(ZooGraph):
         if d["r"] is not None and d["s"] is not None:
             r = self._db_read(cl, query = {"spx_r": d["r"],
                                            "spx_s": d["s"]})
-            d["zooid"] = r["id"]
+            d["zooid"] = r["zooid"]
             d["graph"] = None
         ZooGraph.__init__(self, **d)
 

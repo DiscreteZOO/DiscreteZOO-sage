@@ -8,13 +8,13 @@ import fields
 
 objspec = {
     "name": "graph_spx",
-    "primary_key": "id",
+    "primary_key": "zooid",
     "indices": {"spx_r", "spx_s"},
-    "skip": {"id"},
+    "skip": {"zooid"},
     "fields" : {
-        "id": (ZooGraph, {"primary_key"}),
         "spx_r": Integer,
-        "spx_s": Integer
+        "spx_s": Integer,
+        "zooid": (ZooGraph, {"primary_key"})
     },
     "compute": {},
     "default": {
