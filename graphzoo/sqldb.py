@@ -154,6 +154,8 @@ class SQLDB(DB):
             if isinstance(exp.column, basestring):
                 sql = self.quoteIdent(exp.column)
                 data = []
+                if exp.table is not None:
+                    sql = "%s.%s" % (self.quoteIdent(exp.table), sql)
             else:
                 sql, data = self.makeExpression(exp.column)
             if alias and exp.alias is not None:

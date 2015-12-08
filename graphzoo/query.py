@@ -47,7 +47,7 @@ class Expression(QueryObject):
     def __init__(self, *args, **kargs):
         raise NotImplementedError
 
-    def getColumns():
+    def getTables():
         raise NotImplementedError
 
     def __lt__(self, other):
@@ -157,7 +157,7 @@ class Value(Expression):
     def __init__(self, value):
         self.value = value
 
-    def getColumns(self):
+    def getTables(self):
         return set()
 
     def __str__(self):
@@ -168,26 +168,30 @@ class Value(Expression):
 
 class Column(Expression):
     column = None
+    table = None
     alias = None
 
-    def __init__(self, column, alias = None):
+    def __init__(self, column, table = None, alias = None):
         self.column = column
+        self.table = table
         if alias is True:
             self.alias = str(column)
         else:
             self.alias = alias
 
-    def getColumns(self):
+    def getTables(self):
         if isinstance(self.column, Expression):
-            return self.column.getColumns()
+            return self.column.getTables()
         else:
-            return {self.column}
+            return {self.table}
 
     def __str__(self):
-        if self.alias is None:
-            return '%s' % self.column
-        else:
-            return '%s->%s' % (self.column, self.alias)
+        column = '%s' % self.column
+        if self.table is not None:
+            column = '%s.%s' % (self.table, column)
+        if self.alias is not None:
+            column = '%s->%s' % (column, self.alias)
+        return column
 
 class BinaryOp(Expression):
     left = None
@@ -198,8 +202,8 @@ class BinaryOp(Expression):
         self.left = makeExpression(left)
         self.right = makeExpression(right)
 
-    def getColumns(self):
-        return self.left.getColumns().union(self.right.getColumns())
+    def getTables(self):
+        return self.left.getTables().union(self.right.getTables())
 
     def __str__(self):
         return "(%s) %s (%s)" % (self.left, self.op, self.right)
@@ -279,8 +283,8 @@ class UnaryOp(Expression):
     def __init__(self, exp):
         self.exp = makeExpression(exp)
 
-    def getColumns(self):
-        return exp.getColumns()
+    def getTables(self):
+        return exp.getTables()
 
     def __str__(self):
         return "%s (%s)" % (self.op, self.exp)
@@ -333,11 +337,11 @@ class Count(Expression):
         self.column = column
         self.distinct = distinct
 
-    def getColumns(self):
+    def getTables(self):
         if isinstance(self.column, Expression):
-            return self.column.getColumns()
+            return self.column.getTables()
         else:
-            return {self.column}
+            return set()
 
     def __str__(self):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
@@ -383,13 +387,13 @@ def makeExpression(val):
         return Value(val)
 
 def makeFields(cl, module):
-    for k in cl._spec["fields"]:
-        ModuleType.__setattr__(module, k, Column(k))
     if cl._parent is not None:
         for k in dir(cl._parent._fields):
             if not k.startswith("_"):
                 ModuleType.__setattr__(module, k,
                             ModuleType.__getattribute__(cl._parent._fields, k))
+    for k in cl._spec["fields"]:
+        ModuleType.__setattr__(module, k, Column(k, table = cl._spec["name"]))
     cl._fields = module
 
 A = All()
