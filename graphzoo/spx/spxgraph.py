@@ -40,7 +40,7 @@ class SPXGraph(ZooGraph):
         ZooGraph.__init__(self, **d)
 
         if d["r"] is not None and d["s"] is not None:
-            assert(d["r"] * 2**(d["s"]+1) == self._props["order"])
+            assert(d["r"] * 2**(d["s"]+1) == self._graphprops["order"])
         if len(self._spxprops) == 0:
             self._db_read(cl)
 
