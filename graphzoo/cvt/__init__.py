@@ -16,7 +16,7 @@ objspec = {
         "is_moebius_ladder": bool,
         "is_prism": bool,
         "is_spx": bool,
-        "zooid": (ZooGraph, {"primary_key"})
+        "zooid": ZooGraph
     },
     "compute": {},
     "default": {

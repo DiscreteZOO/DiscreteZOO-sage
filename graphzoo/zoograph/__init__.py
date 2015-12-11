@@ -76,7 +76,7 @@ objspec = {
         "wiener_index": Integer,
         "zagreb1_index": Integer,
         "zagreb2_index": Integer,
-        "zooid": (ZooObject, {"primary_key"})
+        "zooid": ZooObject
     },
     "compute": {ZooGraph: {"diameter", "girth", "has_multiple_edges",
                            "name", "number_of_loops", "order", "size"}},

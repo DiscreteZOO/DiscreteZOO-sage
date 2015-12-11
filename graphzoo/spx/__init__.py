@@ -14,7 +14,7 @@ objspec = {
     "fields" : {
         "spx_r": Integer,
         "spx_s": Integer,
-        "zooid": (ZooGraph, {"primary_key"})
+        "zooid": ZooGraph
     },
     "compute": {},
     "default": {

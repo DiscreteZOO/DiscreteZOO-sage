@@ -205,12 +205,40 @@ class SQLDB(DB):
 
     def init_table(self, spec, commit = False):
         try:
+            pkey = spec["primary_key"]
+            if isinstance(pkey, set):
+                pkey = sorted(pkey)
+            elif not isinstance(pkey, list):
+                pkey = [pkey]
+            idxs = [k[0] if isinstance(k, tuple) else k
+                    for k in spec["indices"]]
+            idxs = [sorted(k) if isinstance(k, set)
+                            else (k if isinstance(k, list) else [k])
+                    for k in idxs]
+            if isinstance(spec["indices"], set):
+                idxs = sorted(idxs)
+            idxs = sum(idxs, [])
+            cols = sorted(pkey)
+            cols += sorted([k for k, v in spec['fields'].items()
+                            if isinstance(v, tuple) and k not in cols])
+            cols += [idxs[i] for i in range(len(idxs))
+                     if idxs[i] not in (cols + idxs[:i])]
+            cols += sorted([k for k, v in spec['fields'].items()
+                            if k not in cols])
+            colspec = ['%s %s' % (self.quoteIdent(k),
+                                            self.makeType(spec['fields'][k]))
+                                        for k in cols]
+            if len(pkey) == 1:
+                pkeytype = spec['fields'][pkey[0]]
+                if isinstance(pkeytype, tuple) \
+                        and "autoincrement" in pkeytype[1]:
+                    pkey = []
+            if len(pkey) > 0:
+                colspec += ["PRIMARY KEY (%s)" % ', '.join(pkey)]
             cur = self.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
-                            (self.quoteIdent(spec['name']),
-                            ', '.join(['%s %s' % (self.quoteIdent(k),
-                                                    self.makeType(v))
-                                        for k, v in spec['fields'].items()])))
+                                                (self.quoteIdent(spec['name']),
+                                                 ', '.join(colspec)))
             for col in spec['indices']:
                 self.createIndex(cur, spec['name'], col)
             cur.close()
