@@ -10,14 +10,17 @@ class Table(QueryObject):
     tables = []
 
     def __init__(self, *args, **kargs):
-        self.tables = [{"table": t,
-                        "alias": t,
-                        "left": False,
-                        "by": set()} for t in args] \
-                    + [{"table": t,
-                        "alias": a,
-                        "left": False,
-                        "by": set()} for a, t in kargs]
+        if len(args) == 1 and isinstance(args[0], Table):
+            self.tables = args[0].tables[:]
+        else:
+            self.tables = [{"table": t,
+                            "alias": t,
+                            "left": False,
+                            "by": set()} for t in args] \
+                        + [{"table": t,
+                            "alias": a,
+                            "left": False,
+                            "by": set()} for a, t in kargs]
 
     def join(self, table, by = set(), left = False, alias = None, **kargs):
         if len(kargs) == 1:
@@ -289,6 +292,16 @@ class BitwiseXOr(BinaryOp):
 class Concatenate(BinaryOp):
     op = "++"
 
+class In(BinaryOp):
+    op = "in"
+
+    def __init__(self, left, right):
+        BinaryOp.__init__(self, left, right)
+        if isinstance(self.right, Column) and self.right.join is not None:
+            self.right = Subquery([self.right.column], Table(self.right.table),
+                                  cond = Column(self.right.by, self.right.join)
+                                    == Column(self.right.by, self.right.table))
+
 class Like(BinaryOp):
     op = "like"
     case = None
@@ -403,6 +416,53 @@ class Ascending(Order):
 
 class Descending(Order):
     order = False
+
+class Subquery(Expression):
+    columns = None
+    table = None
+    cond = None
+    groupby = None
+    orderby = None
+    limit = None
+    offset = None
+
+    def __init__(self, columns, table, cond = None, groupby = None,
+                 orderby = None, limit = None, offset = None):
+        self.columns = columns
+        self.table = table
+        self.cond = cond
+        self.groupby = groupby
+        self.orderby = orderby
+        self.limit = limit
+        self.offset = offset
+
+    def __str__(self):
+        out = "Columns %s from table %s" % (self.columns, self.table)
+        if self.cond is not None:
+            out = "%s where (%s)" % (out, self.cond)
+        if self.groupby is not None:
+            out = "%s grouped by %s" % (out, self.groupby)
+        if self.orderby is not None:
+            out = "%s ordered by %s" % (out, self.orderby)
+        if self.limit is not None:
+            out = "%s with limit %d" % (out, self.limit)
+        if self.offset is not None:
+            out = "%s offset by %d" % (out, self.offset)
+        return out
+
+    def getTables(self):
+        t = self.table.getTables()
+        exptables = {col.getTables() for col in self.columns}
+        exptables = {tbl if isinstance(tbl, tuple) else (tbl, None, None)
+                     for tbl in exptables}
+        if self.cond is not None:
+            exptables.update(self.cond.getTables())
+        if self.groupby is not None:
+            exptables.update(self.groupby.getTables())
+        if self.orderby is not None:
+            exptables.update(self.orderby.getTables())
+        return {(table, join, by) for table, join, by in exptables
+                if table not in t}
 
 def makeExpression(val):
     if isinstance(val, Expression):

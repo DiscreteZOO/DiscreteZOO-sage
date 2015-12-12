@@ -71,7 +71,8 @@ class SQLDB(DB):
         query.BitwiseAnd: '&',
         query.BitwiseOr: '|',
         query.Concatenate: '||',
-        query.Like: 'LIKE'
+        query.Like: 'LIKE',
+        query.In: 'IN'
     }
 
     unaryops = {
@@ -186,6 +187,11 @@ class SQLDB(DB):
             else:
                 sql = 'COUNT(%s)' % sql
             return (sql, data)
+        elif isinstance(exp, query.Subquery):
+            return self.query(exp.columns, exp.table, cond = exp.cond,
+                              groupby = exp.groupby, orderby = exp.orderby,
+                              limit = exp.limit, offset = exp.offset,
+                              subquery = True)
         else:
             raise NotImplementedError
 
@@ -284,7 +290,8 @@ class SQLDB(DB):
         return cur.lastrowid
 
     def query(self, columns, table, cond = None, groupby = None,
-              orderby = None, limit = None, offset = None, cur = None):
+              orderby = None, limit = None, offset = None, cur = None,
+              subquery = False):
         try:
             t = self.makeTable(table)
             cols = [self.makeExpression(col, alias = True) for col in columns]
@@ -322,9 +329,12 @@ class SQLDB(DB):
                 l = ' LIMIT %d' % limit
                 if offset is not None:
                     l += ' OFFSET %d' % offset
+            sql = 'SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l)
+            if subquery:
+                return (sql, data)
             if cur is None:
                 cur = self.cursor()
-            cur.execute('SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l), data)
+            cur.execute(sql, data)
             return cur
         except self.exceptions as ex:
             self.handle_exception(ex)

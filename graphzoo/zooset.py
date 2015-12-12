@@ -40,7 +40,7 @@ class _ZooSet(dict, ZooEntity):
         if name == self._spec["primary_key"]:
             return self.values()
         if name not in self._ordering:
-            raise KeyError(name)
+            raise AttributeError(name)
         if not self._use_tuples:
             return {t for t in self}
         i = self._ordering.index(name)

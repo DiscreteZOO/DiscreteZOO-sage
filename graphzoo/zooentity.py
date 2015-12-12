@@ -3,6 +3,8 @@ from query import A as All
 from query import And
 from query import Column
 from query import Count
+from query import In
+from query import Subquery
 from query import Table
 from utility import lookup
 from utility import todict
@@ -107,8 +109,10 @@ class ZooInfo:
             for table, j, b in cond.getTables():
                 if table not in cols:
                     t = t.join(table, by = b)
-            cur = db.query(columns = [Count(All)] + groupbycols, table = t,
-                           cond = cond, groupby = groupby)
+            cur = db.query(columns = [Count(Column(self.cl._spec["primary_key"],
+                                                   self.cl._spec["name"]),
+                                            distinct = True)] + groupbycols,
+                           table = t, cond = cond, groupby = groupby)
             n = cur.fetchall()
             cur.close()
             return tomultidict(n, groupbycols)
@@ -132,13 +136,24 @@ class ZooInfo:
             limit = lookup(kargs, "limit", default = None, destroy = True)
             offset = lookup(kargs, "offset", default = None, destroy = True)
             cond = And(*largs, **kargs)
+            ct = cond.getTables()
             cols = t.getTables()
-            for table, j, b in cond.getTables():
-                if table not in cols:
-                    t = t.join(table, by = b)
-            return db.query(columns = [Table(table) for table in cols],
-                            table = t, cond = cond, orderby = orderby,
-                            limit = limit, offset = offset, cur = cur)
+            columns = [Table(table) for table in cols]
+            if cols.issuperset({tbl for tbl, j, b in ct}):
+                return db.query(columns = columns, table = t, cond = cond,
+                                orderby = orderby, limit = limit,
+                                offset = offset, cur = cur)
+            else:
+                tt = Table(t)
+                for tbl, j, b in ct:
+                    if tbl not in cols:
+                        t = t.join(tbl, by = b)
+                c = Column(self.cl._spec["primary_key"], self.cl._spec["name"])
+                return db.query(columns = columns, table = tt,
+                                cond = In(c, Subquery(columns = [c], table = t,
+                                                      cond = cond)),
+                                orderby = orderby, limit = limit,
+                                offset = offset, cur = cur)
         else:
             return ZooInfo(self.cl._parent).query(db = db, join = t,
                                         by = {self.cl._spec["primary_key"]},
