@@ -11,6 +11,7 @@ from utility import tomultidict
 class ZooEntity:
     _spec = None
     _db = None
+    _dict = None
     _fields = None
 
     def __init__(self, db):

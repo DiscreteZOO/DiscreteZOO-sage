@@ -145,6 +145,13 @@ class ZooObject(ZooEntity):
             cl._db_read(self)
             cl = cl._parent
 
+    def alias(self):
+        try:
+            return lookup(self._zooprops, "alias")
+        except KeyError:
+            self._zooprops["alias"] = ZooObject._spec["fields"]["alias"](self._zooid)
+            return self._zooprops["alias"]
+
     def unique_id(self):
         if self._unique_id is None:
             raise NotImplementedError

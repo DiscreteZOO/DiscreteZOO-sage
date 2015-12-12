@@ -6,7 +6,9 @@ from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from db import DB
+from utility import enlist
 from utility import int_or_real
+from zooentity import ZooEntity
 from zooobject import ZooObject
 
 class SQLDB(DB):
@@ -205,26 +207,25 @@ class SQLDB(DB):
 
     def init_table(self, spec, commit = False):
         try:
-            pkey = spec["primary_key"]
-            if isinstance(pkey, set):
-                pkey = sorted(pkey)
-            elif not isinstance(pkey, list):
-                pkey = [pkey]
+            pkey = enlist(spec["primary_key"])
             idxs = [k[0] if isinstance(k, tuple) else k
                     for k in spec["indices"]]
-            idxs = [sorted(k) if isinstance(k, set)
-                            else (k if isinstance(k, list) else [k])
-                    for k in idxs]
+            idxs = [enlist(k) for k in idxs]
             if isinstance(spec["indices"], set):
                 idxs = sorted(idxs)
             idxs = sum(idxs, [])
+            ext = {k: v for k, v in [(kk, vv[0] if isinstance(vv, tuple)
+                                                else vv)
+                                     for kk, vv in spec['fields'].items()]
+                    if issubclass(v, ZooEntity) and
+                        not issubclass(v, ZooObject)}
             cols = sorted(pkey)
             cols += sorted([k for k, v in spec['fields'].items()
                             if isinstance(v, tuple) and k not in cols])
             cols += [idxs[i] for i in range(len(idxs))
                      if idxs[i] not in (cols + idxs[:i])]
-            cols += sorted([k for k, v in spec['fields'].items()
-                            if k not in cols])
+            cols += sorted([k for k in spec['fields']
+                            if k not in cols + ext.keys()])
             colspec = ['%s %s' % (self.quoteIdent(k),
                                             self.makeType(spec['fields'][k]))
                                         for k in cols]
@@ -242,6 +243,8 @@ class SQLDB(DB):
             for idx in spec['indices']:
                 self.createIndex(cur, spec['name'], idx)
             cur.close()
+            for c in ext.values():
+                self.init_table(c._spec, commit = False)
             if commit:
                 self.db.commit()
         except self.exceptions as ex:
@@ -260,12 +263,6 @@ class SQLDB(DB):
                 ret = True
             if cur is None:
                 cur = self.cursor()
-            print 'INSERT INTO %s (%s) VALUES (%s)%s' % \
-                            (self.quoteIdent(table),
-                                ', '.join([self.quoteIdent(c) for c in cols]),
-                                ', '.join([self.data_string] * len(cols)),
-                                self.returning(id))
-            print [self.to_db_type(row[c]) for c in cols]
             cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
                             (self.quoteIdent(table),
                                 ', '.join([self.quoteIdent(c) for c in cols]),

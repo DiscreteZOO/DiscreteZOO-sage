@@ -3,6 +3,7 @@ import os
 import shutil
 import sqlite3
 from sqldb import SQLDB
+from utility import enlist
 
 DBFILE = os.path.join(os.path.expanduser('~'), '.graphzoo', 'graphzoo.db')
 
@@ -31,10 +32,7 @@ class SQLiteDB(SQLDB):
         else:
             cols = idx
             cons = set()
-        if isinstance(cols, set):
-            cols = sorted(cols)
-        elif not isinstance(cols, list):
-            cols = [cols]
+        cols = enlist(cols)
         idxname = self.quoteIdent('idx_%s_%s' % (name,
                                                  '_'.join(cols + list(cons))))
         idxcols = ', '.join(self.quoteIdent(col) for col in cols)

@@ -6,6 +6,7 @@ from query import Like
 from query import Or
 from query import Power
 from sqldb import SQLDB
+from utility import enlist
 from utility import lookup
 
 class PostgreSQLDB(SQLDB):
@@ -72,10 +73,7 @@ class PostgreSQLDB(SQLDB):
             else:
                 cols = idx
                 cons = set()
-            if isinstance(cols, set):
-                cols = sorted(cols)
-            elif not isinstance(cols, list):
-                cols = [cols]
+            cols = enlist(cols)
             idxname = self.quoteIdent('idx_%s_%s' % (name,
                                                 '_'.join(cols + list(cons))))
             cur.execute('SELECT to_regclass(%s)', ['public.%s' % idxname])
