@@ -11,7 +11,7 @@ import fields
 objspec = {
     "name": "graph",
     "primary_key": "zooid",
-    "indices": {"average_degree", "order"},
+    "indices": ["order", "average_degree"],
     "skip": {"data", "zooid"},
     "fields" : {
         #"automorphism_group": ZooGroup,

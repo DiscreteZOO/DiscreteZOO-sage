@@ -60,18 +60,30 @@ class PostgreSQLDB(SQLDB):
             c = set()
         if 'autoincrement' in c:
             t = enumerate
+            c = set(c)
             c.remove('autoincrement')
             c.add('primary_key')
         return SQLDB.makeType(self, (t, c))
 
-    def createIndex(self, cur, name, col):
+    def createIndex(self, cur, name, idx):
         try:
-            idxname = 'idx_%s_%s' % (name, col)
+            if isinstance(idx, tuple):
+                cols, cons = idx
+            else:
+                cols = idx
+                cons = set()
+            if isinstance(cols, set):
+                cols = sorted(cols)
+            elif not isinstance(cols, list):
+                cols = [cols]
+            idxname = self.quoteIdent('idx_%s_%s' % (name,
+                                                '_'.join(cols + list(cons))))
             cur.execute('SELECT to_regclass(%s)', ['public.%s' % idxname])
             if cur.fetchone()[0] is None:
-                cur.execute('CREATE INDEX %s ON %s(%s)' %
-                                (self.quoteIdent(idxname), self.quoteIdent(name),
-                                    self.quoteIdent(col)))
+                idxcols = ', '.join(self.quoteIdent(col) for col in cols)
+                unique = 'UNIQUE ' if 'unique' in cons else ''
+                cur.execute('CREATE %sINDEX %s ON %s(%s)'
+                        % (unique, idxname, self.quoteIdent(name), idxcols))
         except psycopg2.ProgrammingError as ex:
             self.db.rollback()
             raise ex

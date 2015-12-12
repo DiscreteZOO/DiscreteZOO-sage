@@ -9,7 +9,7 @@ import fields
 objspec = {
     "name": "graph_spx",
     "primary_key": "zooid",
-    "indices": {"spx_r", "spx_s"},
+    "indices": [(["spx_r", "spx_s"], {"unique"})],
     "skip": {"zooid"},
     "fields" : {
         "spx_r": Integer,

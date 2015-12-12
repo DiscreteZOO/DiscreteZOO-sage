@@ -25,10 +25,22 @@ class SQLiteDB(SQLDB):
 
         self.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
 
-    def createIndex(self, cur, name, col):
-        cur.execute('CREATE INDEX IF NOT EXISTS %s ON %s(%s)'
-                        % (self.quoteIdent('idx_%s_%s' % (name, col)),
-                            self.quoteIdent(name), self.quoteIdent(col)))
+    def createIndex(self, cur, name, idx):
+        if isinstance(idx, tuple):
+            cols, cons = idx
+        else:
+            cols = idx
+            cons = set()
+        if isinstance(cols, set):
+            cols = sorted(cols)
+        elif not isinstance(cols, list):
+            cols = [cols]
+        idxname = self.quoteIdent('idx_%s_%s' % (name,
+                                                 '_'.join(cols + list(cons))))
+        idxcols = ', '.join(self.quoteIdent(col) for col in cols)
+        unique = 'UNIQUE ' if 'unique' in cons else ''
+        cur.execute('CREATE %sINDEX IF NOT EXISTS %s ON %s(%s)'
+                        % (unique, idxname, self.quoteIdent(name), idxcols))
 
     def importDB(self, file):
         # TODO: import data in the database instead of replacing it!

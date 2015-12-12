@@ -200,7 +200,7 @@ class SQLDB(DB):
         self.rollback()
         raise ex
 
-    def createIndex(self, cur, name, col):
+    def createIndex(self, cur, name, idx):
         raise NotImplementedError
 
     def init_table(self, spec, commit = False):
@@ -239,8 +239,8 @@ class SQLDB(DB):
             cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
                                                 (self.quoteIdent(spec['name']),
                                                  ', '.join(colspec)))
-            for col in spec['indices']:
-                self.createIndex(cur, spec['name'], col)
+            for idx in spec['indices']:
+                self.createIndex(cur, spec['name'], idx)
             cur.close()
             if commit:
                 self.db.commit()
