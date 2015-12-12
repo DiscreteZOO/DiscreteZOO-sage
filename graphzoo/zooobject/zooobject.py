@@ -1,5 +1,6 @@
 import re
 from types import MethodType
+from ..query import Column
 from ..query import Table
 from ..utility import default
 from ..utility import isinteger
@@ -138,6 +139,10 @@ class ZooObject(ZooEntity):
                             cur = cur, id = id)
         if id is not None:
             self._zooid = self._db.lastrowid(cur)
+
+    @staticmethod
+    def _get_column(cl, name, table = None, join = None, by = None):
+        return Column(name, table = table, join = join, by = by)
 
     def load_db_data(self):
         cl = self.__class__

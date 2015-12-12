@@ -1,4 +1,6 @@
 from sage.rings.integer import Integer
+from query import Column
+from query import ColumnSet
 from query import Table
 from utility import enlist
 from utility import lookup
@@ -46,6 +48,15 @@ class _ZooSet(dict, ZooEntity):
 
     def __repr__(self):
         return '{%s}' % ', '.join(sorted(self))
+
+    @staticmethod
+    def _get_column(cl, name, table = None, join = None, by = None):
+        col = None if cl._use_tuples else cl._ordering[0]
+        if join is not None:
+            if not isinstance(table, Table):
+                table = Table(table).join(join, by = by)
+        return ColumnSet(cl, col, join = table,
+                         by = frozenset({cl._foreign_key}))
 
     def add(self, x, id = None, store = False):
         if x not in self:

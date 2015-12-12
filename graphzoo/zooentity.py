@@ -13,6 +13,7 @@ class ZooEntity:
     _db = None
     _dict = None
     _fields = None
+    _parent = None
 
     def __init__(self, db):
         if self._db is not None:
@@ -101,8 +102,13 @@ class ZooInfo:
             elif not isinstance(groupby, list):
                 groupby = [groupby]
             groupbycols = [Column(x, alias = True) for x in groupby]
+            cond = And(*largs, **kargs)
+            cols = t.getTables()
+            for table, j, b in cond.getTables():
+                if table not in cols:
+                    t = t.join(table, by = b)
             cur = db.query(columns = [Count(All)] + groupbycols, table = t,
-                           cond = And(*largs, **kargs), groupby = groupby)
+                           cond = cond, groupby = groupby)
             n = cur.fetchall()
             cur.close()
             return tomultidict(n, groupbycols)
@@ -125,9 +131,14 @@ class ZooInfo:
             orderby = lookup(kargs, "orderby", default = [], destroy = True)
             limit = lookup(kargs, "limit", default = None, destroy = True)
             offset = lookup(kargs, "offset", default = None, destroy = True)
-            return db.query(columns = [All], table = t,
-                            cond = And(*largs, **kargs), orderby = orderby,
-                            limit = limit,  offset = offset, cur = cur)
+            cond = And(*largs, **kargs)
+            cols = t.getTables()
+            for table, j, b in cond.getTables():
+                if table not in cols:
+                    t = t.join(table, by = b)
+            return db.query(columns = [Table(table) for table in cols],
+                            table = t, cond = cond, orderby = orderby,
+                            limit = limit, offset = offset, cur = cur)
         else:
             return ZooInfo(self.cl._parent).query(db = db, join = t,
                                         by = {self.cl._spec["primary_key"]},
