@@ -282,15 +282,17 @@ class SQLDB(DB):
             if cur is None:
                 cur = self.cursor()
             if len(cols) == 0:
-                cur.execute('INSERT INTO %s DEFAULT VALUES%s' %
-                            (self.quoteIdent(table), self.returning(id)))
+                sql = 'INSERT INTO %s DEFAULT VALUES%s' % \
+                            (self.quoteIdent(table), self.returning(id))
+                data = []
             else:
-                cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
+                sql = 'INSERT INTO %s (%s) VALUES (%s)%s' % \
                             (self.quoteIdent(table),
                                 ', '.join([self.quoteIdent(c) for c in cols]),
                                 ', '.join([self.data_string] * len(cols)),
-                                self.returning(id)),
-                        [self.to_db_type(row[c]) for c in cols])
+                                self.returning(id))
+                data = [self.to_db_type(row[c]) for c in cols]
+            cur.execute(sql, data)
             if ret:
                 if commit:
                     self.db.commit()
@@ -332,6 +334,38 @@ class SQLDB(DB):
             sql = 'UPDATE %s SET %s%s' % (t, s, w)
             if cur is None:
                 cur = self.cursor()
+            cur.execute(sql, data)
+            if ret:
+                if commit:
+                    self.db.commit()
+                return cur
+            else:
+                cur.close()
+                if commit is not False:
+                    self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
+
+    def delete_rows(self, table, cond = False, cur = None, commit = None):
+        if cond is False:
+            raise UserWarning("false condition given; to delete all rows specify cond = None")
+        if cur is False:
+            cur = None
+            ret = False
+        else:
+            ret = True
+        try:
+            t = self.makeTable(table)
+            w = ''
+            if cond is not None:
+                w, data = self.makeExpression(cond)
+                w = ' WHERE %s' % w
+            else:
+                data = []
+            sql = 'DELETE FROM %s%s' % (t, w)
+            if cur is None:
+                cur = self.cursor()
+            cur.execute(sql, data)
             if ret:
                 if commit:
                     self.db.commit()
@@ -344,9 +378,10 @@ class SQLDB(DB):
             self.handle_exception(ex)
 
     def query(self, columns, table, cond = None, groupby = None,
-              orderby = None, limit = None, offset = None, cur = None,
-              subquery = False):
+              orderby = None, limit = None, offset = None, distinct = False,
+              cur = None, subquery = False):
         try:
+            dist = 'DISTINCT ' if distinct else ''
             t = self.makeTable(table)
             cols = [self.makeExpression(col, alias = True) for col in columns]
             c = ', '.join([x[0] for x in cols])
@@ -384,7 +419,7 @@ class SQLDB(DB):
                 l = ' LIMIT %d' % limit
                 if offset is not None:
                     l += ' OFFSET %d' % offset
-            sql = 'SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l)
+            sql = 'SELECT %s%s FROM %s%s%s%s%s' % (dist, c, t, w, g, o, l)
             if subquery:
                 return (sql, data)
             if cur is None:

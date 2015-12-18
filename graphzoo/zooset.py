@@ -26,11 +26,12 @@ class _ZooSet(dict, ZooProperty):
             ZooProperty.__init__(self, db = db)
             self._objid = data
             if vals is not None and cur is not None:
-                # TODO: insert into database
-                raise NotImplementedError
+                for val in vals:
+                    self.add(val, store = True, cur = cur)
             else:
                 t = Table(self._spec["name"])
-                cur = self._db.query([t], t, {self._foreign_key: data},
+                cur = self._db.query([t], t, {self._foreign_key: data,
+                                              "deleted": False},
                                      cur = cur)
                 r = cur.fetchone()
                 while r is not None:
@@ -52,6 +53,9 @@ class _ZooSet(dict, ZooProperty):
 
     def __repr__(self):
         return '{%s}' % ', '.join(sorted(self))
+
+    def _unique_index(self):
+        return self._spec["indices"][0][0]
 
     @staticmethod
     def _get_column(cl, name, table = None, join = None, by = None):
@@ -80,9 +84,11 @@ class _ZooSet(dict, ZooProperty):
             id = self._insert_row(self.__class__, row, cur = cur)
         self[x] = id
 
-    def clear(self, store = False):
+    def clear(self, store = graphzoo.WRITE_TO_DB, cur = None):
+        if store:
+            self._delete_rows(self.__class__, {self._foreign_key: self._objid},
+                              cur = cur)
         dict.clear(self)
-        # TODO: store to database
 
     def difference(self, other):
         return set(self).difference(other)
@@ -132,14 +138,40 @@ class _ZooSet(dict, ZooProperty):
             else:
                 raise ex
 
-    def popitem(self, store = False):
+    def popitem(self, store = graphzoo.WRITE_TO_DB, cur = None):
         k, v = dict.popitem(self)
-        # TODO: store to database
+        if store:
+            try:
+                self._delete_rows(self.__class__,
+                                  {self._spec["primary_key"]: v}, cur = cur)
+            except self._db.exceptions as ex:
+                self[k] = v
+                raise ex
         return (k, v)
 
-    def remove(self, x, store = False):
+    def remove(self, x = None, id = None, store = graphzoo.WRITE_TO_DB,
+               cur = None):
+        if x is None:
+            if id is None:
+                raise KeyError("element or ID not specified")
+            try:
+                x = next(k for k in self if self[k] == id)
+            except StopIteration:
+                raise ValueError(id)
+        else:
+            tx = tuple(enlist(x))
+            if id is None and len(tx) > len(self._ordering):
+                tx = tx[1:]
+            if not self._use_tuples and len(tx) == 1:
+                x = tx[0]
+            else:
+                x = tx
+            if x not in self:
+                raise KeyError(x)
+            id = self[x]
+        self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
+                          cur = cur)
         del self[x]
-        # TODO: store to database
 
     def symmetric_difference(self, other):
         return set(self).symmetric_difference(other)
@@ -179,15 +211,16 @@ def ZooSet(parent, name, fields, use_tuples = None):
         _spec = {
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
-            "skip": {fkey},
+            "skip": {fkey, "deleted"},
             "fields" : {
                 id: ZooEntity,
-                fkey: (parent, {"not_null"})
+                fkey: (parent, {"not_null"}),
+                "deleted": bool
             },
             "compute": {},
             "default": {}
         }
 
     ZooSet._spec["fields"].update(fields)
-    ZooSet._spec["indices"] = [([fkey] + fields.keys(), "unique")]
+    ZooSet._spec["indices"] = [([fkey] + fields.keys(), {"unique"})]
     return ZooSet
