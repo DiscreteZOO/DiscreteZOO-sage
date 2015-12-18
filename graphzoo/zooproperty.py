@@ -44,5 +44,22 @@ class ZooProperty(ZooEntity):
         if commit:
             self._db.commit()
 
+    def _update_rows(self, cl, row, cond, cur = None, commit = None):
+        if commit is None:
+            commit = cur is None
+        if cur is None:
+            cur = self._db.cursor()
+        self._db.query([cl._spec["primary_key"]] + row.keys(),
+                       cl._spec["name"], cond, distinct = True, cur = cur)
+        for r in cur.fetchall():
+            for c in row:
+                if r[c] != row[c]:
+                    Change(r[cl._spec["primary_key"]], cl, column = c,
+                           cur = cur, db = self._db)
+        self._db.update_rows(cl._spec["name"], row, cond, cur = cur,
+                             commit = False)
+        if commit:
+            self._db.commit()
+
     def _unique_index(self):
         return NotImplementedError

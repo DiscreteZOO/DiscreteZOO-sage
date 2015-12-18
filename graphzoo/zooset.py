@@ -57,6 +57,17 @@ class _ZooSet(dict, ZooProperty):
     def _unique_index(self):
         return self._spec["indices"][0][0]
 
+    def _normalize(self, x, id):
+        tx = tuple(enlist(x))
+        if id is None and len(tx) > len(self._ordering):
+            id = tx[0]
+            tx = tx[1:]
+        if not self._use_tuples and len(tx) == 1:
+            x = tx[0]
+        else:
+            x = tx
+        return (x, tx, id)
+
     @staticmethod
     def _get_column(cl, name, table = None, join = None, by = None):
         col = None if cl._use_tuples else cl._ordering[0]
@@ -68,14 +79,7 @@ class _ZooSet(dict, ZooProperty):
                                           cl._foreign_key)}))
 
     def add(self, x, id = None, store = graphzoo.WRITE_TO_DB, cur = None):
-        tx = tuple(enlist(x))
-        if id is None and len(tx) > len(self._ordering):
-            id = tx[0]
-            tx = tx[1:]
-        if not self._use_tuples and len(tx) == 1:
-            x = tx[0]
-        else:
-            x = tx
+        x, tx, id = self._normalize(x, id)
         if x in self:
             return
         if store:
@@ -159,19 +163,39 @@ class _ZooSet(dict, ZooProperty):
             except StopIteration:
                 raise ValueError(id)
         else:
-            tx = tuple(enlist(x))
-            if id is None and len(tx) > len(self._ordering):
-                tx = tx[1:]
-            if not self._use_tuples and len(tx) == 1:
-                x = tx[0]
-            else:
-                x = tx
+            x, tx, id = self._normalize(x, id)
             if x not in self:
                 raise KeyError(x)
             id = self[x]
         self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
                           cur = cur)
         del self[x]
+
+    def rename(self, old, new = None, id = None, store = graphzoo.WRITE_TO_DB,
+               cur = None):
+        if new is None:
+            if id is None:
+                raise KeyError("new value or ID not specified")
+            new = old
+            try:
+                old = next(k for k in self if self[k] == id)
+            except StopIteration:
+                raise ValueError(id)
+        old, told, id = self._normalize(old, id)
+        if old not in self:
+            (old, told, id), new, tnew = self._normalize(new, id), old, told
+            if old not in self:
+                raise KeyError(old)
+        else:
+            new, tnew, id = self._normalize(new, id)
+        if old == new:
+            return
+        id = self[old]
+        self._update_rows(self.__class__,
+                          {c: tnew[i] for i, c in enumerate(self._ordering)},
+                          {self._spec["primary_key"]: id}, cur = cur)
+        del self[old]
+        self[new] = id
 
     def symmetric_difference(self, other):
         return set(self).symmetric_difference(other)
