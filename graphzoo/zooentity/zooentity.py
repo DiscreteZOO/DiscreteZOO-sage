@@ -12,7 +12,7 @@ from ..utility import lookup
 from ..utility import todict
 from ..utility import tomultidict
 
-class ZooEntity:
+class ZooEntity(object):
     _baseprops = None
     _spec = None
     _db = None
@@ -58,7 +58,10 @@ class ZooEntity:
         return self.__getattribute__(cl._dict)
 
     def _setprops(self, cl, d):
-        props = self.__getattribute__(cl._dict)
+        try:
+            props = self.__getattribute__(cl._dict)
+        except AttributeError:
+            props = None
         if props is None:
             self.__setattr__(cl._dict, d)
         else:
@@ -160,6 +163,9 @@ class ZooEntity:
 
     def zooid(self):
         return self._zooid
+
+class ZooProperty(ZooEntity):
+    pass
 
 class ZooInfo:
     cl = None

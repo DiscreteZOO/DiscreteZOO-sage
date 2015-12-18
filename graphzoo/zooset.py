@@ -5,8 +5,9 @@ from query import Table
 from utility import enlist
 from utility import lookup
 from zooentity import ZooEntity
+from zooentity import ZooProperty
 
-class _ZooSet(dict, ZooEntity):
+class _ZooSet(dict, ZooProperty):
     _parent = None
     _objid = None
     _use_tuples = None
@@ -19,9 +20,9 @@ class _ZooSet(dict, ZooEntity):
             dict.update(self, data)
             if db is None:
                 db = data._db
-            ZooEntity.__init__(self, db = db)
+            ZooProperty.__init__(self, db = db)
         else:
-            ZooEntity.__init__(self, db = db)
+            ZooProperty.__init__(self, db = db)
             self._objid = data
             if vals is not None and cur is not None:
                 # TODO: insert into database

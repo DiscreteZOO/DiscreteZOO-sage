@@ -9,7 +9,7 @@ from db import DB
 from utility import enlist
 from utility import int_or_real
 from zooentity import ZooEntity
-from zooobject import ZooObject
+from zooentity import ZooProperty
 
 class SQLDB(DB):
     db = None
@@ -26,7 +26,7 @@ class SQLDB(DB):
         RealNumber: float,
         str: str,
         bool: int,
-        ZooObject: int
+        ZooEntity: int
     }
 
     convert_from = {
@@ -37,7 +37,7 @@ class SQLDB(DB):
         RealNumber: create_RealNumber,
         str: str,
         bool: bool,
-        ZooObject: Integer
+        ZooEntity: Integer
     }
     
     types = {
@@ -215,9 +215,10 @@ class SQLDB(DB):
     def rollback(self, **kargs):
         self.db.rollback(**kargs)
 
-    def handle_exception(self, ex):
+    def handle_exception(self, ex, throw = True):
         self.rollback()
-        raise ex
+        if throw:
+            raise ex
 
     def createIndex(self, cur, name, idx):
         raise NotImplementedError
@@ -234,13 +235,12 @@ class SQLDB(DB):
             ext = {k: v for k, v in [(kk, vv[0] if isinstance(vv, tuple)
                                                 else vv)
                                      for kk, vv in spec['fields'].items()]
-                    if issubclass(v, ZooEntity) and
-                        not issubclass(v, ZooObject)}
-            cols = sorted(pkey)
-            cols += sorted([k for k, v in spec['fields'].items()
-                            if isinstance(v, tuple) and k not in cols])
+                    if issubclass(v, ZooProperty)}
+            cols = pkey[:]
             cols += [idxs[i] for i in range(len(idxs))
                      if idxs[i] not in (cols + idxs[:i])]
+            cols += sorted([k for k, v in spec['fields'].items()
+                            if isinstance(v, tuple) and k not in cols])
             cols += sorted([k for k in spec['fields']
                             if k not in cols + ext.keys()])
             colspec = ['%s %s' % (self.quoteIdent(k),
@@ -270,7 +270,8 @@ class SQLDB(DB):
     def returning(self, id):
         return ''
 
-    def insert_row(self, table, row, cur = None, commit = None, id = None):
+    def insert_row(self, table, row, cur = None, commit = None, id = None,
+                   canfail = False):
         try:
             cols = [c for c in row if row[c] is not None]
             if cur is False:
@@ -298,11 +299,49 @@ class SQLDB(DB):
                 cur.close()
                 if commit is not False:
                     self.db.commit()
+        except self.integrity_error as ex:
+            self.handle_exception(ex, throw = not canfail)
+            raise ValueError(ex)
         except self.exceptions as ex:
             self.handle_exception(ex)
 
     def lastrowid(self, cur):
         return cur.lastrowid
+
+    def update_rows(self, table, row, cond = False, cur = None, commit = None):
+        if cond is False:
+            raise UserWarning("false condition given; to change all rows specify cond = None")
+        if cur is False:
+            cur = None
+            ret = False
+        else:
+            ret = True
+        if len(row) == 0:
+            return cur if ret else None
+        try:
+            t = self.makeTable(table)
+            cols = row.keys()
+            s = ', '.join(['%s = %s' % (self.quoteIdent(c), self.data_string)
+                           for c in cols])
+            data = [self.to_db_type(row[c]) for c in cols]
+            w = ''
+            if cond is not None:
+                w, d = self.makeExpression(cond)
+                w = ' WHERE %s' % w
+                data += d
+            sql = 'UPDATE %s SET %s%s' % (t, s, w)
+            if cur is None:
+                cur = self.cursor()
+            if ret:
+                if commit:
+                    self.db.commit()
+                return cur
+            else:
+                cur.close()
+                if commit is not False:
+                    self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
 
     def query(self, columns, table, cond = None, groupby = None,
               orderby = None, limit = None, offset = None, cur = None,
@@ -312,6 +351,7 @@ class SQLDB(DB):
             cols = [self.makeExpression(col, alias = True) for col in columns]
             c = ', '.join([x[0] for x in cols])
             data = sum([x[1] for x in cols], [])
+            w = ''
             if cond is not None:
                 w, d = self.makeExpression(cond)
                 w = ' WHERE %s' % w

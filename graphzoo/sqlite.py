@@ -11,6 +11,7 @@ class SQLiteDB(SQLDB):
     data_string = '?'
     ident_quote = '"'
     exceptions = sqlite3.Error
+    integrity_error = sqlite3.IntegrityError
     file = None
     
     def connect(self, file = DBFILE):
@@ -23,8 +24,6 @@ class SQLiteDB(SQLDB):
         self.db = sqlite3.connect(file)
         self.db.text_factory = str
         self.db.row_factory = sqlite3.Row
-
-        self.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
 
     def createIndex(self, cur, name, idx):
         if isinstance(idx, tuple):
@@ -51,3 +50,6 @@ class SQLiteDB(SQLDB):
 
     def __str__(self):
         return 'SQLite database in %s' % self.file
+
+SQLiteDB.constraints = dict(SQLDB.constraints)
+SQLiteDB.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'

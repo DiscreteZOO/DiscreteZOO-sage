@@ -13,6 +13,7 @@ class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
     exceptions = psycopg2.Error
+    integrity_error = psycopg2.IntegrityError
 
     logicalconsts = {
         And: 'TRUE',
@@ -35,12 +36,6 @@ class PostgreSQLDB(SQLDB):
                     if k[:1] != '_':
                         kargs[k] = d[k]
         self.db = psycopg2.connect(**kargs)
-
-        self.types[bool] = 'BOOLEAN'
-        self.convert_to[bool] = bool
-        self.binaryops[Power] = '^'
-        self.binaryops[BitwiseXOr] = '#'
-        self.types[enumerate] = 'SERIAL'
 
     def cursor(self, **kargs):
         try:
@@ -102,3 +97,12 @@ class PostgreSQLDB(SQLDB):
         if "port" in d:
             host = "%s:%s" % (host, d["port"])
         return 'PostgreSQL database "%s" at %s' % (d["dbname"], host)
+
+PostgreSQLDB.types = dict(SQLDB.types)
+PostgreSQLDB.convert_to = dict(SQLDB.convert_to)
+PostgreSQLDB.binaryops = dict(SQLDB.binaryops)
+PostgreSQLDB.types[bool] = 'BOOLEAN'
+PostgreSQLDB.types[enumerate] = 'SERIAL'
+PostgreSQLDB.convert_to[bool] = bool
+PostgreSQLDB.binaryops[Power] = '^'
+PostgreSQLDB.binaryops[BitwiseXOr] = '#'
