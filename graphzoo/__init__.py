@@ -1,5 +1,6 @@
 __all__ = ["zoograph", "cvt", "spx", "sqlite", "query"]
 DEFAULT_DB = None
+WRITE_TO_DB = True
 from . import *
 
 DEFAULT_DB = sqlite.SQLiteDB()

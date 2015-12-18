@@ -1,11 +1,12 @@
 from sage.rings.integer import Integer
+import graphzoo
 from query import Column
 from query import ColumnSet
 from query import Table
 from utility import enlist
 from utility import lookup
 from zooentity import ZooEntity
-from zooentity import ZooProperty
+from zooproperty import ZooProperty
 
 class _ZooSet(dict, ZooProperty):
     _parent = None
@@ -62,10 +63,22 @@ class _ZooSet(dict, ZooProperty):
                          by = frozenset({(cl._foreign_obj._spec["primary_key"],
                                           cl._foreign_key)}))
 
-    def add(self, x, id = None, store = False):
-        if x not in self:
-            self[x] = id
-        # TODO: store to database
+    def add(self, x, id = None, store = graphzoo.WRITE_TO_DB, cur = None):
+        tx = tuple(enlist(x))
+        if id is None and len(tx) > len(self._ordering):
+            id = tx[0]
+            tx = tx[1:]
+        if not self._use_tuples and len(tx) == 1:
+            x = tx[0]
+        else:
+            x = tx
+        if x in self:
+            return
+        if store:
+            row = {c: tx[i] for i, c in enumerate(self._ordering)}
+            row[self._foreign_key] = self._objid
+            id = self._insert_row(self.__class__, row, cur = cur)
+        self[x] = id
 
     def clear(self, store = False):
         dict.clear(self)

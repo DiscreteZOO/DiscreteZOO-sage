@@ -9,7 +9,7 @@ from db import DB
 from utility import enlist
 from utility import int_or_real
 from zooentity import ZooEntity
-from zooentity import ZooProperty
+from zooproperty import ZooProperty
 
 class SQLDB(DB):
     db = None

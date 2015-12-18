@@ -15,6 +15,8 @@ class Change(ZooEntity):
             self._chgid = id
         else:
             self._objid = id
+            if issubclass(table, ZooEntity):
+                table = table._spec["name"]
         ZooEntity.__init__(self, db = db)
         if cur is not None:
             if self._objid is None:

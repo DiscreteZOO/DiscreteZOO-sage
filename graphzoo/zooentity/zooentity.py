@@ -135,13 +135,16 @@ class ZooEntity(object):
         id = None
         if cl._parent is None:
             id = cl._spec["primary_key"]
-        self._db.insert_row(cl._spec["name"],
-                            dict(self._getprops(cl).items() + \
-                                 [(k, self.__getattribute__(k)())
-                                  for k in cl._spec["skip"]]),
-                            cur = cur, id = id)
+        row = dict(self._getprops(cl).items() +
+                [(k, self.__getattribute__(k)()) for k in cl._spec["skip"]])
+        if self._zooid is False:
+            del row["zooid"]
+        self._db.insert_row(cl._spec["name"], row, cur = cur, id = id)
         if id is not None:
-            self._zooid = self._db.lastrowid(cur)
+            objid = self._db.lastrowid(cur)
+            if self._zooid is not False:
+                self._zooid = objid
+            return objid
 
     def _todict(self, r, skip = [], fields = None):
         if fields is None:
@@ -163,9 +166,6 @@ class ZooEntity(object):
 
     def zooid(self):
         return self._zooid
-
-class ZooProperty(ZooEntity):
-    pass
 
 class ZooInfo:
     cl = None
