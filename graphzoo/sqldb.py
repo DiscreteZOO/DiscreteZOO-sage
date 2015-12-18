@@ -115,28 +115,39 @@ class SQLDB(DB):
         else:
             c = set()
         cons = ''.join([' ' + self.constraints[x] for x in c])
-        if issubclass(t, ZooObject):
+        if issubclass(t, ZooEntity):
             return 'INTEGER' + cons + ' REFERENCES %s(%s)' \
                                 % (self.quoteIdent(t._spec['name']),
                                     self.quoteIdent(t._spec['primary_key']))
         else:
             return self.types[t] + cons
 
-    def makeTable(self, t):
+    def makeTable(self, t, alias = True):
         if isinstance(t, query.Table):
-            aliases = ['%s' % self.makeTable(x['table'])
+            if not alias and len(t.tables) == 1:
+                return self.makeTable(t.tables[0]['table'], alias = False)
+            tables = ['%s' % self.makeTable(x['table'])
                         if x['alias'] is None else '%s AS %s' %
-                                                (self.makeTable(x['table']),
-                                                self.quoteIdent(x['alias']))
+                                    (self.makeTable(x['table'], alias = False),
+                                     self.quoteIdent(x['alias']))
                         for x in t.tables]
+            aliases = [query.Table.name(x) for x in t.tables]
             joins = [' %sJOIN ' % ('LEFT ' if x['left'] else '')
                         for x in t.tables]
-            using = ['' if len(x['by']) == 0
-                     else ' USING (%s)' % ', '.join([self.quoteIdent(c)
-                                        for c in x['by']]) for x in t.tables]
-            out = aliases[0] + ''.join([joins[i] + aliases[i] + using[i]
+            by = [[] if x['by'] is None else
+                    [c if isinstance(c, tuple) else (c, c) for c in x['by']]
+                        for x in t.tables]
+            using = ['' if len(by[i]) == 0 else (' ON (%s)' %
+                        ' AND '.join(['%s.%s = %s.%s' %
+                                                (self.quoteIdent(aliases[i-1]),
+                                                 self.quoteIdent(c[0]),
+                                                 self.quoteIdent(aliases[i]),
+                                                 self.quoteIdent(c[1]))
+                                      for c in by[i]]))
+                     for i, x in enumerate(t.tables)]
+            out = tables[0] + ''.join([joins[i] + tables[i] + using[i]
                                          for i in range(1, len(t.tables))])
-            if len(aliases) > 1:
+            if len(tables) > 1:
                 out = "(%s)" % out
             return out
         else:
@@ -269,7 +280,11 @@ class SQLDB(DB):
                 ret = True
             if cur is None:
                 cur = self.cursor()
-            cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
+            if len(cols) == 0:
+                cur.execute('INSERT INTO %s DEFAULT VALUES%s' %
+                            (self.quoteIdent(table), self.returning(id)))
+            else:
+                cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
                             (self.quoteIdent(table),
                                 ', '.join([self.quoteIdent(c) for c in cols]),
                                 ', '.join([self.data_string] * len(cols)),

@@ -1,6 +1,5 @@
 import re
 from types import MethodType
-from ..query import Column
 from ..query import Table
 from ..utility import default
 from ..utility import isinteger
@@ -13,32 +12,13 @@ class ZooObject(ZooEntity):
     _spec = None
     _zooid = None
     _unique_id = None
-    _parent = None
+    _parent = ZooEntity
     _dict = "_zooprops"
     _extra_props = None
     _fields = None
 
     def __init__(self, data = None, **kargs):
         self._init_(ZooObject, kargs, setVal = {"data": data})
-
-    def _init_(self, cl, d, defNone = [], defVal = {}, setVal = {},
-               setProp = {}):
-        self._extra_props = set()
-        cl._init_defaults(self, d)
-        for k in defNone:
-            default(d, k)
-        for k, v in defVal.items():
-            default(d, k, v)
-        for k, v in setVal.items():
-            d[k] = v
-        default(d, "db")
-        ZooEntity.__init__(self, d["db"])
-        if not cl._parse_params(self, d):
-            self._init_params(d)
-        self._default_props(cl)
-        cl._init_object(self, cl, d, setProp)
-        if d["cur"] is not None:
-            self._db_write(cl, d["cur"])
 
     def _init_defaults(self, d):
         default(d, "zooid")
@@ -56,9 +36,6 @@ class ZooObject(ZooEntity):
         else:
             return False
 
-    def _init_params(self, d):
-        pass
-
     def _init_object(self, cl, d, setProp = {}):
         if self._zooid is None:
             self._zooid = d["zooid"]
@@ -69,14 +46,7 @@ class ZooObject(ZooEntity):
                 r = self._db_read(cl)
                 self._zooid = r["zooid"]
                 self._unique_id = r["unique_id"]
-
-    def _default_props(self, cl):
-        c = cl
-        while c is not None:
-            self._setprops(c, {})
-            c = c._parent
-        for c, m in cl._spec["default"].items():
-            self._getprops(c).update(m)
+        ZooEntity.__init__(self, **d)
 
     def _copy_props(self, cl, obj):
         c = cl
@@ -102,53 +72,18 @@ class ZooObject(ZooEntity):
                 if isinstance(attr, MethodType):
                     self.__setattr__(a, MethodType(attr.im_func, self, cl))
 
-    def _db_read(self, cl, join = None, query = None, cur = None):
-        if query is None:
-            if self._zooid is None:
-                if self._unique_id is not None:
-                    query = {"unique_id": self._unique_id}
-                    cur = self._db.query([ZooObject._spec["primary_key"]],
-                                         Table(ZooObject._spec["name"]),
-                                         query, cur = cur)
-                    r = cur.fetchone()
-                    if r is None:
-                        raise KeyError(query)
-                    self._zooid = r[0]
-                raise IndexError("object id not given")
-            query = {"zooid": self._zooid}
-        t = Table(cl._spec["name"])
-        if join is None:
-            join = t
-        cur = self._db.query([t], join, query, cur = cur)
-        r = cur.fetchone()
-        cur.close()
-        if r is None:
-            raise KeyError(query)
-        self._setprops(cl, self._todict(r, skip = cl._spec["skip"],
-                                        fields = cl._spec["fields"]))
-        return r
-
-    def _db_write(self, cl, cur):
-        id = None
-        if cl._parent is None:
-            id = cl._spec["primary_key"]
-        self._db.insert_row(cl._spec["name"],
-                            dict(self._getprops(cl).items() + \
-                                 [(k, self.__getattribute__(k)())
-                                  for k in cl._spec["skip"]]),
-                            cur = cur, id = id)
-        if id is not None:
-            self._zooid = self._db.lastrowid(cur)
-
-    @staticmethod
-    def _get_column(cl, name, table = None, join = None, by = None):
-        return Column(name, table = table, join = join, by = by)
-
-    def load_db_data(self):
-        cl = self.__class__
-        while cl is not None:
-            cl._db_read(self)
-            cl = cl._parent
+    def _db_read_nonprimary(self, cur = None):
+        if self._unique_id is not None:
+            query = {"unique_id": self._unique_id}
+            cur = self._db.query([ZooObject._spec["primary_key"]],
+                                 Table(ZooObject._spec["name"]),
+                                 query, cur = cur)
+            r = cur.fetchone()
+            if r is None:
+                raise KeyError(query)
+            self._zooid = r[0]
+            return True
+        return False
 
     def alias(self):
         try:
@@ -161,8 +96,5 @@ class ZooObject(ZooEntity):
         if self._unique_id is None:
             raise NotImplementedError
         return self._unique_id
-
-    def zooid(self):
-        return self._zooid
 
 info = ZooInfo(ZooObject)

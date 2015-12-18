@@ -7,11 +7,13 @@ from utility import lookup
 from zooentity import ZooEntity
 
 class _ZooSet(dict, ZooEntity):
+    _parent = None
     _objid = None
     _use_tuples = None
 
     def __init__(self, data, vals = None, cur = None, db = None):
         dict.__init__(self)
+        self._zooid = False
         if isinstance(data, _ZooSet):
             self._objid = data._objid
             dict.update(self, data)
@@ -54,9 +56,10 @@ class _ZooSet(dict, ZooEntity):
         col = None if cl._use_tuples else cl._ordering[0]
         if join is not None:
             if not isinstance(table, Table):
-                table = Table(table).join(join, by = by)
+                table = join.join(Table(table), by = by)
         return ColumnSet(cl, col, join = table,
-                         by = frozenset({cl._foreign_key}))
+                         by = frozenset({(cl._foreign_obj._spec["primary_key"],
+                                          cl._foreign_key)}))
 
     def add(self, x, id = None, store = False):
         if x not in self:
@@ -151,19 +154,20 @@ def ZooSet(parent, name, fields, use_tuples = None):
         use_tuples = True
     elif use_tuples is None:
         use_tuples = False
-    id = "%s_id" % name
-    fkey = enlist(parent._spec["primary_key"])[0]
+    id = "zooid"
+    fkey = "%s_id" % parent._spec["name"]
 
     class ZooSet(_ZooSet):
         _use_tuples = use_tuples
         _ordering = sorted(fields.keys())
         _foreign_key = fkey
+        _foreign_obj = parent
         _spec = {
-            "name": name,
+            "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
             "skip": {fkey},
             "fields" : {
-                id: (Integer, {"autoincrement"}),
+                id: ZooEntity,
                 fkey: (parent, {"not_null"})
             },
             "compute": {},

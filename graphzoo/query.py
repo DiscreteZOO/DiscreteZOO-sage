@@ -8,25 +8,28 @@ class All(QueryObject):
 
 class Table(QueryObject):
     tables = []
+    index = 0
 
     def __init__(self, *args, **kargs):
         if len(args) == 1 and isinstance(args[0], Table):
             self.tables = args[0].tables[:]
         else:
             self.tables = [{"table": t,
-                            "alias": t,
+                            "alias": Table.alias(t),
                             "left": False,
                             "by": set()} for t in args] \
                         + [{"table": t,
                             "alias": a,
                             "left": False,
-                            "by": set()} for a, t in kargs]
+                            "by": set()} for a, t in kargs.items()]
 
     def join(self, table, by = set(), left = False, alias = None, **kargs):
         if len(kargs) == 1:
             alias, table = kargs.items()[0]
         elif len(kargs) != 0:
             raise NotImplementedError
+        else:
+            alias = Table.alias(table)
         self.tables.append({"table": table,
                             "alias": alias,
                             "left": left,
@@ -37,6 +40,26 @@ class Table(QueryObject):
         return set(sum([list(t["table"].getTables())
                         if isinstance(t["table"], Table)
                         else [t["table"]] for t in self.tables], []))
+
+    @staticmethod
+    def alias(table):
+        if isinstance(table, Table):
+            if len(table.tables) == 1:
+                return None
+            else:
+                alias = "_join%d" % Table.index
+                Table.index += 1
+        else:
+            return str(table)
+
+    @staticmethod
+    def name(x):
+        if x["alias"] is not None:
+            return x["alias"]
+        if isinstance(x["table"], Table):
+            return Table.name(x["table"].tables[0])
+        else:
+            return str(x["table"])
 
     def __str__(self):
         if len(self.tables) == 0:
@@ -193,8 +216,10 @@ class Column(Expression):
     def getTables(self):
         if isinstance(self.column, Expression):
             return self.column.getTables()
-        else:
+        elif self.table is not None:
             return {(self.table, self.join, self.by)}
+        else:
+            return set()
 
     def __str__(self):
         column = '%s' % self.column
