@@ -14,6 +14,7 @@ objspec = {
         "column": (str, {"not_null"}),
         "commit": (str, {"not_null"}),
         "table": (str, {"not_null"}),
+        "user": str,
         "zooid": (ZooEntity, {"not_null"})
     },
     "compute": {},

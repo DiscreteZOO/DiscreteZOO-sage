@@ -9,7 +9,7 @@ class Change(ZooEntity):
     _chgid = None
 
     def __init__(self, id, table = None, column = None, commit = None,
-                 cur = None, db = None):
+                 user = None, cur = None, db = None):
         self._zooid = False
         if table is None:
             self._chgid = id
@@ -30,6 +30,7 @@ class Change(ZooEntity):
                            cur = cur)
             r = cur.fetchone()
             if r is None:
+                row["user"] = user
                 self._db.insert_row(self._spec["name"], row, cur = cur,
                                     id = self._spec["primary_key"])
                 self._chgid = self._db.lastrowid(cur)
@@ -38,6 +39,7 @@ class Change(ZooEntity):
             self.table =  table
             self.column = column
             self.commit = commit
+            self.user = user
         else:
             if self._chgid is None:
                 raise KeyError("change id not given")
@@ -52,6 +54,7 @@ class Change(ZooEntity):
             self.table = r["table"]
             self.column = None if r["column"] == "" else r["column"]
             self.commit = None if r["commit"] == "" else r["commit"]
+            self.user = r["user"]
 
     def __repr__(self):
         out = "table %s" % self.table
@@ -61,9 +64,11 @@ class Change(ZooEntity):
             out = "%s at commit %s" % (out, self.commit)
         return "Change to object with ID %d in %s" % (self._objid, out)
 
-    def commit(commit, cur = None):
+    def commit(commit, user, cur = None):
         if self.commit is not None:
             raise KeyError("change is already included in a commit")
-        self._db.update_rows(self._spec["name"], {"commit" : commit},
+        self._db.update_rows(self._spec["name"],
+                             {"commit" : commit, "user": user},
                              Column("change_id") == Value(self._chgid))
         self.commit = commit
+        self.user = user
