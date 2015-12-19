@@ -21,18 +21,20 @@ class Change(ZooEntity):
         if cur is not None:
             if self._objid is None:
                 raise KeyError("table not given")
-            cond = {"zooid": self._objid, "table": table,
-                    "column": "" if column is None else column,
-                    "commit": "" if commit is None else commit}
-            try:
-                self._db.insert_row(self._spec["name"], cond, cur = cur,
-                                    id = self._spec["primary_key"],
-                                    canfail = True)
+            row = {"zooid": self._objid, "table": table,
+                   "column": "" if column is None else column,
+                   "commit": "" if commit is None else commit}
+            self._db.query([self._spec["primary_key"]],
+                           Table(self._spec["name"]),
+                           [Column(k) == Value(v) for k, v in row.items()],
+                           cur = cur)
+            r = cur.fetchone()
+            if r is None:
+                self._db.insert_row(self._spec["name"], row, cur = cur,
+                                    id = self._spec["primary_key"])
                 self._chgid = self._db.lastrowid(cur)
-            except ValueError:
-                self._db.query([self._spec["primary_key"]],
-                                Table(self._spec["name"]), cond, cur = cur)
-                self._chgid = cur.fetchone()[0]
+            else:
+                self._chgid = r[0]
             self.table =  table
             self.column = column
             self.commit = commit
@@ -63,5 +65,5 @@ class Change(ZooEntity):
         if self.commit is not None:
             raise KeyError("change is already included in a commit")
         self._db.update_rows(self._spec["name"], {"commit" : commit},
-                             Column("commit") == Value(commit))
+                             Column("change_id") == Value(self._chgid))
         self.commit = commit

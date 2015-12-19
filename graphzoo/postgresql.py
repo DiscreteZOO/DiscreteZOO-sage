@@ -13,7 +13,6 @@ class PostgreSQLDB(SQLDB):
     data_string = '%s'
     ident_quote = '"'
     exceptions = psycopg2.Error
-    integrity_error = psycopg2.IntegrityError
 
     logicalconsts = {
         And: 'TRUE',

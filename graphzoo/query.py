@@ -379,6 +379,8 @@ class LogicalExpression(Expression):
     terms = None
 
     def __init__(self, *lterms, **kterms):
+        if len(lterms) == 1 and isinstance(lterms[0], (list, set, tuple)):
+            lterms = lterms[0]
         if len(kterms) > 0:
             q = kterms.keys()
             self.__init__(*(list(lterms) + \

@@ -215,10 +215,9 @@ class SQLDB(DB):
     def rollback(self, **kargs):
         self.db.rollback(**kargs)
 
-    def handle_exception(self, ex, throw = True):
+    def handle_exception(self, ex):
         self.rollback()
-        if throw:
-            raise ex
+        raise ex
 
     def createIndex(self, cur, name, idx):
         raise NotImplementedError
@@ -270,8 +269,7 @@ class SQLDB(DB):
     def returning(self, id):
         return ''
 
-    def insert_row(self, table, row, cur = None, commit = None, id = None,
-                   canfail = False):
+    def insert_row(self, table, row, cur = None, commit = None, id = None):
         try:
             cols = [c for c in row if row[c] is not None]
             if cur is False:
@@ -301,9 +299,6 @@ class SQLDB(DB):
                 cur.close()
                 if commit is not False:
                     self.db.commit()
-        except self.integrity_error as ex:
-            self.handle_exception(ex, throw = not canfail)
-            raise ValueError(ex)
         except self.exceptions as ex:
             self.handle_exception(ex)
 

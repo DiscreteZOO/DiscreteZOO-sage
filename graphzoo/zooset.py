@@ -97,23 +97,25 @@ class _ZooSet(dict, ZooProperty):
     def difference(self, other):
         return set(self).difference(other)
 
-    def difference_update(self, other, store = False):
+    def difference_update(self, other, store = graphzoo.WRITE_TO_DB,
+                          cur = None):
         for x in other:
-            self.discard(x, store = store)
+            self.discard(x, store = store, cur = cur)
 
-    def discard(self, x, store = False):
+    def discard(self, x, store = graphzoo.WRITE_TO_DB, cur = None):
         try:
-            self.remove(x, store = store)
+            self.remove(x, store = store, cur = cur)
         except KeyError:
             pass
 
     def intersection(self, other):
         return set(self).intersection(other)
 
-    def intersection_update(self, other, store = False):
+    def intersection_update(self, other, store = graphzoo.WRITE_TO_DB,
+                            cur = None):
         for x in self:
             if x not in other:
-                self.remove(x, store = store)
+                self.remove(x, store = store, cur = cur)
 
     def isdisjoint(self, other):
         return set(self).isdisjoint(other)
@@ -125,7 +127,9 @@ class _ZooSet(dict, ZooProperty):
         return set(self).issuperset(other)
 
     def pop(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = False, destroy = True)
+        store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+                       destroy = True)
+        cur = lookup(kargs, "cur", default = None, destroy = True)
         if len(largs) == 0:
             try:
                 x = next(iter(self))
@@ -134,7 +138,7 @@ class _ZooSet(dict, ZooProperty):
         else:
             x = largs[0]
         try:
-            self.remove(x, store = store)
+            self.remove(x, store = store, cur = cur)
             return x
         except KeyError as ex:
             if len(largs) > 1:
@@ -167,8 +171,9 @@ class _ZooSet(dict, ZooProperty):
             if x not in self:
                 raise KeyError(x)
             id = self[x]
-        self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
-                          cur = cur)
+        if store:
+            self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
+                              cur = cur)
         del self[x]
 
     def rename(self, old, new = None, id = None, store = graphzoo.WRITE_TO_DB,
@@ -185,39 +190,43 @@ class _ZooSet(dict, ZooProperty):
         if old not in self:
             (old, told, id), new, tnew = self._normalize(new, id), old, told
             if old not in self:
-                raise KeyError(old)
+                raise KeyError(new, old)
         else:
             new, tnew, id = self._normalize(new, id)
         if old == new:
             return
+        if new in self:
+            raise KeyError(new)
         id = self[old]
-        self._update_rows(self.__class__,
-                          {c: tnew[i] for i, c in enumerate(self._ordering)},
-                          {self._spec["primary_key"]: id}, cur = cur)
+        if store:
+            self._update_rows(self.__class__,
+                            {c: tnew[i] for i, c in enumerate(self._ordering)},
+                            {self._spec["primary_key"]: id}, cur = cur)
         del self[old]
         self[new] = id
 
     def symmetric_difference(self, other):
         return set(self).symmetric_difference(other)
 
-    def symmetric_difference_update(self, other, store = False):
+    def symmetric_difference_update(self, other, store = graphzoo.WRITE_TO_DB,
+                                    cur = None):
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:
             if x in self:
-                self.remove(x, store = store)
+                self.remove(x, store = store, cur = cur)
             else:
-                self.add(x, other[x], store = store)
+                self.add(x, other[x], store = store, cur = cur)
 
     def union(self, other):
         return set(self).union(other)
 
-    def update(self, other, store = False):
+    def update(self, other, store = graphzoo.WRITE_TO_DB, cur = None):
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:
             if x not in self or self[x] is None:
-                self.add(x, other[x], store = store)
+                self.add(x, other[x], store = store, cur = cur)
 
 def ZooSet(parent, name, fields, use_tuples = None):
     if len(fields) != 1:

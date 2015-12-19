@@ -11,7 +11,6 @@ class SQLiteDB(SQLDB):
     data_string = '?'
     ident_quote = '"'
     exceptions = sqlite3.Error
-    integrity_error = sqlite3.IntegrityError
     file = None
     
     def connect(self, file = DBFILE):
