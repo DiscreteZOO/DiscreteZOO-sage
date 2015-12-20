@@ -1,5 +1,6 @@
 import re
 from types import MethodType
+from ..change import Change
 from ..query import Table
 from ..utility import default
 from ..utility import isinteger
@@ -14,7 +15,6 @@ class ZooObject(ZooEntity):
     _unique_id = None
     _parent = ZooEntity
     _dict = "_zooprops"
-    _extra_props = None
     _fields = None
 
     def __init__(self, data = None, **kargs):
@@ -58,14 +58,14 @@ class ZooObject(ZooEntity):
         cl = self.__class__
         while c is not None and not issubclass(cl, c):
             self.__setattr__(c._dict, obj._getprops(c))
-            self._extra_props.add(c._dict)
+            self._extra_classes.add(c)
             c = c._parent
-        for p in obj._extra_props:
+        for c in obj._extra_classes:
             try:
-                self.__getattribute__(p)
+                self.__getattribute__(c._dict)
             except AttributeError:
-                self.__setattr__(p, obj.__getattribute__(p))
-                self._extra_props.add(p)
+                self.__setattr__(c._dict, obj.__getattribute__(c._dict))
+                self._extra_classes.add(c)
         for a in dir(obj):
             if a not in dir(self):
                 attr = obj.__getattribute__(a)
@@ -84,6 +84,21 @@ class ZooObject(ZooEntity):
             self._zooid = r[0]
             return True
         return False
+
+    def _update_rows(self, cl, row, cond, cur = None, commit = None):
+        if commit is None:
+            commit = cur is None
+        if cur is None:
+            cur = self._db.cursor()
+        self._db.query([cl._spec["primary_key"]] + row.keys(),
+                       cl._spec["name"], cond, distinct = True, cur = cur)
+        for r in cur.fetchall():
+            for k, v in row.items():
+                if v != r[k]:
+                    Change(r[cl._spec["primary_key"]], cl, column = k,
+                           cur = cur, db = self._db)
+        self._db.update_rows(cl._spec["name"], row, cond, cur = cur,
+                             commit = commit)
 
     def alias(self):
         try:

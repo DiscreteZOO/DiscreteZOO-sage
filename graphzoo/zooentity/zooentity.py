@@ -19,13 +19,14 @@ class ZooEntity(object):
     _dict = "_baseprops"
     _fields = None
     _parent = None
+    _extra_classes = None
 
     def __init__(self, data = None, **kargs):
         self._init_(ZooEntity, kargs, setVal = {"data": data})
 
     def _init_(self, cl, d, defNone = [], defVal = {}, setVal = {},
                setProp = {}):
-        self._extra_props = set()
+        self._extra_classes = set()
         cl._init_defaults(self, d)
         for k in defNone:
             default(d, k)
@@ -54,8 +55,29 @@ class ZooEntity(object):
         else:
             self._db = db
 
+    def _getclass(self, attr):
+        c = self.__class__
+        while c is not None:
+            if attr in c._spec["fields"]:
+                return c
+            c = c._parent
+        for c in self._extra_classes:
+            if attr in c._spec["fields"]:
+                return c
+        raise KeyError(attr)
+
     def _getprops(self, cl):
-        return self.__getattribute__(cl._dict)
+        if isinstance(cl, type):
+            return self.__getattribute__(cl._dict)
+        c = self.__class__
+        while c is not None:
+            if cl in c._spec["fields"]:
+                return self.__getattribute__(c._dict)
+            c = c._parent
+        for c in self._extra_classes:
+            if cl in c._spec["fields"]:
+                return self.__getattribute__(c._dict)
+        raise KeyError(cl)
 
     def _setprops(self, cl, d):
         try:
