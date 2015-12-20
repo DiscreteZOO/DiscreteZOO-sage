@@ -8,16 +8,15 @@ import fields
 
 objspec = {
     "name": "graph_cvt",
-    "dict": "_cvtprops",
-    "primary_key": "id",
+    "primary_key": "zooid",
     "indices": {"cvt_index"},
-    "skip": {"id"},
+    "skip": {"zooid"},
     "fields" : {
         "cvt_index": Integer,
-        "id": (ZooGraph, {"primary_key"}),
         "is_moebius_ladder": bool,
         "is_prism": bool,
-        "is_spx": bool
+        "is_spx": bool,
+        "zooid": ZooGraph
     },
     "compute": {},
     "default": {
@@ -31,4 +30,4 @@ objspec = {
 }
 
 CVTGraph._spec = objspec
-makeFields(objspec, fields)
+makeFields(CVTGraph, fields)

@@ -1,19 +1,20 @@
 from sage.rings.integer import Integer
 from ..utility import isinteger
 from ..utility import lookup
+from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
-from ..zooobject import ZooInfo
 from ..zooobject import ZooObject
 
 class SPXGraph(ZooGraph):
     _spxprops = None
     _parent = ZooGraph
     _spec = None
+    _dict = "_spxprops"
 
     def __init__(self, data = None, s = None, **kargs):
-        ZooObject.__init__(self, SPXGraph, kargs, defNone = ["r"],
-                           setVal = {"data": data, "s": s},
-                           setProp = {"spx_r": "r", "spx_s": "s"})
+        ZooObject._init_(self, SPXGraph, kargs, defNone = ["r"],
+                         setVal = {"data": data, "s": s},
+                         setProp = {"spx_r": "r", "spx_s": "s"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
@@ -34,13 +35,13 @@ class SPXGraph(ZooGraph):
         if d["r"] is not None and d["s"] is not None:
             r = self._db_read(cl, query = {"spx_r": d["r"],
                                            "spx_s": d["s"]})
-            d["zooid"] = r["id"]
+            d["zooid"] = r["zooid"]
             d["graph"] = None
         ZooGraph.__init__(self, **d)
 
         if d["r"] is not None and d["s"] is not None:
-            assert(d["r"] * 2**(d["s"]+1) == self._props["order"])
-        if self._spxprops is None:
+            assert(d["r"] * 2**(d["s"]+1) == self._graphprops["order"])
+        if len(self._spxprops) == 0:
             self._db_read(cl)
 
     def _repr_generic(self):

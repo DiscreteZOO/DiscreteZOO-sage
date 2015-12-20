@@ -1,5 +1,3 @@
-from types import ModuleType
-
 class QueryObject:
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
@@ -10,27 +8,58 @@ class All(QueryObject):
 
 class Table(QueryObject):
     tables = []
+    index = 0
 
     def __init__(self, *args, **kargs):
-        self.tables = [{"table": t,
-                        "alias": t,
-                        "left": False,
-                        "by": set()} for t in args] \
-                    + [{"table": t,
-                        "alias": a,
-                        "left": False,
-                        "by": set()} for a, t in kargs]
+        if len(args) == 1 and isinstance(args[0], Table):
+            self.tables = args[0].tables[:]
+        else:
+            self.tables = [{"table": t,
+                            "alias": Table.alias(t),
+                            "left": False,
+                            "by": set()} for t in args] \
+                        + [{"table": t,
+                            "alias": a,
+                            "left": False,
+                            "by": set()} for a, t in kargs.items()]
 
     def join(self, table, by = set(), left = False, alias = None, **kargs):
         if len(kargs) == 1:
             alias, table = kargs.items()[0]
         elif len(kargs) != 0:
             raise NotImplementedError
+        else:
+            alias = Table.alias(table)
         self.tables.append({"table": table,
                             "alias": alias,
                             "left": left,
                             "by": by})
         return self
+
+    def getTables(self):
+        return set(sum([list(t["table"].getTables())
+                        if isinstance(t["table"], Table)
+                        else [t["table"]] for t in self.tables], []))
+
+    @staticmethod
+    def alias(table):
+        if isinstance(table, Table):
+            if len(table.tables) == 1:
+                return None
+            else:
+                alias = "_join%d" % Table.index
+                Table.index += 1
+        else:
+            return str(table)
+
+    @staticmethod
+    def name(x):
+        if x["alias"] is not None:
+            return x["alias"]
+        if isinstance(x["table"], Table):
+            return Table.name(x["table"].tables[0])
+        else:
+            return str(x["table"])
 
     def __str__(self):
         if len(self.tables) == 0:
@@ -47,7 +76,7 @@ class Expression(QueryObject):
     def __init__(self, *args, **kargs):
         raise NotImplementedError
 
-    def getColumns():
+    def getTables(self):
         raise NotImplementedError
 
     def __lt__(self, other):
@@ -157,7 +186,7 @@ class Value(Expression):
     def __init__(self, value):
         self.value = value
 
-    def getColumns(self):
+    def getTables(self):
         return set()
 
     def __str__(self):
@@ -168,26 +197,56 @@ class Value(Expression):
 
 class Column(Expression):
     column = None
-    alias = None
+    table = None
+    colalias = None
+    join = None
+    by = None
 
-    def __init__(self, column, alias = None):
+    def __init__(self, column, table = None, alias = None, join = None,
+                 by = None):
         self.column = column
+        self.table = table
+        self.join = join
+        self.by = by
         if alias is True:
             self.alias = str(column)
         else:
             self.alias = alias
 
-    def getColumns(self):
+    def getTables(self):
         if isinstance(self.column, Expression):
-            return self.column.getColumns()
+            return self.column.getTables()
+        elif self.table is not None:
+            return {(self.table, self.join, self.by)}
         else:
-            return {self.column}
+            return set()
 
     def __str__(self):
-        if self.alias is None:
-            return '%s' % self.column
-        else:
-            return '%s->%s' % (self.column, self.alias)
+        column = '%s' % self.column
+        if self.table is not None:
+            column = '%s.%s' % (self.table, column)
+        if self.alias is not None:
+            column = '%s->%s' % (column, self.alias)
+        if self.join is not None:
+            column = '%s joining %s by %s' % (column, self.join, self.by)
+        return column
+
+class ColumnSet(Column):
+    cl = None
+
+    def __init__(self, cl, column = None, alias = None, join = None,
+                 by = None):
+        self.cl = cl
+        makeFields(cl, self, join = join, by = by)
+        if column is not None:
+            Column.__init__(self, column = column, table = cl._spec["name"],
+                            alias = alias, join = join, by = by)
+
+    def __str__(self):
+        cset = "Columns of %s" % self.cl
+        if self.column is not None:
+            cset = "%s with default %s" % (cset, Column.__str__(self))
+        return cset
 
 class BinaryOp(Expression):
     left = None
@@ -198,8 +257,8 @@ class BinaryOp(Expression):
         self.left = makeExpression(left)
         self.right = makeExpression(right)
 
-    def getColumns(self):
-        return self.left.getColumns().union(self.right.getColumns())
+    def getTables(self):
+        return self.left.getTables().union(self.right.getTables())
 
     def __str__(self):
         return "(%s) %s (%s)" % (self.left, self.op, self.right)
@@ -258,6 +317,16 @@ class BitwiseXOr(BinaryOp):
 class Concatenate(BinaryOp):
     op = "++"
 
+class In(BinaryOp):
+    op = "in"
+
+    def __init__(self, left, right):
+        BinaryOp.__init__(self, left, right)
+        if isinstance(self.right, Column) and self.right.join is not None:
+            self.right = Subquery([self.right.column], Table(self.right.table),
+                                  cond = Column(self.right.by, self.right.join)
+                                    == Column(self.right.by, self.right.table))
+
 class Like(BinaryOp):
     op = "like"
     case = None
@@ -279,8 +348,8 @@ class UnaryOp(Expression):
     def __init__(self, exp):
         self.exp = makeExpression(exp)
 
-    def getColumns(self):
-        return exp.getColumns()
+    def getTables(self):
+        return exp.getTables()
 
     def __str__(self):
         return "%s (%s)" % (self.op, self.exp)
@@ -310,6 +379,8 @@ class LogicalExpression(Expression):
     terms = None
 
     def __init__(self, *lterms, **kterms):
+        if len(lterms) == 1 and isinstance(lterms[0], (list, set, tuple)):
+            lterms = lterms[0]
         if len(kterms) > 0:
             q = kterms.keys()
             self.__init__(*(list(lterms) + \
@@ -319,6 +390,9 @@ class LogicalExpression(Expression):
 
     def __str__(self):
         return self.op.join("%s" % t for t in self.terms)
+
+    def getTables(self):
+        return set(sum([list(t.getTables()) for t in self.terms], []))
 
 class And(LogicalExpression):
     op = " and "
@@ -333,11 +407,11 @@ class Count(Expression):
         self.column = column
         self.distinct = distinct
 
-    def getColumns(self):
+    def getTables(self):
         if isinstance(self.column, Expression):
-            return self.column.getColumns()
+            return self.column.getTables()
         else:
-            return {self.column}
+            return set()
 
     def __str__(self):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
@@ -370,6 +444,53 @@ class Ascending(Order):
 class Descending(Order):
     order = False
 
+class Subquery(Expression):
+    columns = None
+    table = None
+    cond = None
+    groupby = None
+    orderby = None
+    limit = None
+    offset = None
+
+    def __init__(self, columns, table, cond = None, groupby = None,
+                 orderby = None, limit = None, offset = None):
+        self.columns = columns
+        self.table = table
+        self.cond = cond
+        self.groupby = groupby
+        self.orderby = orderby
+        self.limit = limit
+        self.offset = offset
+
+    def __str__(self):
+        out = "Columns %s from table %s" % (self.columns, self.table)
+        if self.cond is not None:
+            out = "%s where (%s)" % (out, self.cond)
+        if self.groupby is not None:
+            out = "%s grouped by %s" % (out, self.groupby)
+        if self.orderby is not None:
+            out = "%s ordered by %s" % (out, self.orderby)
+        if self.limit is not None:
+            out = "%s with limit %d" % (out, self.limit)
+        if self.offset is not None:
+            out = "%s offset by %d" % (out, self.offset)
+        return out
+
+    def getTables(self):
+        t = self.table.getTables()
+        exptables = {col.getTables() for col in self.columns}
+        exptables = {tbl if isinstance(tbl, tuple) else (tbl, None, None)
+                     for tbl in exptables}
+        if self.cond is not None:
+            exptables.update(self.cond.getTables())
+        if self.groupby is not None:
+            exptables.update(self.groupby.getTables())
+        if self.orderby is not None:
+            exptables.update(self.orderby.getTables())
+        return {(table, join, by) for table, join, by in exptables
+                if table not in t}
+
 def makeExpression(val):
     if isinstance(val, Expression):
         return val
@@ -382,9 +503,23 @@ def makeExpression(val):
     else:
         return Value(val)
 
-def makeFields(spec, module):
-    for k in spec["fields"]:
-        ModuleType.__setattr__(module, k, Column(k))
+def makeFields(cl, module, join = None, by = None):
+    mtype = type(module)
+    if cl._parent is not None:
+        for k in dir(cl._parent._fields):
+            if not k.startswith("_"):
+                mtype.__setattr__(module, k,
+                                mtype.__getattribute__(cl._parent._fields, k))
+    for k, v in cl._spec["fields"].items():
+        try:
+            if isinstance(v, tuple):
+                v = v[0]
+            col = v._get_column(v, k, table = cl._spec["name"], join = join,
+                                by = by)
+        except AttributeError:
+            col = Column(k, table = cl._spec["name"], join = join, by = by)
+        mtype.__setattr__(module, k, col)
+    cl._fields = module
 
 A = All()
 C = Column

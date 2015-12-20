@@ -3,6 +3,7 @@ import os
 import shutil
 import sqlite3
 from sqldb import SQLDB
+from utility import enlist
 
 DBFILE = os.path.join(os.path.expanduser('~'), '.graphzoo', 'graphzoo.db')
 
@@ -23,12 +24,19 @@ class SQLiteDB(SQLDB):
         self.db.text_factory = str
         self.db.row_factory = sqlite3.Row
 
-        self.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
-
-    def createIndex(self, cur, name, col):
-        cur.execute('CREATE INDEX IF NOT EXISTS %s ON %s(%s)'
-                        % (self.quoteIdent('idx_%s_%s' % (name, col)),
-                            self.quoteIdent(name), self.quoteIdent(col)))
+    def createIndex(self, cur, name, idx):
+        if isinstance(idx, tuple):
+            cols, cons = idx
+        else:
+            cols = idx
+            cons = set()
+        cols = enlist(cols)
+        idxname = self.quoteIdent('idx_%s_%s' % (name,
+                                                 '_'.join(cols + list(cons))))
+        idxcols = ', '.join(self.quoteIdent(col) for col in cols)
+        unique = 'UNIQUE ' if 'unique' in cons else ''
+        cur.execute('CREATE %sINDEX IF NOT EXISTS %s ON %s(%s)'
+                        % (unique, idxname, self.quoteIdent(name), idxcols))
 
     def importDB(self, file):
         # TODO: import data in the database instead of replacing it!
@@ -41,3 +49,6 @@ class SQLiteDB(SQLDB):
 
     def __str__(self):
         return 'SQLite database in %s' % self.file
+
+SQLiteDB.constraints = dict(SQLDB.constraints)
+SQLiteDB.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'

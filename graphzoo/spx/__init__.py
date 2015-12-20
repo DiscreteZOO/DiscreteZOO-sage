@@ -8,14 +8,13 @@ import fields
 
 objspec = {
     "name": "graph_spx",
-    "dict": "_spxprops",
-    "primary_key": "id",
-    "indices": {"spx_r", "spx_s"},
-    "skip": {"id"},
+    "primary_key": "zooid",
+    "indices": [(["spx_r", "spx_s"], {"unique"})],
+    "skip": {"zooid"},
     "fields" : {
-        "id": (ZooGraph, {"primary_key"}),
         "spx_r": Integer,
-        "spx_s": Integer
+        "spx_s": Integer,
+        "zooid": ZooGraph
     },
     "compute": {},
     "default": {
@@ -29,4 +28,4 @@ objspec = {
 }
 
 SPXGraph._spec = objspec
-makeFields(objspec, fields)
+makeFields(SPXGraph, fields)

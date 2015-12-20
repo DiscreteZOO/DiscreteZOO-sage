@@ -1,22 +1,25 @@
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
+import graphzoo
 from ..query import Table
 from ..utility import isinteger
 from ..utility import lookup
+from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zoograph import canonical_label
-from ..zooobject import ZooInfo
+from ..zoograph import override
 from ..zooobject import ZooObject
 
 class CVTGraph(ZooGraph):
     _cvtprops = None
     _parent = ZooGraph
     _spec = None
+    _dict = "_cvtprops"
 
     def __init__(self, data = None, index = None, **kargs):
-        ZooObject.__init__(self, CVTGraph, kargs, defNone = ["order"],
-                           setVal = {"data": data, "index": index},
-                           setProp = {"cvt_index": "index"})
+        ZooObject._init_(self, CVTGraph, kargs, defNone = ["order"],
+                         setVal = {"data": data, "index": index},
+                         setProp = {"cvt_index": "index"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
@@ -39,13 +42,13 @@ class CVTGraph(ZooGraph):
                          by = {cl._spec["primary_key"]})
             r = self._db_read(cl._parent, join, {"order": d["order"],
                                                  "cvt_index": d["index"]})
-            d["zooid"] = r["id"]
+            d["zooid"] = r["zooid"]
             d["graph"] = None
         ZooGraph.__init__(self, **d)
 
         if d["order"] is not None:
-            assert(d["order"] == self._props["order"])
-        if self._cvtprops is None:
+            assert(d["order"] == self._graphprops["order"])
+        if len(self._cvtprops) == 0:
             self._db_read(cl)
 
     def _repr_generic(self):
@@ -54,6 +57,38 @@ class CVTGraph(ZooGraph):
 
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")
+
+    @override.derived
+    def is_moebius_ladder(self, store = graphzoo.WRITE_TO_DB, cur = None):
+        g = self.girth(store = store, cur = cur)
+        if g != 4:
+            return False
+        o = self.order(store = store, cur = cur)
+        b = self.is_bipartite(store = store, cur = cur)
+        if o == 6:
+            return b
+        d = self.diameter(store = store, cur = cur)
+        og = self.odd_girth(store = store, cur = cur)
+        return ((o % 4 == 0 and 4*d == o and og == 2*d+1) or
+                    (o % 4 == 2 and 4*d == o+2 and b)) and \
+                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
+
+    @override.derived
+    def is_prism(self, store = graphzoo.WRITE_TO_DB, cur = None):
+        o = self.order(store = store, cur = cur)
+        b = self.is_bipartite(store = store, cur = cur)
+        if o == 6:
+            return not b
+        if o == 8:
+            return b
+        g = self.girth(store = store, cur = cur)
+        if g != 4:
+            return False
+        d = self.diameter(store = store, cur = cur)
+        og = self.odd_girth(store = store, cur = cur)
+        return ((o % 4 == 0 and 4*d == o+4 and b) or
+                    (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
+                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
 info = ZooInfo(CVTGraph)
 

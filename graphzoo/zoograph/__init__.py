@@ -4,15 +4,15 @@ from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from ..query import makeFields
+from ..zooobject import ZooObject
 from .zoograph import *
 import fields
 
 objspec = {
     "name": "graph",
-    "dict": "_props",
-    "primary_key": "id",
-    "indices": {"average_degree", "order"},
-    "skip": {"id", "data", "unique_id"},
+    "primary_key": "zooid",
+    "indices": ["order", "average_degree"],
+    "skip": {"data", "zooid"},
     "fields" : {
         #"automorphism_group": ZooGroup,
         "average_degree": Rational,
@@ -31,7 +31,6 @@ objspec = {
         "genus": Integer,
         "girth": Integer,
         "has_multiple_edges": bool,
-        "id": (Integer, {"autoincrement"}),
         "is_arc_transitive": bool,
         "is_asteroidal_triple_free": bool,
         "is_bipartite": bool,
@@ -73,11 +72,11 @@ objspec = {
         "szeged_index": Integer,
         "triangles_count": Integer,
         "treewidth": Integer,
-        "unique_id": (str, {"unique"}),
         "vertex_connectivity": Integer,
         "wiener_index": Integer,
         "zagreb1_index": Integer,
-        "zagreb2_index": Integer
+        "zagreb2_index": Integer,
+        "zooid": ZooObject
     },
     "compute": {ZooGraph: {"diameter", "girth", "has_multiple_edges",
                            "name", "number_of_loops", "order", "size"}},
@@ -85,4 +84,4 @@ objspec = {
 }
 
 ZooGraph._spec = objspec
-makeFields(objspec, fields)
+makeFields(ZooGraph, fields)

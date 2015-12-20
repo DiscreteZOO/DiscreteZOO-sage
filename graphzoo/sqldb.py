@@ -6,8 +6,10 @@ from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from db import DB
+from utility import enlist
 from utility import int_or_real
-from zooobject import ZooObject
+from zooentity import ZooEntity
+from zooproperty import ZooProperty
 
 class SQLDB(DB):
     db = None
@@ -24,7 +26,7 @@ class SQLDB(DB):
         RealNumber: float,
         str: str,
         bool: int,
-        ZooObject: int
+        ZooEntity: int
     }
 
     convert_from = {
@@ -35,7 +37,7 @@ class SQLDB(DB):
         RealNumber: create_RealNumber,
         str: str,
         bool: bool,
-        ZooObject: Integer
+        ZooEntity: Integer
     }
     
     types = {
@@ -69,7 +71,8 @@ class SQLDB(DB):
         query.BitwiseAnd: '&',
         query.BitwiseOr: '|',
         query.Concatenate: '||',
-        query.Like: 'LIKE'
+        query.Like: 'LIKE',
+        query.In: 'IN'
     }
 
     unaryops = {
@@ -112,28 +115,39 @@ class SQLDB(DB):
         else:
             c = set()
         cons = ''.join([' ' + self.constraints[x] for x in c])
-        if issubclass(t, ZooObject):
+        if issubclass(t, ZooEntity):
             return 'INTEGER' + cons + ' REFERENCES %s(%s)' \
                                 % (self.quoteIdent(t._spec['name']),
                                     self.quoteIdent(t._spec['primary_key']))
         else:
             return self.types[t] + cons
 
-    def makeTable(self, t):
+    def makeTable(self, t, alias = True):
         if isinstance(t, query.Table):
-            aliases = ['%s' % self.makeTable(x['table'])
+            if not alias and len(t.tables) == 1:
+                return self.makeTable(t.tables[0]['table'], alias = False)
+            tables = ['%s' % self.makeTable(x['table'])
                         if x['alias'] is None else '%s AS %s' %
-                                                (self.makeTable(x['table']),
-                                                self.quoteIdent(x['alias']))
+                                    (self.makeTable(x['table'], alias = False),
+                                     self.quoteIdent(x['alias']))
                         for x in t.tables]
+            aliases = [query.Table.name(x) for x in t.tables]
             joins = [' %sJOIN ' % ('LEFT ' if x['left'] else '')
                         for x in t.tables]
-            using = ['' if len(x['by']) == 0
-                     else ' USING (%s)' % ', '.join([self.quoteIdent(c)
-                                        for c in x['by']]) for x in t.tables]
-            out = aliases[0] + ''.join([joins[i] + aliases[i] + using[i]
+            by = [[] if x['by'] is None else
+                    [c if isinstance(c, tuple) else (c, c) for c in x['by']]
+                        for x in t.tables]
+            using = ['' if len(by[i]) == 0 else (' ON (%s)' %
+                        ' AND '.join(['%s.%s = %s.%s' %
+                                                (self.quoteIdent(aliases[i-1]),
+                                                 self.quoteIdent(c[0]),
+                                                 self.quoteIdent(aliases[i]),
+                                                 self.quoteIdent(c[1]))
+                                      for c in by[i]]))
+                     for i, x in enumerate(t.tables)]
+            out = tables[0] + ''.join([joins[i] + tables[i] + using[i]
                                          for i in range(1, len(t.tables))])
-            if len(aliases) > 1:
+            if len(tables) > 1:
                 out = "(%s)" % out
             return out
         else:
@@ -154,6 +168,8 @@ class SQLDB(DB):
             if isinstance(exp.column, basestring):
                 sql = self.quoteIdent(exp.column)
                 data = []
+                if exp.table is not None:
+                    sql = "%s.%s" % (self.quoteIdent(exp.table), sql)
             else:
                 sql, data = self.makeExpression(exp.column)
             if alias and exp.alias is not None:
@@ -182,6 +198,11 @@ class SQLDB(DB):
             else:
                 sql = 'COUNT(%s)' % sql
             return (sql, data)
+        elif isinstance(exp, query.Subquery):
+            return self.query(exp.columns, exp.table, cond = exp.cond,
+                              groupby = exp.groupby, orderby = exp.orderby,
+                              limit = exp.limit, offset = exp.offset,
+                              subquery = True)
         else:
             raise NotImplementedError
 
@@ -198,20 +219,48 @@ class SQLDB(DB):
         self.rollback()
         raise ex
 
-    def createIndex(self, cur, name, col):
+    def createIndex(self, cur, name, idx):
         raise NotImplementedError
 
     def init_table(self, spec, commit = False):
         try:
+            pkey = enlist(spec["primary_key"])
+            idxs = [k[0] if isinstance(k, tuple) else k
+                    for k in spec["indices"]]
+            idxs = [enlist(k) for k in idxs]
+            if isinstance(spec["indices"], set):
+                idxs = sorted(idxs)
+            idxs = sum(idxs, [])
+            ext = {k: v for k, v in [(kk, vv[0] if isinstance(vv, tuple)
+                                                else vv)
+                                     for kk, vv in spec['fields'].items()]
+                    if issubclass(v, ZooProperty)}
+            cols = pkey[:]
+            cols += [idxs[i] for i in range(len(idxs))
+                     if idxs[i] not in (cols + idxs[:i])]
+            cols += sorted([k for k, v in spec['fields'].items()
+                            if isinstance(v, tuple) and k not in cols])
+            cols += sorted([k for k in spec['fields']
+                            if k not in cols + ext.keys()])
+            colspec = ['%s %s' % (self.quoteIdent(k),
+                                            self.makeType(spec['fields'][k]))
+                                        for k in cols]
+            if len(pkey) == 1:
+                pkeytype = spec['fields'][pkey[0]]
+                if isinstance(pkeytype, tuple) \
+                        and "autoincrement" in pkeytype[1]:
+                    pkey = []
+            if len(pkey) > 0:
+                colspec += ["PRIMARY KEY (%s)" % ', '.join(pkey)]
             cur = self.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
-                            (self.quoteIdent(spec['name']),
-                            ', '.join(['%s %s' % (self.quoteIdent(k),
-                                                    self.makeType(v))
-                                        for k, v in spec['fields'].items()])))
-            for col in spec['indices']:
-                self.createIndex(cur, spec['name'], col)
+                                                (self.quoteIdent(spec['name']),
+                                                 ', '.join(colspec)))
+            for idx in spec['indices']:
+                self.createIndex(cur, spec['name'], idx)
             cur.close()
+            for c in ext.values():
+                self.init_table(c._spec, commit = False)
             if commit:
                 self.db.commit()
         except self.exceptions as ex:
@@ -230,12 +279,18 @@ class SQLDB(DB):
                 ret = True
             if cur is None:
                 cur = self.cursor()
-            cur.execute('INSERT INTO %s (%s) VALUES (%s)%s' %
+            if len(cols) == 0:
+                sql = 'INSERT INTO %s DEFAULT VALUES%s' % \
+                            (self.quoteIdent(table), self.returning(id))
+                data = []
+            else:
+                sql = 'INSERT INTO %s (%s) VALUES (%s)%s' % \
                             (self.quoteIdent(table),
                                 ', '.join([self.quoteIdent(c) for c in cols]),
                                 ', '.join([self.data_string] * len(cols)),
-                                self.returning(id)),
-                        [self.to_db_type(row[c]) for c in cols])
+                                self.returning(id))
+                data = [self.to_db_type(row[c]) for c in cols]
+            cur.execute(sql, data)
             if ret:
                 if commit:
                     self.db.commit()
@@ -250,13 +305,83 @@ class SQLDB(DB):
     def lastrowid(self, cur):
         return cur.lastrowid
 
-    def query(self, columns, table, cond = None, groupby = None,
-              orderby = None, limit = None, offset = None, cur = None):
+    def update_rows(self, table, row, cond = False, cur = None, commit = None):
+        if cond is False:
+            raise UserWarning("false condition given; to change all rows specify cond = None")
+        if cur is False:
+            cur = None
+            ret = False
+        else:
+            ret = True
+        if len(row) == 0:
+            return cur if ret else None
         try:
+            t = self.makeTable(table)
+            cols = row.keys()
+            s = ', '.join(['%s = %s' % (self.quoteIdent(c), self.data_string)
+                           for c in cols])
+            data = [self.to_db_type(row[c]) for c in cols]
+            w = ''
+            if cond is not None:
+                w, d = self.makeExpression(cond)
+                w = ' WHERE %s' % w
+                data += d
+            sql = 'UPDATE %s SET %s%s' % (t, s, w)
+            if cur is None:
+                cur = self.cursor()
+            cur.execute(sql, data)
+            if ret:
+                if commit:
+                    self.db.commit()
+                return cur
+            else:
+                cur.close()
+                if commit is not False:
+                    self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
+
+    def delete_rows(self, table, cond = False, cur = None, commit = None):
+        if cond is False:
+            raise UserWarning("false condition given; to delete all rows specify cond = None")
+        if cur is False:
+            cur = None
+            ret = False
+        else:
+            ret = True
+        try:
+            t = self.makeTable(table)
+            w = ''
+            if cond is not None:
+                w, data = self.makeExpression(cond)
+                w = ' WHERE %s' % w
+            else:
+                data = []
+            sql = 'DELETE FROM %s%s' % (t, w)
+            if cur is None:
+                cur = self.cursor()
+            cur.execute(sql, data)
+            if ret:
+                if commit:
+                    self.db.commit()
+                return cur
+            else:
+                cur.close()
+                if commit is not False:
+                    self.db.commit()
+        except self.exceptions as ex:
+            self.handle_exception(ex)
+
+    def query(self, columns, table, cond = None, groupby = None,
+              orderby = None, limit = None, offset = None, distinct = False,
+              cur = None, subquery = False):
+        try:
+            dist = 'DISTINCT ' if distinct else ''
             t = self.makeTable(table)
             cols = [self.makeExpression(col, alias = True) for col in columns]
             c = ', '.join([x[0] for x in cols])
             data = sum([x[1] for x in cols], [])
+            w = ''
             if cond is not None:
                 w, d = self.makeExpression(cond)
                 w = ' WHERE %s' % w
@@ -289,9 +414,12 @@ class SQLDB(DB):
                 l = ' LIMIT %d' % limit
                 if offset is not None:
                     l += ' OFFSET %d' % offset
+            sql = 'SELECT %s%s FROM %s%s%s%s%s' % (dist, c, t, w, g, o, l)
+            if subquery:
+                return (sql, data)
             if cur is None:
                 cur = self.cursor()
-            cur.execute('SELECT %s FROM %s%s%s%s%s' % (c, t, w, g, o, l), data)
+            cur.execute(sql, data)
             return cur
         except self.exceptions as ex:
             self.handle_exception(ex)

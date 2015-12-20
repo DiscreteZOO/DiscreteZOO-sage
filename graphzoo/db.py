@@ -1,5 +1,5 @@
 from sage.rings.real_mpfr import RealNumber
-from zooobject import ZooObject
+from zooentity import ZooEntity
 
 class DB:
     convert_to = None
@@ -30,8 +30,8 @@ class DB:
         raise NotImplementedError
 
     def to_db_type(self, x):
-        if isinstance(x, ZooObject):
-            return self.convert_to[ZooObject](x._zooid)
+        if isinstance(x, ZooEntity):
+            return self.convert_to[ZooEntity](x._zooid)
         elif isinstance(x, RealNumber):
             return self.convert_to[RealNumber](x)
         elif type(x) in self.convert_to:
@@ -42,8 +42,8 @@ class DB:
     def from_db_type(self, x, t):
         if isinstance(t, tuple):
             t = t[0]
-        if issubclass(t, ZooObject):
-            return self.convert_from[ZooObject](x)
+        if issubclass(t, ZooEntity):
+            return self.convert_from[ZooEntity](x)
         elif t in self.convert_from:
             return self.convert_from[t](x)
         else:
