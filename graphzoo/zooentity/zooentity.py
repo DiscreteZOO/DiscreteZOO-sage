@@ -167,6 +167,10 @@ class ZooEntity(object):
             if self._zooid is not False:
                 self._zooid = objid
             return objid
+        cl._add_change(self, cl, cur)
+
+    def _add_change(self, cl, cur):
+        pass
 
     def _todict(self, r, skip = [], fields = None):
         if fields is None:
