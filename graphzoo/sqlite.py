@@ -14,11 +14,13 @@ class SQLiteDB(SQLDB):
     file = None
     
     def connect(self, file = DBFILE):
-        try:
-            os.makedirs(os.path.dirname(file))
-        except OSError as ex:
-            if ex.errno != errno.EEXIST:
-                raise ex
+        dir = os.path.dirname(file)
+        if dir:
+            try:
+                os.makedirs(dir)
+            except OSError as ex:
+                if ex.errno != errno.EEXIST:
+                    raise ex
         self.file = file
         self.db = sqlite3.connect(file)
         self.db.text_factory = str

@@ -100,6 +100,9 @@ class ZooObject(ZooEntity):
         self._db.update_rows(cl._spec["name"], row, cond, cur = cur,
                              commit = commit)
 
+    def _add_change(self, cl, cur):
+        Change(self._zooid, cl, cur = cur)
+
     def alias(self):
         try:
             return lookup(self._zooprops, "alias")
