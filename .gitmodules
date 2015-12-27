@@ -1,0 +1,3 @@
+[submodule "graphzoo/spec"]
+	path = graphzoo/spec
+	url = git@github.com:GraphZOO/GraphZOO-spec.git

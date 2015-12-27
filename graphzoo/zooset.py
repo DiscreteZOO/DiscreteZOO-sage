@@ -7,6 +7,7 @@ from utility import enlist
 from utility import lookup
 from zooentity import ZooEntity
 from zooproperty import ZooProperty
+from zootypes import register_type
 
 class _ZooSet(dict, ZooProperty):
     _parent = None
@@ -248,7 +249,7 @@ def ZooSet(parent, name, fields, use_tuples = None):
             "fields" : {
                 id: ZooEntity,
                 fkey: (parent, {"not_null"}),
-                "deleted": bool
+                "deleted": (bool, {"not_null"})
             },
             "compute": {},
             "default": {}
@@ -257,3 +258,5 @@ def ZooSet(parent, name, fields, use_tuples = None):
     ZooSet._spec["fields"].update(fields)
     ZooSet._spec["indices"] = [([fkey] + fields.keys(), {"unique"})]
     return ZooSet
+
+register_type(ZooSet)

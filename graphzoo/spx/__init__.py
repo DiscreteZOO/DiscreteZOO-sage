@@ -1,31 +1,7 @@
 __all__ = ['fields', 'SPXGraph', 'info']
 
-from sage.rings.integer import Integer
 from .spxgraph import *
-from ..query import makeFields
-from ..zoograph import ZooGraph
+from ..zootypes import init_class
 import fields
 
-objspec = {
-    "name": "graph_spx",
-    "primary_key": "zooid",
-    "indices": [(["spx_r", "spx_s"], {"unique"})],
-    "skip": {"zooid"},
-    "fields" : {
-        "spx_r": Integer,
-        "spx_s": Integer,
-        "zooid": ZooGraph
-    },
-    "compute": {},
-    "default": {
-        ZooGraph: {
-            "average_degree": 3,
-            "is_bipartite": True,
-            "is_regular": True,
-            "is_tree": False
-        }
-    }
-}
-
-SPXGraph._spec = objspec
-makeFields(SPXGraph, fields)
+init_class(SPXGraph, fields)
