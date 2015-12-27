@@ -1,18 +1,8 @@
 __all__ = ['ZooEntity', 'ZooInfo']
 
-from sage.rings.integer import Integer
 from .zooentity import *
+from ..zootypes import init_class
 
-objspec = {
-    "name": "entity",
-    "primary_key": "zooid",
-    "indices": {},
-    "skip": {"zooid"},
-    "fields" : {
-        "zooid": (Integer, {"autoincrement"})
-    },
-    "compute": {},
-    "default": {}
-}
+init_class(ZooEntity)
 
-ZooEntity._spec = objspec
+from ..zooset import ZooSet

@@ -66,12 +66,3 @@ def enlist(l):
     elif not isinstance(l, list):
         l = [l]
     return l
-
-def init_metaclasses(cl):
-    for k, v in cl._spec["fields"].items():
-        if isinstance(v, tuple) and isinstance(v[0], tuple):
-            (m, f), c = v
-            t = m(cl, k, f)
-            if len(c) > 0:
-                t = (t, c)
-            cl._spec["fields"][k] = t
