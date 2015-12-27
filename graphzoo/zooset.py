@@ -248,7 +248,7 @@ def ZooSet(parent, name, fields, use_tuples = None):
             "fields" : {
                 id: ZooEntity,
                 fkey: (parent, {"not_null"}),
-                "deleted": bool
+                "deleted": (bool, {"not_null"})
             },
             "compute": {},
             "default": {}
