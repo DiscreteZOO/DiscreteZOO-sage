@@ -4,7 +4,7 @@
 
 ## Installation
 
-If you don't have it yet, obtain [Sage](http://www.sagemath.org/). Then [download](https://github.com/DiscreteZOO/DiscreteZOO-sage/archive/master.zip) or clone this repository into the working folder, and [make sure](INSTALL.md) that Sage will see the `discretezoo` folder once it is run.
+If you don't have it yet, obtain [Sage](http://www.sagemath.org/). Then [download](https://github.com/DiscreteZOO/DiscreteZOO-sage/archive/master.zip) or clone this repository into the working folder, run `init.sh` from it, and [make sure](INSTALL.md) that Sage will see the `discretezoo` folder once it is run.
 
 A [database](http://baza.fmf.uni-lj.si/discretezoo.db) of all cubic vertex-transitive graphs with at most 1280 vertices is currently available. To import it, download it, and then run in Sage:
 ```sage
