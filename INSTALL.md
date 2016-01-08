@@ -4,7 +4,7 @@
 
 ## The Sage interface
 
-To use the Sage interface, you will first have to obtain [Sage](http://www.sagemath.org/) (any version from 6.7 on should do, although 6.10 will contain fixes that will allow using all applicable methods on graphs from *DiscreteZOO*). Then either [download](https://github.com/DiscreteZOO/DiscreteZOO/archive/master.zip) the contents of the repository and unzip it, or clone the repository to your local computer.
+To use the Sage interface, you will first have to obtain [Sage](http://www.sagemath.org/) (any version from 6.7 on should do, although 6.10 will contain fixes that will allow using all applicable methods on graphs from *DiscreteZOO*). Then either [download](https://github.com/DiscreteZOO/DiscreteZOO-sage/archive/master.zip) the contents of the repository and unzip it, or clone the repository to your local computer.
 
 Your local copy will contain a folder named `discretezoo`, which contains the Python module that acts as the Sage interface. To use it, you should make sure that it is in the serach path of Sage's copy of Python. There are two basic ways of achieving this:
 * Run Sage from the root folder of this repository.
