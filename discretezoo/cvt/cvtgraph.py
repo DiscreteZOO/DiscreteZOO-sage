@@ -1,6 +1,6 @@
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
-import graphzoo
+import discretezoo
 from ..query import Table
 from ..utility import isinteger
 from ..utility import lookup
@@ -59,7 +59,7 @@ class CVTGraph(ZooGraph):
         return lookup(self._cvtprops, "cvt_index")
 
     @override.derived
-    def is_moebius_ladder(self, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_moebius_ladder(self, store = discretezoo.WRITE_TO_DB, cur = None):
         g = self.girth(store = store, cur = cur)
         if g != 4:
             return False
@@ -74,7 +74,7 @@ class CVTGraph(ZooGraph):
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
     @override.derived
-    def is_prism(self, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_prism(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
         b = self.is_bipartite(store = store, cur = cur)
         if o == 6:

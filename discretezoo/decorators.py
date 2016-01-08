@@ -1,4 +1,4 @@
-import graphzoo
+import discretezoo
 from utility import lookup
 from utility import update
 
@@ -17,7 +17,7 @@ class ZooDecorator:
 
     def derived(this, fun):
         def decorated(self, *largs, **kargs):
-            store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                            destroy = True)
             cur = lookup(kargs, "cur", default = None, destroy = True)
             if len(largs) + len(kargs) == 0:
@@ -32,7 +32,8 @@ class ZooDecorator:
     def implied(this, **attrs):
         def _implied(fun):
             def decorated(self, *largs, **kargs):
-                store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+                store = lookup(kargs, "store",
+                               default = discretezoo.WRITE_TO_DB,
                                destroy = True)
                 cur = lookup(kargs, "cur", default = None, destroy = True)
                 default = len(largs) + len(kargs) == 0
@@ -67,7 +68,8 @@ class ZooDecorator:
     def determined(this, **attrs):
         def _determined(fun):
             def decorated(self, *largs, **kargs):
-                store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+                store = lookup(kargs, "store",
+                               default = discretezoo.WRITE_TO_DB,
                                destroy = True)
                 cur = lookup(kargs, "cur", default = None, destroy = True)
                 default = len(largs) + len(kargs) == 0

@@ -3,7 +3,7 @@ import os
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
-import graphzoo
+import discretezoo
 from query import makeFields
 
 names = {
@@ -14,7 +14,7 @@ names = {
     "RealNumber": RealNumber
 }
 
-path = os.path.join(graphzoo.__path__[0], "spec")
+path = os.path.join(discretezoo.__path__[0], "spec")
 
 def normalize_type(t):
     if isinstance(t, list):

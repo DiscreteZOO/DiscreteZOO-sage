@@ -5,7 +5,7 @@ import sqlite3
 from sqldb import SQLDB
 from utility import enlist
 
-DBFILE = os.path.join(os.path.expanduser('~'), '.graphzoo', 'graphzoo.db')
+DBFILE = os.path.join(os.path.expanduser('~'), '.discretezoo', 'discretezoo.db')
 
 class SQLiteDB(SQLDB):
     data_string = '?'

@@ -1,4 +1,4 @@
-import graphzoo
+import discretezoo
 from ..query import A as All
 from ..query import And
 from ..query import Column
@@ -51,7 +51,7 @@ class ZooEntity(object):
         if self._db is not None:
             return
         if db is None:
-            self._db = graphzoo.DEFAULT_DB
+            self._db = discretezoo.DEFAULT_DB
         else:
             self._db = db
 
@@ -208,7 +208,7 @@ class ZooInfo:
     def getdb(self):
         if self.cl._db is not None:
             return self.cl._db
-        return graphzoo.DEFAULT_DB
+        return discretezoo.DEFAULT_DB
 
     def initdb(self, db = None, commit = True):
         if db is None:

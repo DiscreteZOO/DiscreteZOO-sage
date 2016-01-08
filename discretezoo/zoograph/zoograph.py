@@ -5,7 +5,7 @@ from sage.rings.integer import Integer
 from hashlib import sha256
 from types import BuiltinFunctionType
 from types import MethodType
-import graphzoo
+import discretezoo
 from ..decorators import ZooDecorator
 from ..query import Column
 from ..query import Value
@@ -151,7 +151,7 @@ class ZooGraph(Graph, ZooObject):
 
     def __getattribute__(self, name):
         def _graphattr(*largs, **kargs):
-            store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                            destroy = True)
             cur = lookup(kargs, "cur", default = None, destroy = True)
             default = len(largs) + len(kargs) == 0
@@ -230,18 +230,18 @@ class ZooGraph(Graph, ZooObject):
             return self._unique_id
 
     @override.derived
-    def is_half_transitive(self, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
 
     @override.implied(genus = Integer(0))
-    def is_planar(self, value, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_planar(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
         return value
 
     @override.documented
     def is_regular(self, k = None, *largs, **kargs):
-        store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
@@ -268,7 +268,7 @@ class ZooGraph(Graph, ZooObject):
             return r
 
     @override.derived
-    def is_semi_symmetric(self, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_semi_symmetric(self, store = discretezoo.WRITE_TO_DB, cur = None):
         if not self.is_bipartite(store = store, cur = cur):
             return False
         return (self.is_regular(store = store, cur = cur) and
@@ -276,17 +276,18 @@ class ZooGraph(Graph, ZooObject):
                 not self.is_vertex_transitive(store = store, cur = cur))
 
     @override.implied(triangles_count = Integer(0))
-    def is_triangle_free(self, value, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_triangle_free(self, value, store = discretezoo.WRITE_TO_DB,
+                         cur = None):
         return value
 
     @override.derived
-    def is_weakly_chordal(self, store = graphzoo.WRITE_TO_DB, cur = None):
+    def is_weakly_chordal(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return self.is_long_hole_free(store = store, cur = cur) \
             and self.is_long_antihole_free(store = store, cur = cur)
 
     @override.documented
     def name(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = graphzoo.WRITE_TO_DB,
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
         new = lookup(kargs, "new", default = None, destroy = True)
@@ -306,7 +307,7 @@ class ZooGraph(Graph, ZooObject):
             return Graph.name(self, *largs, **kargs)
 
     @override.determined(is_bipartite = PlusInfinity())
-    def odd_girth(self, value, store = graphzoo.WRITE_TO_DB, cur = None):
+    def odd_girth(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
         if value == PlusInfinity():
             if store:
                 self._update_rows(ZooGraph, {"is_bipartite": True},
