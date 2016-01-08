@@ -47,4 +47,3 @@ if SQL:
     conn.execute("VACUUM;")
     conn.commit()
     conn.close()
-
