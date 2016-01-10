@@ -229,6 +229,28 @@ class ZooGraph(Graph, ZooObject):
             self._unique_id = unique_id(self)
             return self._unique_id
 
+    @override.documented
+    def average_degree(self, *largs, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                       destroy = True)
+        cur = lookup(kargs, "cur", default = None, destroy = True)
+        default = len(largs) + len(kargs) == 0
+        try:
+            if not default:
+                raise NotImplementedError
+            lookup(self._graphprops, "average_degree")
+            return 2*self.size(store = store,
+                               cur = cur)/self.order(store = store, cur = cur)
+        except (KeyError, NotImplementedError):
+            a = Graph.average_degree(self, *largs, **kargs)
+            if default:
+                if store:
+                    self._update_rows(ZooGraph, {"average_degree": a},
+                                      {self._spec["primary_key"]: self._zooid},
+                                      cur = cur)
+                update(self._graphprops, "average_degree", a)
+            return a
+
     @override.derived
     def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return (self.is_edge_transitive(store = store, cur = cur) and
