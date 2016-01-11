@@ -229,7 +229,7 @@ class Column(Expression):
         elif self.join is None:
             return self.table
         else:
-            return Table(self.table).join(self.join, by = self.by)
+            return Table(self.join).join(self.table, by = self.by)
 
     def __str__(self):
         column = '%s' % self.column

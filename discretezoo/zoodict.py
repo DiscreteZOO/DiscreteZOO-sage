@@ -68,10 +68,10 @@ class _ZooDict(dict, ZooProperty):
         k, tk = self._normalize_key(k)
         return dict.__getitem__(self, k)[1]
 
-    def __setitem__(self, k, v, store = discretezoo.WRITE_TO_DB, cur = None):
+    def __setitem__(self, k, v, id = None, store = discretezoo.WRITE_TO_DB,
+                    cur = None):
         k, tk = self._normalize_key(k)
         v, tv = self._normalize_val(v)
-        id = None
         if k in self and self[k] == v:
             return
         if store:
@@ -94,7 +94,7 @@ class _ZooDict(dict, ZooProperty):
             k, tk = self._normalize_key(k)
             if k not in self:
                 raise KeyError(k)
-            id = self[k][0]
+            id = dict.__getitem__(self, k)[0]
         if store:
             self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
                               cur = cur)

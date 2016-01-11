@@ -80,7 +80,7 @@ class ZooGraph(Graph, ZooObject):
             d["unique_id_algorithm"] = d["graph"]._unique_id_algorithm
             self._copy_props(cl, d["graph"])
         else:
-            d["unique_id"] = unique_id(d["graph"])
+            d["unique_id"] = unique_id(d["graph"], store = False)
             d["unique_id_algorithm"] = DEFAULT_ALGORITHM
         try:
             if d["zooid"] is None:
@@ -337,14 +337,19 @@ class ZooGraph(Graph, ZooObject):
 
 DEFAULT_ALGORITHM = "sage"
 
-def canonical_label(graph):
-    return graph.canonical_label(algorithm = DEFAULT_ALGORITHM)
+def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):
+    return graph.canonical_label(algorithm = algorithm)
 
-def data(graph):
+def data(graph, algorithm = DEFAULT_ALGORITHM):
     # TODO: determine the most appropriate way of representing the graph
-    return canonical_label(graph).sparse6_string()
+    return canonical_label(graph, algorithm = algorithm).sparse6_string()
 
-def unique_id(graph):
-    return sha256(data(graph)).hexdigest()
+def unique_id(graph, algorithm = DEFAULT_ALGORITHM,
+              store = discretezoo.WRITE_TO_DB, cur = None):
+    uid = sha256(data(graph, algorithm = algorithm)).hexdigest()
+    if isinstance(graph, ZooGraph):
+        graph.unique_id().__setitem__(algorithm, uid, store = store,
+                                      cur = cur)
+    return uid
 
 info = ZooInfo(ZooGraph)
