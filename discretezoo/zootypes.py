@@ -27,7 +27,7 @@ def normalize_type(t):
         s = None
     t = names[t]
     if s is not None:
-        t = (t, init_fields(s))
+        t = (t, {k: init_fields(v) for k, v in s.items()})
     if c is not None:
         t = (t, c)
     return t
@@ -39,7 +39,7 @@ def init_metaclasses(cl):
     for k, v in cl._spec["fields"].items():
         if isinstance(v, tuple) and isinstance(v[0], tuple):
             (m, f), c = v
-            t = m(cl, k, f)
+            t = m(cl, k, **f)
             init_metaclasses(t)
             if len(c) > 0:
                 t = (t, c)
@@ -61,7 +61,8 @@ def init_class(cl, fields = None):
     f.close()
     spec["name"] = str(spec["name"])
     spec["primary_key"] = str(spec["primary_key"])
-    spec["indices"] = to_string(spec["indices"])
+    spec["indices"] = [tuple(t) if isinstance(t, list) else t
+                       for t in to_string(spec["indices"])]
     spec["skip"] = to_string(spec["skip"])
     spec["fields"] = init_fields(spec["fields"])
     spec["compute"] = {names[c]: to_string(l)

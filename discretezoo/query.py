@@ -69,7 +69,9 @@ class Table(QueryObject):
                     else ('"%s"->"%s"' % (t["table"], t["alias"]))
                     for t in self.tables]
         return "Table %s%s" % (aliases[0], ''.join([' %sjoin %s by (%s)' %
-                ("left " if t["left"] else "", aliases[i], ', '.join(t["by"]))
+                ("left " if t["left"] else "", aliases[i],
+                 ', '.join([('%s = %s' % x) if isinstance(x, tuple) else x
+                            for x in t["by"]]))
                 for i, t in enumerate(self.tables) if i > 0]))
 
 class Expression(QueryObject):
@@ -221,6 +223,14 @@ class Column(Expression):
         else:
             return set()
 
+    def getJoin(self):
+        if self.table is None:
+            return None
+        elif self.join is None:
+            return self.table
+        else:
+            return Table(self.join).join(self.table, by = self.by)
+
     def __str__(self):
         column = '%s' % self.column
         if self.table is not None:
@@ -233,10 +243,12 @@ class Column(Expression):
 
 class ColumnSet(Column):
     cl = None
+    foreign = None
 
     def __init__(self, cl, column = None, alias = None, join = None,
-                 by = None):
+                 by = None, foreign = None):
         self.cl = cl
+        self.foreign = foreign
         makeFields(cl, self, join = join, by = by)
         if column is not None:
             Column.__init__(self, column = column, table = cl._spec["name"],
@@ -244,8 +256,13 @@ class ColumnSet(Column):
 
     def __str__(self):
         cset = "Columns of %s" % self.cl
+        add = []
         if self.column is not None:
-            cset = "%s with default %s" % (cset, Column.__str__(self))
+            add.append("default %s" % Column.__str__(self))
+        if self.foreign is not None:
+            add.append("foreign key %s" % self.foreign)
+        if len(add) > 0:
+            cset = "%s with %s" % (cset, " and ".join(add))
         return cset
 
 class BinaryOp(Expression):

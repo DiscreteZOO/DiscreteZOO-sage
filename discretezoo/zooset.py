@@ -1,6 +1,4 @@
-from sage.rings.integer import Integer
 import discretezoo
-from query import Column
 from query import ColumnSet
 from query import Table
 from utility import enlist
@@ -44,7 +42,7 @@ class _ZooSet(dict, ZooProperty):
 
     def __getattr__(self, name):
         if name == self._spec["primary_key"]:
-            return self.values()
+            return set(self.values())
         if name not in self._ordering:
             raise AttributeError(name)
         if not self._use_tuples:
@@ -77,7 +75,8 @@ class _ZooSet(dict, ZooProperty):
                 table = join.join(Table(table), by = by)
         return ColumnSet(cl, col, join = table,
                          by = frozenset({(cl._foreign_obj._spec["primary_key"],
-                                          cl._foreign_key)}))
+                                          cl._foreign_key)}),
+                         foreign = cl._foreign_key)
 
     def add(self, x, id = None, store = discretezoo.WRITE_TO_DB, cur = None):
         x, tx, id = self._normalize(x, id)

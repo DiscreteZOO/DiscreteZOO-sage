@@ -13,6 +13,7 @@ class ZooObject(ZooEntity):
     _spec = None
     _zooid = None
     _unique_id = None
+    _unique_id_algorithm = None
     _parent = ZooEntity
     _dict = "_zooprops"
     _fields = None
@@ -23,6 +24,7 @@ class ZooObject(ZooEntity):
     def _init_defaults(self, d):
         default(d, "zooid")
         default(d, "unique_id")
+        default(d, "unique_id_algorithm")
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
@@ -31,7 +33,7 @@ class ZooObject(ZooEntity):
             return True
         elif isinstance(d["data"], basestring) \
                 and re.match(r'^[0-9A-Fa-f]{64}$', d["data"]):
-            d["unique_id"] = Integer(d["data"])
+            d["unique_id"] = d["data"]
             d["data"] = None
         else:
             return False
@@ -41,11 +43,21 @@ class ZooObject(ZooEntity):
             self._zooid = d["zooid"]
         if self._unique_id is None:
             self._unique_id = d["unique_id"]
+            self._unique_id_algorithm = d["unique_id_algorithm"]
         if self._zooid is None or self._unique_id is None:
             if d["cur"] is None:
                 r = self._db_read(cl)
                 self._zooid = r["zooid"]
-                self._unique_id = r["unique_id"]
+                if self._unique_id is None:
+                    uid = self._fields.unique_id
+                    cur = self._db.query([uid.algorithm.column, uid.column],
+                                         uid.getJoin(),
+                                         {uid.foreign: self._zooid,
+                                          uid.deleted: False}, limit = 1,
+                                         cur = d["cur"])
+                    r = cur.fetchone()
+                    if r is not None:
+                        self._unique_id_algorithm, self._unique_id = r
         ZooEntity.__init__(self, **d)
 
     def _copy_props(self, cl, obj):
@@ -74,16 +86,21 @@ class ZooObject(ZooEntity):
 
     def _db_read_nonprimary(self, cur = None):
         if self._unique_id is not None:
-            query = {"unique_id": self._unique_id}
-            cur = self._db.query([ZooObject._spec["primary_key"]],
-                                 Table(ZooObject._spec["name"]),
-                                 query, cur = cur)
+            uid = self._fields.unique_id
+            query = {uid.column: self._unique_id, uid.deleted: False}
+            cur = self._db.query([ZooObject._spec["primary_key"],
+                                  uid.algorithm.column],
+                                 uid.getJoin(), query, cur = cur)
             r = cur.fetchone()
             if r is None:
                 raise KeyError(query)
-            self._zooid = r[0]
+            self._zooid, self._unique_id_algorithm = r
             return True
         return False
+
+    def _db_write_nonprimary(self, cur = None):
+        uid = self.unique_id()
+        uid[self._unique_id_algorithm] = self._unique_id
 
     def _update_rows(self, cl, row, cond, cur = None, commit = None):
         if commit is None:
@@ -111,8 +128,10 @@ class ZooObject(ZooEntity):
             return self._zooprops["alias"]
 
     def unique_id(self):
-        if self._unique_id is None:
-            raise NotImplementedError
-        return self._unique_id
+        try:
+            return lookup(self._zooprops, "unique_id")
+        except KeyError:
+            self._zooprops["unique_id"] = ZooObject._spec["fields"]["unique_id"](self._zooid)
+            return self._zooprops["unique_id"]
 
 info = ZooInfo(ZooObject)

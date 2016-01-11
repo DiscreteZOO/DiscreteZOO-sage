@@ -76,13 +76,15 @@ class ZooGraph(Graph, ZooObject):
             d["name"] = d["graph"].name()
         if isinstance(d["graph"], ZooGraph):
             d["zooid"] = d["graph"]._zooid
-            d["unique_id"] = d["graph"].unique_id()
+            d["unique_id"] = d["graph"]._unique_id
+            d["unique_id_algorithm"] = d["graph"]._unique_id_algorithm
             self._copy_props(cl, d["graph"])
         else:
-            d["unique_id"] = unique_id(d["graph"])
+            d["unique_id"] = unique_id(d["graph"], store = False)
+            d["unique_id_algorithm"] = DEFAULT_ALGORITHM
         try:
             if d["zooid"] is None:
-                d["props"] = next(ZooInfo(cl).props(Column("unique_id") == \
+                d["props"] = next(ZooInfo(cl).props(cl._fields.unique_id == \
                                                         Value(d["unique_id"]),
                                                     cur = d["cur"]))
         except StopIteration:
@@ -222,13 +224,6 @@ class ZooGraph(Graph, ZooObject):
         except (KeyError, TypeError):
             return data(self)
 
-    def unique_id(self):
-        try:
-            return ZooObject.unique_id(self)
-        except NotImplementedError:
-            self._unique_id = unique_id(self)
-            return self._unique_id
-
     @override.documented
     def average_degree(self, *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
@@ -340,14 +335,21 @@ class ZooGraph(Graph, ZooObject):
         else:
             return True
 
-def canonical_label(graph):
-    return graph.canonical_label(algorithm = "sage")
+DEFAULT_ALGORITHM = "sage"
 
-def data(graph):
+def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):
+    return graph.canonical_label(algorithm = algorithm)
+
+def data(graph, algorithm = DEFAULT_ALGORITHM):
     # TODO: determine the most appropriate way of representing the graph
-    return canonical_label(graph).sparse6_string()
+    return canonical_label(graph, algorithm = algorithm).sparse6_string()
 
-def unique_id(graph):
-    return sha256(data(graph)).hexdigest()
+def unique_id(graph, algorithm = DEFAULT_ALGORITHM,
+              store = discretezoo.WRITE_TO_DB, cur = None):
+    uid = sha256(data(graph, algorithm = algorithm)).hexdigest()
+    if isinstance(graph, ZooGraph):
+        graph.unique_id().__setitem__(algorithm, uid, store = store,
+                                      cur = cur)
+    return uid
 
 info = ZooInfo(ZooGraph)

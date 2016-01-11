@@ -35,6 +35,7 @@ class ZooProperty(ZooEntity):
             self._db.update_rows(cl._spec["name"], row,
                                  {cl._spec["primary_key"]: id}, cur = cur,
                                  commit = commit)
+        return id
 
     def _delete_rows(self, cl, cond, cur = None, commit = None):
         if commit is None:
