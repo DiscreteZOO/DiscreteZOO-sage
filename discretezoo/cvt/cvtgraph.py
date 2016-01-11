@@ -6,7 +6,6 @@ from ..utility import isinteger
 from ..utility import lookup
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
-from ..zoograph import canonical_label
 from ..zoograph import override
 from ..zooobject import ZooObject
 

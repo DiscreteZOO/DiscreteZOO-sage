@@ -1,4 +1,5 @@
 import discretezoo
+import discretezoo.zootypes
 from ..query import A as All
 from ..query import And
 from ..query import Column
@@ -168,6 +169,10 @@ class ZooEntity(object):
                 self._zooid = objid
             return objid
         cl._add_change(self, cl, cur)
+        cl._db_write_nonprimary(self, cur)
+
+    def _db_write_nonprimary(self, cur = None):
+        pass
 
     def _add_change(self, cl, cur):
         pass
@@ -314,3 +319,12 @@ class ZooInfo:
         if r is None:
             raise KeyError(largs, kargs)
         return self.cl(todict(r, db), db = db)
+
+def initdb(db = None, commit = True):
+    if db is None:
+        db = discretezoo.DEFAULT_DB
+    for cl in discretezoo.zootypes.names.values():
+        if type(cl) is type and issubclass(cl, ZooEntity):
+            ZooInfo(cl).initdb(db = db, commit = False)
+    if commit:
+        db.commit()
