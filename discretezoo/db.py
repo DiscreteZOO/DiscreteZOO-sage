@@ -1,11 +1,17 @@
 from sage.rings.real_mpfr import RealNumber
+import discretezoo
 from zooentity import ZooEntity
+from utility import lookup
 
 class DB:
     convert_to = None
     convert_from = None
+    track = discretezoo.TRACK_CHANGES
 
     def __init__(self, *largs, **kargs):
+        self.track = lookup(kargs, "track",
+                            default = discretezoo.TRACK_CHANGES,
+                            destroy = True)
         self.connect(*largs, **kargs)
 
     def connect(self, **kargs):
