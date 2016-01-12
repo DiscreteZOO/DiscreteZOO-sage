@@ -263,6 +263,10 @@ class ZooGraph(Graph, ZooObject):
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
 
     @override.derived
+    def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return self.number_of_loops(store = store, cur = cur) > 0
+
+    @override.derived
     def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and

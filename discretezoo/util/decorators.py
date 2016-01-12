@@ -29,7 +29,7 @@ class ZooDecorator:
         decorated.func_name = fun.func_name
         return this.documented(decorated)
 
-    def implied(this, **attrs):
+    def implied(this, value = True, **attrs):
         def _implied(fun):
             def decorated(self, *largs, **kargs):
                 store = lookup(kargs, "store",
@@ -41,7 +41,8 @@ class ZooDecorator:
                 try:
                     if not default:
                         raise NotImplementedError
-                    return all(lookup(d, k) == v for k, v in attrs.items())
+                    return all(lookup(d, k) == v
+                               for k, v in attrs.items()) == value
                 except (KeyError, NotImplementedError):
                     a = type.__getattribute__(this.cl,
                                               fun.func_name)(self,
