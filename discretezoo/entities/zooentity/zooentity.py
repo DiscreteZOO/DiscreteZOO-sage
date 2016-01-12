@@ -1,17 +1,17 @@
 import discretezoo
-import discretezoo.zootypes
-from ..query import A as All
-from ..query import And
-from ..query import Column
-from ..query import Count
-from ..query import In
-from ..query import Subquery
-from ..query import Table
-from ..utility import default
-from ..utility import isinteger
-from ..utility import lookup
-from ..utility import todict
-from ..utility import tomultidict
+from .. import zootypes
+from ...db.query import A as All
+from ...db.query import And
+from ...db.query import Column
+from ...db.query import Count
+from ...db.query import In
+from ...db.query import Subquery
+from ...db.query import Table
+from ...util.utility import default
+from ...util.utility import isinteger
+from ...util.utility import lookup
+from ...util.utility import todict
+from ...util.utility import tomultidict
 
 class ZooEntity(object):
     _baseprops = None
@@ -323,7 +323,7 @@ class ZooInfo:
 def initdb(db = None, commit = True):
     if db is None:
         db = discretezoo.DEFAULT_DB
-    for cl in discretezoo.zootypes.names.values():
+    for cl in zootypes.names.values():
         if type(cl) is type and issubclass(cl, ZooEntity):
             ZooInfo(cl).initdb(db = db, commit = False)
     if commit:

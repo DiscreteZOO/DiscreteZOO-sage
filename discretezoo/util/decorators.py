@@ -1,6 +1,6 @@
 import discretezoo
-from utility import lookup
-from utility import update
+from .utility import lookup
+from .utility import update
 
 class ZooDecorator:
     cl = None

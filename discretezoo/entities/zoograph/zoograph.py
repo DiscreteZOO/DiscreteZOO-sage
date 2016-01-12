@@ -7,15 +7,15 @@ from hashlib import sha256
 from types import BuiltinFunctionType
 from types import MethodType
 import discretezoo
-from ..decorators import ZooDecorator
-from ..query import Column
-from ..query import Value
-from ..utility import construct
-from ..utility import default
-from ..utility import lookup
-from ..utility import update
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
+from ...db.query import Column
+from ...db.query import Value
+from ...util.decorators import ZooDecorator
+from ...util.utility import construct
+from ...util.utility import default
+from ...util.utility import lookup
+from ...util.utility import update
 
 override = ZooDecorator(Graph)
 

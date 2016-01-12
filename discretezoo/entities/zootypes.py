@@ -4,7 +4,7 @@ from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 import discretezoo
-from query import makeFields
+from ..db.query import makeFields
 
 names = {
     "bool": bool,

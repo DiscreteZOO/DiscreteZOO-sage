@@ -1,12 +1,12 @@
 import re
 from types import MethodType
 from ..change import Change
-from ..query import Table
-from ..utility import default
-from ..utility import isinteger
-from ..utility import lookup
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
+from ...db.query import Table
+from ...util.utility import default
+from ...util.utility import isinteger
+from ...util.utility import lookup
 
 class ZooObject(ZooEntity):
     _zooprops = None

@@ -1,7 +1,7 @@
-from ..query import Column
-from ..query import Table
-from ..query import Value
 from ..zooentity import ZooEntity
+from ...db.query import Column
+from ...db.query import Table
+from ...db.query import Value
 
 class Change(ZooEntity):
     _parent = None
