@@ -100,7 +100,8 @@ class ZooObject(ZooEntity):
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()
-        uid[self._unique_id_algorithm] = self._unique_id
+        uid.__setitem__(self._unique_id_algorithm, self._unique_id,
+                        store = True, cur = cur)
 
     def _update_rows(self, cl, row, cond, cur = None, commit = None):
         if commit is None:

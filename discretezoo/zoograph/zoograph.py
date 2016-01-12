@@ -1,5 +1,6 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.misc.package import is_package_installed
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
@@ -127,6 +128,13 @@ class ZooGraph(Graph, ZooObject):
         if d["multiedges"] is None:
             d["multiedges"] = self._graphprops["has_multiple_edges"]
         construct(Graph, self, d)
+
+    def _db_write_nonprimary(self, cur = None):
+        uid = self.unique_id()
+        for algo in AVAILABLE_ALGORITHMS:
+            if algo not in uid:
+                uid.__setitem__(algo, unique_id(self, algorithm = algo),
+                                store = True, cur = cur)
 
     def _repr_generic(self):
         name = ""
@@ -335,7 +343,10 @@ class ZooGraph(Graph, ZooObject):
         else:
             return True
 
+AVAILABLE_ALGORITHMS = ["bliss", "sage"]
 DEFAULT_ALGORITHM = "sage"
+if is_package_installed("bliss"):
+    DEFAULT_ALGORITHM = "bliss"
 
 def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):
     return graph.canonical_label(algorithm = algorithm)
