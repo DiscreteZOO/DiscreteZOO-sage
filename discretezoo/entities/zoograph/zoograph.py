@@ -319,10 +319,9 @@ class ZooGraph(Graph, ZooObject):
                 self.is_edge_transitive(store = store, cur = cur) and
                 not self.is_vertex_transitive(store = store, cur = cur))
 
-    @override.implied(triangles_count = Integer(0))
-    def is_triangle_free(self, value, store = discretezoo.WRITE_TO_DB,
-                         cur = None):
-        return value
+    @override.derived
+    def is_triangle_free(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return self.triangles_count(store = store, cur = cur) == 0
 
     @override.derived
     def is_weakly_chordal(self, store = discretezoo.WRITE_TO_DB, cur = None):
