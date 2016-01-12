@@ -18,6 +18,11 @@ from ...util.utility import lookup
 from ...util.utility import update
 
 override = ZooDecorator(Graph)
+aliases = {
+    "__len__": "order",
+    "num_edges": "size",
+    "num_verts": "order"
+}
 
 class ZooGraph(Graph, ZooObject):
     _graphprops = None
@@ -178,6 +183,8 @@ class ZooGraph(Graph, ZooObject):
                                     cur = cur)
                     update(self._graphprops, name, a)
                 return a
+        if name in aliases:
+            name = aliases[name]
         attr = Graph.__getattribute__(self, name)
         if isinstance(attr, MethodType) and \
                 (isinstance(attr.im_func, BuiltinFunctionType) or
