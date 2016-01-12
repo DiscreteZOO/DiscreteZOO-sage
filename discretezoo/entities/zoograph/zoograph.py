@@ -181,7 +181,10 @@ class ZooGraph(Graph, ZooObject):
         attr = Graph.__getattribute__(self, name)
         if isinstance(attr, MethodType) and \
                 (isinstance(attr.im_func, BuiltinFunctionType) or
-                    attr.func_globals["__package__"].startswith("sage.")):
+                    (attr.func_globals["__package__"] is not None and
+                     attr.func_globals["__package__"].startswith("sage.")) or
+                    (attr.func_globals["__name__"] is not None and
+                     attr.func_globals["__name__"].startswith("sage."))):
             cl = type(self)
             while cl is not None:
                 if name in cl._spec["fields"] and \
@@ -253,6 +256,11 @@ class ZooGraph(Graph, ZooObject):
                                       cur = cur)
                 update(self._graphprops, "average_degree", a)
             return a
+
+    @override.derived
+    def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        o = self.order(store = store, cur = cur)
+        return 2*self.size(store = store, cur = cur)/(o*(o-1))
 
     @override.derived
     def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
