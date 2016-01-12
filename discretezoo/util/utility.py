@@ -20,7 +20,6 @@ def default(d, k, v = None):
 
 def update(d, k, v):
     d[k] = v
-    # TODO: write to the database and prepare a commit
 
 def isinteger(x):
     return isinstance(x, Integer) or isinstance(x, int)

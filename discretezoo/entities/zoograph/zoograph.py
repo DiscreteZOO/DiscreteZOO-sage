@@ -18,6 +18,11 @@ from ...util.utility import lookup
 from ...util.utility import update
 
 override = ZooDecorator(Graph)
+aliases = {
+    "__len__": "order",
+    "num_edges": "size",
+    "num_verts": "order"
+}
 
 class ZooGraph(Graph, ZooObject):
     _graphprops = None
@@ -178,6 +183,8 @@ class ZooGraph(Graph, ZooObject):
                                     cur = cur)
                     update(self._graphprops, name, a)
                 return a
+        if name in aliases:
+            name = aliases[name]
         attr = Graph.__getattribute__(self, name)
         if isinstance(attr, MethodType) and \
                 (isinstance(attr.im_func, BuiltinFunctionType) or
@@ -261,6 +268,10 @@ class ZooGraph(Graph, ZooObject):
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
+
+    @override.derived
+    def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return self.number_of_loops(store = store, cur = cur) > 0
 
     @override.derived
     def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
