@@ -1,13 +1,13 @@
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 import discretezoo
-from ..query import Table
-from ..utility import isinteger
-from ..utility import lookup
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zoograph import override
 from ..zooobject import ZooObject
+from ...db.query import Table
+from ...util.utility import isinteger
+from ...util.utility import lookup
 
 class CVTGraph(ZooGraph):
     _cvtprops = None

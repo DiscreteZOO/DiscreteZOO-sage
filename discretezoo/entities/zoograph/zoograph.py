@@ -7,15 +7,15 @@ from hashlib import sha256
 from types import BuiltinFunctionType
 from types import MethodType
 import discretezoo
-from ..decorators import ZooDecorator
-from ..query import Column
-from ..query import Value
-from ..utility import construct
-from ..utility import default
-from ..utility import lookup
-from ..utility import update
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
+from ...db.query import Column
+from ...db.query import Value
+from ...util.decorators import ZooDecorator
+from ...util.utility import construct
+from ...util.utility import default
+from ...util.utility import lookup
+from ...util.utility import update
 
 override = ZooDecorator(Graph)
 
@@ -343,9 +343,10 @@ class ZooGraph(Graph, ZooObject):
         else:
             return True
 
-AVAILABLE_ALGORITHMS = ["bliss", "sage"]
+AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"
 if is_package_installed("bliss"):
+    AVAILABLE_ALGORITHMS.append("bliss")
     DEFAULT_ALGORITHM = "bliss"
 
 def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):

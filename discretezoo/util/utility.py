@@ -1,7 +1,7 @@
 from sage.rings.integer import Integer
 from sage.rings.real_mpfr import create_RealNumber
 from inspect import getargspec
-from query import Column
+from ..db.query import Column
 
 def lookup(d, k, destroy = False, **kargs):
     if k in d:

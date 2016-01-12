@@ -1,11 +1,11 @@
 import discretezoo
-from query import ColumnSet
-from query import Table
-from utility import enlist
-from utility import lookup
-from zooentity import ZooEntity
-from zooproperty import ZooProperty
-from zootypes import register_type
+from .zooentity import ZooEntity
+from .zooproperty import ZooProperty
+from .zootypes import register_type
+from ..db.query import ColumnSet
+from ..db.query import Table
+from ..util.utility import enlist
+from ..util.utility import lookup
 
 class _ZooDict(dict, ZooProperty):
     _parent = None

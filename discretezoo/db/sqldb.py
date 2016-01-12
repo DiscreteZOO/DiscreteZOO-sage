@@ -1,15 +1,15 @@
 import os
 import sqlite3
-import query
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
-from db import DB
-from utility import enlist
-from utility import int_or_real
-from zooentity import ZooEntity
-from zooproperty import ZooProperty
+from . import query
+from .db import DB
+from ..util.utility import enlist
+from ..util.utility import int_or_real
+from ..entities.zooentity import ZooEntity
+from ..entities.zooproperty import ZooProperty
 
 class SQLDB(DB):
     db = None

@@ -2,8 +2,8 @@ import errno
 import os
 import shutil
 import sqlite3
-from sqldb import SQLDB
-from utility import enlist
+from .sqldb import SQLDB
+from ..util.utility import enlist
 
 DBFILE = os.path.join(os.path.expanduser('~'), '.discretezoo', 'discretezoo.db')
 

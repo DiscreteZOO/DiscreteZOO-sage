@@ -1,8 +1,8 @@
-from change import Change
-from query import Column
-from query import Or
-from query import Value
-from zooentity import ZooEntity
+from .change import Change
+from .zooentity import ZooEntity
+from ..db.query import Column
+from ..db.query import Or
+from ..db.query import Value
 
 class ZooProperty(ZooEntity):
     def _insert_row(self, cl, row, cur = None, commit = None):

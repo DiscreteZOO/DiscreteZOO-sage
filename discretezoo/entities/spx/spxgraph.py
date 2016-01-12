@@ -1,9 +1,9 @@
 from sage.rings.integer import Integer
-from ..utility import isinteger
-from ..utility import lookup
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zooobject import ZooObject
+from ...util.utility import isinteger
+from ...util.utility import lookup
 
 class SPXGraph(ZooGraph):
     _spxprops = None

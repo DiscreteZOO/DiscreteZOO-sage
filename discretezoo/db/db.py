@@ -1,7 +1,7 @@
 from sage.rings.real_mpfr import RealNumber
 import discretezoo
-from zooentity import ZooEntity
-from utility import lookup
+from ..entities.zooentity import ZooEntity
+from ..util.utility import lookup
 
 class DB:
     convert_to = None

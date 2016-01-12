@@ -1,13 +1,13 @@
 import psycopg2, psycopg2.extensions, psycopg2.extras
 from types import ModuleType
-from query import And
-from query import BitwiseXOr
-from query import Like
-from query import Or
-from query import Power
-from sqldb import SQLDB
-from utility import enlist
-from utility import lookup
+from .query import And
+from .query import BitwiseXOr
+from .query import Like
+from .query import Or
+from .query import Power
+from .sqldb import SQLDB
+from ..util.utility import enlist
+from ..util.utility import lookup
 
 class PostgreSQLDB(SQLDB):
     data_string = '%s'

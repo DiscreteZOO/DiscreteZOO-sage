@@ -1,9 +1,9 @@
-__all__ = ["zooentity", "zoograph", "cvt", "spx", "sqlite", "query"]
+__all__ = ["entities", "db"]
 DEFAULT_DB = None
 WRITE_TO_DB = True
 TRACK_CHANGES = True
-from . import *
-from zooentity import initdb
+from entities import *
+from db import *
 
 DEFAULT_DB = sqlite.SQLiteDB(track = TRACK_CHANGES)
 info = zoograph.info
