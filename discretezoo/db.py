@@ -1,11 +1,14 @@
 from sage.rings.real_mpfr import RealNumber
+import discretezoo
 from zooentity import ZooEntity
 
 class DB:
     convert_to = None
     convert_from = None
+    track = discretezoo.TRACK_CHANGES
 
-    def __init__(self, *largs, **kargs):
+    def __init__(self, track = discretezoo.TRACK_CHANGES, *largs, **kargs):
+        self.track = track
         self.connect(*largs, **kargs)
 
     def connect(self, **kargs):

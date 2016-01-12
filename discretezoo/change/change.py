@@ -19,23 +19,24 @@ class Change(ZooEntity):
                 table = table._spec["name"]
         ZooEntity.__init__(self, db = db)
         if cur is not None:
-            if self._objid is None:
-                raise KeyError("table not given")
-            row = {"zooid": self._objid, "table": table,
-                   "column": "" if column is None else column,
-                   "commit": "" if commit is None else commit}
-            self._db.query([self._spec["primary_key"]],
-                           Table(self._spec["name"]),
-                           [Column(k) == Value(v) for k, v in row.items()],
-                           cur = cur)
-            r = cur.fetchone()
-            if r is None:
-                row["user"] = user
-                self._db.insert_row(self._spec["name"], row, cur = cur,
-                                    id = self._spec["primary_key"])
-                self._chgid = self._db.lastrowid(cur)
-            else:
-                self._chgid = r[0]
+            if self._db.track:
+                if self._objid is None:
+                    raise KeyError("table not given")
+                row = {"zooid": self._objid, "table": table,
+                       "column": "" if column is None else column,
+                       "commit": "" if commit is None else commit}
+                self._db.query([self._spec["primary_key"]],
+                               Table(self._spec["name"]),
+                               [Column(k) == Value(v) for k, v in row.items()],
+                               cur = cur)
+                r = cur.fetchone()
+                if r is None:
+                    row["user"] = user
+                    self._db.insert_row(self._spec["name"], row, cur = cur,
+                                        id = self._spec["primary_key"])
+                    self._chgid = self._db.lastrowid(cur)
+                else:
+                    self._chgid = r[0]
             self.table =  table
             self.column = column
             self.commit = commit
@@ -65,6 +66,8 @@ class Change(ZooEntity):
         return "Change to object with ID %d in %s" % (self._objid, out)
 
     def commit(commit, user, cur = None):
+        if self._chgid is None:
+            raise KeyError
         if self.commit is not None:
             raise KeyError("change is already included in a commit")
         self._db.update_rows(self._spec["name"],
