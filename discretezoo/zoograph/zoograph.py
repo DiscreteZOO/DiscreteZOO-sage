@@ -343,9 +343,10 @@ class ZooGraph(Graph, ZooObject):
         else:
             return True
 
-AVAILABLE_ALGORITHMS = ["bliss", "sage"]
+AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"
 if is_package_installed("bliss"):
+    AVAILABLE_ALGORITHMS.append("bliss")
     DEFAULT_ALGORITHM = "bliss"
 
 def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):
