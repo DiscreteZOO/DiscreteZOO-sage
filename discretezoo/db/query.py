@@ -366,7 +366,7 @@ class UnaryOp(Expression):
         self.exp = makeExpression(exp)
 
     def getTables(self):
-        return exp.getTables()
+        return self.exp.getTables()
 
     def __str__(self):
         return "%s (%s)" % (self.op, self.exp)
