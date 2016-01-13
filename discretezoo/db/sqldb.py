@@ -6,7 +6,7 @@ from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from . import query
 from .db import DB
-from ..util.utility import enlist
+from .query import enlist
 from ..util.utility import int_or_real
 from ..entities.zooentity import ZooEntity
 from ..entities.zooproperty import ZooProperty
@@ -97,6 +97,10 @@ class SQLDB(DB):
     def quoteIdent(self, ident):
         return '%s%s%s' % (self.ident_quote, ident, self.ident_quote)
 
+    def tableAlias(self, table):
+        return table.tables[0]['alias'] if isinstance(table, query.Table) \
+               else table
+
     def binaryOp(self, op, left, right):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
@@ -139,10 +143,14 @@ class SQLDB(DB):
                         for x in t.tables]
             using = ['' if len(by[i]) == 0 else (' ON (%s)' %
                         ' AND '.join(['%s.%s = %s.%s' %
-                                                (self.quoteIdent(aliases[i-1]),
-                                                 self.quoteIdent(c[0]),
-                                                 self.quoteIdent(aliases[i]),
-                                                 self.quoteIdent(c[1]))
+                                        (self.quoteIdent(c[0][1]
+                                            if isinstance(c[0], tuple)
+                                            else aliases[i-1]),
+                                         self.quoteIdent(c[0][0]
+                                            if isinstance(c[0], tuple)
+                                            else c[0]),
+                                         self.quoteIdent(aliases[i]),
+                                         self.quoteIdent(c[1]))
                                       for c in by[i]]))
                      for i, x in enumerate(t.tables)]
             out = tables[0] + ''.join([joins[i] + tables[i] + using[i]
@@ -169,11 +177,12 @@ class SQLDB(DB):
                 sql = self.quoteIdent(exp.column)
                 data = []
                 if exp.table is not None:
-                    sql = "%s.%s" % (self.quoteIdent(exp.table), sql)
+                    sql = "%s.%s" % \
+                            (self.quoteIdent(self.tableAlias(exp.table)), sql)
             else:
                 sql, data = self.makeExpression(exp.column)
-            if alias and exp.alias is not None:
-                sql += ' AS %s' % self.quoteIdent(exp.alias)
+            if alias and exp.colalias is not None:
+                sql += ' AS %s' % self.quoteIdent(exp.colalias)
             return (sql, data)
         elif isinstance(exp, query.LogicalExpression):
             word = self.logicalexps[exp.__class__]
@@ -419,6 +428,8 @@ class SQLDB(DB):
                 return (sql, data)
             if cur is None:
                 cur = self.cursor()
+            print sql
+            print data
             cur.execute(sql, data)
             return cur
         except self.exceptions as ex:

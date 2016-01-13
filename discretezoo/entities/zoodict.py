@@ -4,7 +4,7 @@ from .zooproperty import ZooProperty
 from .zootypes import register_type
 from ..db.query import ColumnSet
 from ..db.query import Table
-from ..util.utility import enlist
+from ..db.query import enlist
 from ..util.utility import lookup
 
 class _ZooDict(dict, ZooProperty):
@@ -123,15 +123,16 @@ class _ZooDict(dict, ZooProperty):
         return (v, tv)
 
     @staticmethod
-    def _get_column(cl, name, table = None, join = None, by = None):
+    def _get_column(cl, name, table = None, join = None, by = None, cond = []):
         col = None if cl._use_val_tuples else cl._val_ordering[0]
         if join is not None:
             if not isinstance(table, Table):
                 table = join.join(Table(table), by = by)
         return ColumnSet(cl, col, join = table,
-                         by = frozenset({(cl._foreign_obj._spec["primary_key"],
-                                          cl._foreign_key)}),
-                         foreign = cl._foreign_key)
+                        by = frozenset({((cl._foreign_obj._spec["primary_key"],
+                                          table), cl._foreign_key)}),
+                        foreign = cl._foreign_key,
+                        ordering = cl._key_ordering, cond = cond)
 
     def clear(self, store = discretezoo.WRITE_TO_DB, cur = None):
         if store:

@@ -2,9 +2,10 @@ import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
 from .zootypes import register_type
+from ..db.query import Column
 from ..db.query import ColumnSet
 from ..db.query import Table
-from ..util.utility import enlist
+from ..db.query import enlist
 from ..util.utility import lookup
 
 class _ZooSet(dict, ZooProperty):
@@ -68,15 +69,16 @@ class _ZooSet(dict, ZooProperty):
         return (x, tx, id)
 
     @staticmethod
-    def _get_column(cl, name, table = None, join = None, by = None):
+    def _get_column(cl, name, table = None, join = None, by = None, cond = []):
         col = None if cl._use_tuples else cl._ordering[0]
         if join is not None:
             if not isinstance(table, Table):
                 table = join.join(Table(table), by = by)
         return ColumnSet(cl, col, join = table,
-                         by = frozenset({(cl._foreign_obj._spec["primary_key"],
-                                          cl._foreign_key)}),
-                         foreign = cl._foreign_key)
+                by = frozenset({((cl._foreign_obj._spec["primary_key"], table),
+                                 cl._foreign_key)}),
+                foreign = cl._foreign_key, ordering = cl._ordering,
+                cond = cond)
 
     def add(self, x, id = None, store = discretezoo.WRITE_TO_DB, cur = None):
         x, tx, id = self._normalize(x, id)

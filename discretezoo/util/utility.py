@@ -58,10 +58,3 @@ def construct(cl, self, d):
     if argspec[2] is None:
         d = {k: v for k, v in d.items() if k in argspec[0]}
     return cl.__init__(self, **d)
-
-def enlist(l):
-    if isinstance(l, set):
-        l = sorted(l)
-    elif not isinstance(l, list):
-        l = [l]
-    return l
