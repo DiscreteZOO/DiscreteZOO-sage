@@ -17,13 +17,13 @@ class Table(QueryObject):
             self.tables = [{"table": t,
                             "alias": Table.alias(t),
                             "left": False,
-                            "by": set()} for t in args] \
+                            "by": None} for t in args] \
                         + [{"table": t,
                             "alias": a,
                             "left": False,
-                            "by": set()} for a, t in kargs.items()]
+                            "by": None} for a, t in kargs.items()]
 
-    def join(self, table, by = set(), left = False, alias = None, **kargs):
+    def join(self, table, by = None, left = False, alias = None, **kargs):
         if len(kargs) == 1:
             alias, table = kargs.items()[0]
         elif len(kargs) != 0:
@@ -87,6 +87,9 @@ class Expression(QueryObject):
 
     def getTables(self):
         raise NotImplementedError
+
+    def __hash__(self):
+        return hash(str(self))
 
     def __lt__(self, other):
         return LessThan(self, other)
@@ -213,12 +216,11 @@ class Column(Expression):
     cond = None
 
     def __init__(self, column, table = None, alias = None, join = None,
-                 by = None, cond = []):
+                 by = None):
         self.column = column
         self.table = table
         self.join = join
         self.by = by
-        self.cond = cond
         if alias is True:
             self.colalias = str(column)
         else:
@@ -255,10 +257,11 @@ class ColumnSet(Column):
     foreign = None
     ordering = None
     table = None
+    subtables = None
 
     def __init__(self, cl, column = None, alias = None, join = None,
-                 by = None, foreign = None, ordering = None, cond = [],
-                 newcond = None):
+                 by = None, foreign = None, ordering = None, newcond = None):
+        self.subtables = {}
         if isinstance(cl, ColumnSet):
             self.cl = cl.cl
             self.foreign = cl.foreign
@@ -275,15 +278,16 @@ class ColumnSet(Column):
             self.ordering = ordering
             self.table = cl._spec["name"]
         if newcond is not None:
-            cond = cond + [(self.table, newcond)]
-        makeFields(self.cl, self, join = join, by = by, table = self.table,
-                   cond = cond)
+            if by is None:
+                by = []
+            elif isinstance(by, frozenset):
+                by = [(k, Column(k, table = join)) for k in by]
+            by = tuple(by + newcond)
+        makeFields(self.cl, self, join = join, by = by, table = self.table)
         if column is not None:
             Column.__init__(self, column = column,
                             table = self.table, alias = alias,
-                            join = join, by = by, cond = cond)
-        else:
-            self.cond = cond
+                            join = join, by = by)
 
     def __str__(self):
         cset = "Columns of %s" % self.cl
@@ -297,9 +301,17 @@ class ColumnSet(Column):
         return cset
 
     def __getitem__(self, k):
-        tk = enlist(k)
-        return ColumnSet(self, newcond = {c: tk[i]
-                                        for i, c in enumerate(self.ordering)})
+        tk = tuple(enlist(k))
+        if tk not in self.subtables:
+            st = ColumnSet(self, newcond = tuple((c, Value(tk[i])) for i, c
+                                                 in enumerate(self.ordering)))
+            try:
+                self.subtables[tk] = st
+            except TypeError:
+                pass
+        else:
+            st = self.subtables[tk]
+        return st
 
 class BinaryOp(Expression):
     left = None
@@ -563,7 +575,7 @@ def makeExpression(val):
     else:
         return Value(val)
 
-def makeFields(cl, module, join = None, by = None, table = None, cond = []):
+def makeFields(cl, module, join = None, by = None, table = None):
     mtype = type(module)
     if cl._parent is not None:
         for k in dir(cl._parent._fields):
@@ -576,10 +588,9 @@ def makeFields(cl, module, join = None, by = None, table = None, cond = []):
         try:
             if isinstance(v, tuple):
                 v = v[0]
-            col = v._get_column(v, k, table = table, join = join,
-                                by = by, cond = cond)
+            col = v._get_column(v, k, table = table, join = join, by = by)
         except AttributeError:
-            col = Column(k, table = table, join = join, by = by, cond = cond)
+            col = Column(k, table = table, join = join, by = by)
         mtype.__setattr__(module, k, col)
     cl._fields = module
 

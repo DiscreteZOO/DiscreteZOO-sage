@@ -52,8 +52,7 @@ class ZooObject(ZooEntity):
                     uid = self._fields.unique_id
                     cur = self._db.query([uid.algorithm.column, uid.column],
                                          uid.getJoin(),
-                                         {uid.foreign: self._zooid,
-                                          uid.deleted.column: False},
+                                         {uid.foreign: self._zooid},
                                           limit = 1, cur = d["cur"])
                     r = cur.fetchone()
                     if r is not None:
@@ -87,7 +86,7 @@ class ZooObject(ZooEntity):
     def _db_read_nonprimary(self, cur = None):
         if self._unique_id is not None:
             uid = self._fields.unique_id
-            query = {uid.column: self._unique_id, uid.deleted.column: False}
+            query = {uid.column: self._unique_id}
             cur = self._db.query([ZooObject._spec["primary_key"],
                                   uid.algorithm.column],
                                  uid.getJoin(), query, cur = cur)
