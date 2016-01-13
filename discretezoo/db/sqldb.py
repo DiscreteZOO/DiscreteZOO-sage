@@ -6,7 +6,7 @@ from sage.rings.real_mpfr import RealNumber
 from sage.rings.real_mpfr import create_RealNumber
 from . import query
 from .db import DB
-from ..util.utility import enlist
+from .query import enlist
 from ..util.utility import int_or_real
 from ..entities.zooentity import ZooEntity
 from ..entities.zooproperty import ZooProperty
@@ -97,6 +97,10 @@ class SQLDB(DB):
     def quoteIdent(self, ident):
         return '%s%s%s' % (self.ident_quote, ident, self.ident_quote)
 
+    def tableAlias(self, table):
+        return table.tables[0]['alias'] if isinstance(table, query.Table) \
+               else table
+
     def binaryOp(self, op, left, right):
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
@@ -126,32 +130,40 @@ class SQLDB(DB):
         if isinstance(t, query.Table):
             if not alias and len(t.tables) == 1:
                 return self.makeTable(t.tables[0]['table'], alias = False)
-            tables = ['%s' % self.makeTable(x['table'])
-                        if x['alias'] is None else '%s AS %s' %
-                                    (self.makeTable(x['table'], alias = False),
-                                     self.quoteIdent(x['alias']))
-                        for x in t.tables]
+            tdata = [self.makeTable(x['table']) if x['alias'] is None
+                     else self.makeTable(x['table'], alias = False)
+                     for x in t.tables]
+            tables = ['%s' % tdata[i][0] if x['alias'] is None
+                      else '%s AS %s' % (tdata[i][0],
+                                         self.quoteIdent(x['alias']))
+                        for i, x in enumerate(t.tables)]
             aliases = [query.Table.name(x) for x in t.tables]
             joins = [' %sJOIN ' % ('LEFT ' if x['left'] else '')
                         for x in t.tables]
-            by = [[] if x['by'] is None else
-                    [c if isinstance(c, tuple) else (c, c) for c in x['by']]
-                        for x in t.tables]
-            using = ['' if len(by[i]) == 0 else (' ON (%s)' %
-                        ' AND '.join(['%s.%s = %s.%s' %
-                                                (self.quoteIdent(aliases[i-1]),
-                                                 self.quoteIdent(c[0]),
-                                                 self.quoteIdent(aliases[i]),
-                                                 self.quoteIdent(c[1]))
-                                      for c in by[i]]))
+            bydata = [{} if not isinstance(x['by'], tuple) else
+                      {k: self.makeExpression(v) for k, v in x['by']}
+                      for x in t.tables]
+            bykeys = [d.keys() for d in bydata]
+            using = ['' if x['by'] is None or len(x['by']) == 0 else
+                     ((' USING (%s)' % ', '.join([self.quoteIdent(c)
+                                                  for c in x['by']]))
+                        if isinstance(x['by'], frozenset)
+                        else ' ON %s' %
+                            ' AND '.join(['%s.%s = %s' %
+                                            (self.quoteIdent(aliases[i]),
+                                             self.quoteIdent(k),
+                                             bydata[i][k][0])
+                                          for k in bykeys[i]]))
                      for i, x in enumerate(t.tables)]
             out = tables[0] + ''.join([joins[i] + tables[i] + using[i]
                                          for i in range(1, len(t.tables))])
+            data = sum([tdata[i][1] + sum([bydata[i][k][1] for k in keys], [])
+                        for i, keys in enumerate(bykeys)], [])
             if len(tables) > 1:
                 out = "(%s)" % out
-            return out
+            return out, data
         else:
-            return self.quoteIdent(t)
+            return self.quoteIdent(t), []
 
     def makeExpression(self, exp, alias = False):
         if exp is None:
@@ -169,11 +181,12 @@ class SQLDB(DB):
                 sql = self.quoteIdent(exp.column)
                 data = []
                 if exp.table is not None:
-                    sql = "%s.%s" % (self.quoteIdent(exp.table), sql)
+                    sql = "%s.%s" % \
+                            (self.quoteIdent(self.tableAlias(exp.table)), sql)
             else:
                 sql, data = self.makeExpression(exp.column)
-            if alias and exp.alias is not None:
-                sql += ' AS %s' % self.quoteIdent(exp.alias)
+            if alias and exp.colalias is not None:
+                sql += ' AS %s' % self.quoteIdent(exp.colalias)
             return (sql, data)
         elif isinstance(exp, query.LogicalExpression):
             word = self.logicalexps[exp.__class__]
@@ -316,11 +329,11 @@ class SQLDB(DB):
         if len(row) == 0:
             return cur if ret else None
         try:
-            t = self.makeTable(table)
+            t, data = self.makeTable(table)
             cols = row.keys()
             s = ', '.join(['%s = %s' % (self.quoteIdent(c), self.data_string)
                            for c in cols])
-            data = [self.to_db_type(row[c]) for c in cols]
+            data += [self.to_db_type(row[c]) for c in cols]
             w = ''
             if cond is not None:
                 w, d = self.makeExpression(cond)
@@ -350,13 +363,12 @@ class SQLDB(DB):
         else:
             ret = True
         try:
-            t = self.makeTable(table)
+            t, data = self.makeTable(table)
             w = ''
             if cond is not None:
-                w, data = self.makeExpression(cond)
+                w, d = self.makeExpression(cond)
                 w = ' WHERE %s' % w
-            else:
-                data = []
+                data += d
             sql = 'DELETE FROM %s%s' % (t, w)
             if cur is None:
                 cur = self.cursor()
@@ -377,10 +389,11 @@ class SQLDB(DB):
               cur = None, subquery = False):
         try:
             dist = 'DISTINCT ' if distinct else ''
-            t = self.makeTable(table)
             cols = [self.makeExpression(col, alias = True) for col in columns]
             c = ', '.join([x[0] for x in cols])
             data = sum([x[1] for x in cols], [])
+            t, d = self.makeTable(table)
+            data += d
             w = ''
             if cond is not None:
                 w, d = self.makeExpression(cond)

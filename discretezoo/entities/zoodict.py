@@ -2,9 +2,10 @@ import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
 from .zootypes import register_type
+from ..db.query import Column
 from ..db.query import ColumnSet
 from ..db.query import Table
-from ..util.utility import enlist
+from ..db.query import enlist
 from ..util.utility import lookup
 
 class _ZooDict(dict, ZooProperty):
@@ -129,9 +130,11 @@ class _ZooDict(dict, ZooProperty):
             if not isinstance(table, Table):
                 table = join.join(Table(table), by = by)
         return ColumnSet(cl, col, join = table,
-                         by = frozenset({(cl._foreign_obj._spec["primary_key"],
-                                          cl._foreign_key)}),
-                         foreign = cl._foreign_key)
+            by = (("deleted", False),
+                  (cl._foreign_key,
+                   Column(cl._foreign_obj._spec["primary_key"],
+                          table = table))),
+            foreign = cl._foreign_key, ordering = cl._key_ordering)
 
     def clear(self, store = discretezoo.WRITE_TO_DB, cur = None):
         if store:

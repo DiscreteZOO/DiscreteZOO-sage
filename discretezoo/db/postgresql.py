@@ -5,8 +5,8 @@ from .query import BitwiseXOr
 from .query import Like
 from .query import Or
 from .query import Power
+from .query import enlist
 from .sqldb import SQLDB
-from ..util.utility import enlist
 from ..util.utility import lookup
 
 class PostgreSQLDB(SQLDB):

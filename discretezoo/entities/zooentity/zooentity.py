@@ -254,8 +254,8 @@ class ZooInfo:
             return tomultidict(n, groupbycols)
         else:
             return ZooInfo(self.cl._parent).count(db = db, join = t,
-                                        by = {self.cl._spec["primary_key"]},
-                                        *largs, **kargs)
+                                by = frozenset([self.cl._spec["primary_key"]]),
+                                *largs, **kargs)
 
     def query(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)
@@ -292,8 +292,8 @@ class ZooInfo:
                                 offset = offset, cur = cur)
         else:
             return ZooInfo(self.cl._parent).query(db = db, join = t,
-                                        by = {self.cl._spec["primary_key"]},
-                                        *largs, **kargs)
+                                by = frozenset([self.cl._spec["primary_key"]]),
+                                *largs, **kargs)
 
     def props(self, *largs, **kargs):
         db = lookup(kargs, "db", default = None, destroy = True)

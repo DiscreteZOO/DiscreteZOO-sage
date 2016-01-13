@@ -38,7 +38,7 @@ class CVTGraph(ZooGraph):
     def _construct_object(self, cl, d):
         if d["order"] is not None and d["index"] is not None:
             join = Table(cl._spec["name"]).join(Table(cl._parent._spec["name"]),
-                         by = {cl._spec["primary_key"]})
+                         by = frozenset([cl._spec["primary_key"]]))
             r = self._db_read(cl._parent, join, {"order": d["order"],
                                                  "cvt_index": d["index"]})
             d["zooid"] = r["zooid"]
