@@ -282,6 +282,14 @@ class SQLDB(DB):
     def returning(self, id):
         return ''
 
+    def limit(self, limit = None, offset = None):
+        out = ''
+        if limit is not None:
+            out += ' LIMIT %d' % limit
+            if offset is not None:
+                out += ' OFFSET %d' % offset
+        return out
+
     def insert_row(self, table, row, cur = None, commit = None, id = None):
         try:
             cols = [c for c in row if row[c] is not None]
@@ -421,12 +429,7 @@ class SQLDB(DB):
                             ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
                                         for (k, _), v in orderby)
                     data += sum([x[0][1] for x in orderby], [])
-            if limit is None:
-                l = ''
-            else:
-                l = ' LIMIT %d' % limit
-                if offset is not None:
-                    l += ' OFFSET %d' % offset
+            l = self.limit(limit, offset)
             sql = 'SELECT %s%s FROM %s%s%s%s%s' % (dist, c, t, w, g, o, l)
             if subquery:
                 return (sql, data)
