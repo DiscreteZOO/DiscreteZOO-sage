@@ -85,6 +85,14 @@ class PostgreSQLDB(SQLDB):
             return ' RETURNING %s' % self.quoteIdent(id)
         return ''
 
+    def limit(self, limit = None, offset = None):
+        out = ''
+        if limit is not None:
+            out += ' LIMIT %d' % limit
+        if offset is not None:
+            out += ' OFFSET %d' % offset
+        return out
+
     def lastrowid(self, cur):
         return cur.fetchone()[0]
 
