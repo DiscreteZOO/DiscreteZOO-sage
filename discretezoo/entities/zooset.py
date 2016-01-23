@@ -232,7 +232,7 @@ class _ZooSet(dict, ZooProperty):
             if x not in self or self[x] is None:
                 self.add(x, other[x], store = store, cur = cur)
 
-def ZooSet(parent, name, fields, use_tuples = None):
+def ZooSet(parent, name, fields, fieldparams = {}, use_tuples = None):
     if len(fields) != 1:
         use_tuples = True
     elif use_tuples is None:
@@ -249,16 +249,21 @@ def ZooSet(parent, name, fields, use_tuples = None):
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
             "skip": {fkey, "deleted"},
-            "fields" : {
+            "fields": {
                 id: ZooEntity,
-                fkey: (parent, {"not_null"}),
-                "deleted": (bool, {"not_null"})
+                fkey: parent,
+                "deleted": bool,
+            },
+            "fieldparams": {
+                fkey: {"not_null"},
+                "deleted": {"not_null"}
             },
             "compute": {},
             "default": {}
         }
 
     ZooSet._spec["fields"].update(fields)
+    ZooSet._spec["fieldparams"].update(fieldparams)
     ZooSet._spec["indices"] = [([fkey] + fields.keys(), {"unique"})]
     return ZooSet
 

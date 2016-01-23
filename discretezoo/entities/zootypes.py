@@ -18,31 +18,27 @@ path = os.path.join(discretezoo.__path__[0], "spec")
 
 def normalize_type(t):
     if isinstance(t, list):
-        t, c = t
-    else:
-        c = None
-    if isinstance(t, list):
-        t, s = t
+        t, s, p = t
+        t = (names[t], {str(k): init_fields(v) for k, v in s.items()},
+             init_fieldparams(p))
     else:
         s = None
-    t = names[t]
-    if s is not None:
-        t = (t, {k: init_fields(v) for k, v in s.items()})
-    if c is not None:
-        t = (t, c)
+        p = None
+        t = names[t]
     return t
 
 def init_fields(fields):
     return {str(k): normalize_type(t) for k, t in fields.items()}
 
+def init_fieldparams(fieldparams):
+    return {str(k): to_string(p) for k, p in fieldparams.items()}
+
 def init_metaclasses(cl):
     for k, v in cl._spec["fields"].items():
-        if isinstance(v, tuple) and isinstance(v[0], tuple):
-            (m, f), c = v
-            t = m(cl, k, **f)
+        if isinstance(v, tuple):
+            m, f, p = v
+            t = m(cl, k, fieldparams = p, **f)
             init_metaclasses(t)
-            if len(c) > 0:
-                t = (t, c)
             cl._spec["fields"][k] = t
 
 def to_string(s):
@@ -65,6 +61,7 @@ def init_class(cl, fields = None):
                        for t in to_string(spec["indices"])]
     spec["skip"] = to_string(spec["skip"])
     spec["fields"] = init_fields(spec["fields"])
+    spec["fieldparams"] = init_fieldparams(spec["fieldparams"])
     spec["compute"] = {names[c]: to_string(l)
                         for c, l in spec["compute"].items()}
     spec["default"] = {names[c]: {str(k): v for k, v in d.items()}
