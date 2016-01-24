@@ -329,11 +329,10 @@ class ZooGraph(Graph, ZooObject):
             and self.is_long_antihole_free(store = store, cur = cur)
 
     @override.documented
-    def name(self, *largs, **kargs):
+    def name(self, new = None, *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
-        new = lookup(kargs, "new", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
         if default:
             if new is None:
@@ -347,7 +346,7 @@ class ZooGraph(Graph, ZooObject):
                                       cur = cur)
                 update(self._graphprops, "name", new)
         else:
-            return Graph.name(self, *largs, **kargs)
+            return Graph.name(self, new, *largs, **kargs)
 
     @override.determined(is_bipartite = PlusInfinity())
     def odd_girth(self, value, store = discretezoo.WRITE_TO_DB, cur = None):

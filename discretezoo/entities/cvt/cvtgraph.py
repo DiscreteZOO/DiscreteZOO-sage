@@ -57,7 +57,7 @@ class CVTGraph(ZooGraph):
     def cvt_index(self):
         return lookup(self._cvtprops, "cvt_index")
 
-    @override.derived
+    @override.computed
     def is_moebius_ladder(self, store = discretezoo.WRITE_TO_DB, cur = None):
         g = self.girth(store = store, cur = cur)
         if g != 4:
@@ -72,7 +72,7 @@ class CVTGraph(ZooGraph):
                     (o % 4 == 2 and 4*d == o+2 and b)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    @override.derived
+    @override.computed
     def is_prism(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
         b = self.is_bipartite(store = store, cur = cur)
