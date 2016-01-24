@@ -1,5 +1,6 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.graphs.graph_coloring import edge_coloring
 from sage.misc.package import is_package_installed
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
@@ -263,6 +264,10 @@ class ZooGraph(Graph, ZooObject):
                                       cur = cur)
                 update(self._graphprops, "average_degree", a)
             return a
+
+    @override.computed
+    def chromatic_index(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return edge_coloring(self, value_only = True)
 
     @override.derived
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
