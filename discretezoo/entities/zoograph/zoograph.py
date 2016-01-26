@@ -1,3 +1,4 @@
+from sage.graphs.graph import DiGraph
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.graphs.graph_coloring import edge_coloring
@@ -287,6 +288,13 @@ class ZooGraph(Graph, ZooObject):
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
+
+    @override.computed
+    def is_partial_cube(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return self.is_bipartite(store = store, cur = cur) and \
+            DiGraph([self.edges(labels = False), lambda (u1, u2), (v1, v2):
+                self.distance(u1, v1) + self.distance(u2, v2) !=
+                self.distance(u1, v2) + self.distance(u2, v1)]).is_transitive()
 
     @override.implied(genus = Integer(0))
     def is_planar(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
