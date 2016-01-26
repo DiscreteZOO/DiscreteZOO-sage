@@ -5,6 +5,7 @@ from sage.misc.package import is_package_installed
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
+from inspect import getargspec
 from types import BuiltinFunctionType
 from types import MethodType
 import discretezoo
@@ -50,10 +51,13 @@ class ZooGraph(Graph, ZooObject):
     def _init_params(self, d):
         if isinstance(d["data"], GenericGraph):
             d["graph"] = d["data"]
-            d["data"] = None
         elif isinstance(d["data"], dict):
             d["props"] = d["data"]
-            d["data"] = None
+        elif d["data"] is not None:
+            args = getargspec(Graph.__init__)[0][1:]
+            d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
+            d["vertex_labels"] = None
+        d["data"] = None
 
     def _init_skip(self, d):
         if d["props"] is not None:

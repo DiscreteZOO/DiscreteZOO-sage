@@ -29,7 +29,7 @@ class CVTGraph(ZooGraph):
             d["data"] = None
             return True
         else:
-            return False
+            return ZooGraph._parse_params(self, d)
 
     def _clear_params(self, d):
         d["order"] = None

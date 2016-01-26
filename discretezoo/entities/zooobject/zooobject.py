@@ -28,14 +28,13 @@ class ZooObject(ZooEntity):
         default(d, "unique_id_algorithm")
 
     def _parse_params(self, d):
-        if isinteger(d["data"]):
-            d["zooid"] = Integer(d["data"])
-            d["data"] = None
+        if ZooEntity._parse_params(self, d):
             return True
         elif isinstance(d["data"], basestring) \
                 and re.match(r'^[0-9A-Fa-f]{64}$', d["data"]):
             d["unique_id"] = d["data"]
             d["data"] = None
+            return True
         else:
             return False
 
