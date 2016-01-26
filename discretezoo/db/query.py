@@ -133,6 +133,12 @@ class Expression(QueryObject):
     def __rdiv__(self, other):
         return Divide(other, self)
 
+    def __floordiv__(self, other):
+        return FloorDivide(self, other)
+
+    def __rfloordiv__(self, other):
+        return FloorDivide(other, self)
+
     def __mod__(self, other):
         return Modulo(self, other)
 
@@ -187,9 +193,7 @@ class Expression(QueryObject):
     def __invert__(self):
         return Not(self)
 
-    __floordiv__ = __div__
     __truediv__ = __div__
-    __rfloordiv__ = __rdiv__
     __rtruediv__ = __rdiv__
 
 class Value(Expression):
@@ -357,6 +361,9 @@ class Times(BinaryOp):
 
 class Divide(BinaryOp):
     op = "/"
+
+class FloorDivide(BinaryOp):
+    op = "//"
 
 class Modulo(BinaryOp):
     op = "mod"
