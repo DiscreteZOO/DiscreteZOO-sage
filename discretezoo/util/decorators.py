@@ -15,6 +15,30 @@ class ZooDecorator:
             pass
         return fun
 
+    def computed(this, fun):
+        def decorated(self, *largs, **kargs):
+            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                           destroy = True)
+            cur = lookup(kargs, "cur", default = None, destroy = True)
+            default = len(largs) + len(kargs) == 0
+            d = self._getprops(fun.func_name)
+            try:
+                if not default:
+                    raise NotImplementedError
+                return lookup(d, fun.func_name)
+            except (KeyError, NotImplementedError):
+                a = fun(self, store = store, cur = cur, *largs, **kargs)
+                if default:
+                    if store:
+                        self._update_rows(self._getclass(fun.func_name),
+                                    {fun.func_name: a},
+                                    {self._spec["primary_key"]: self._zooid},
+                                    cur = cur)
+                    update(d, fun.func_name, a)
+                return a
+        decorated.func_name = fun.func_name
+        return this.documented(decorated)
+
     def derived(this, fun):
         def decorated(self, *largs, **kargs):
             store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
@@ -41,7 +65,7 @@ class ZooDecorator:
                 try:
                     if not default:
                         raise NotImplementedError
-                    return all(lookup(d, k) == v
+                    return all(lookup(self._getprops(k), k) == v
                                for k, v in attrs.items()) == value
                 except (KeyError, NotImplementedError):
                     a = type.__getattribute__(this.cl,
@@ -60,7 +84,7 @@ class ZooDecorator:
                                     {self._spec["primary_key"]: self._zooid},
                                     cur = cur)
                         for k, v in attrs.items():
-                            update(d, k, v)
+                            update(self._getprops(k), k, v)
                     return a
             decorated.func_name = fun.func_name
             return this.documented(decorated)
@@ -80,7 +104,7 @@ class ZooDecorator:
                         raise NotImplementedError
                     for a, v in attrs.items():
                         try:
-                            if lookup(d, a):
+                            if lookup(self._getprops(a), a):
                                 return v
                         except KeyError:
                             pass

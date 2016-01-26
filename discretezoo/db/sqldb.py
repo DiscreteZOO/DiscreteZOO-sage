@@ -66,6 +66,7 @@ class SQLDB(DB):
         query.Minus: '-',
         query.Times: '*',
         query.Divide: '/',
+        query.FloorDivide: '/',
         query.Modulo: '%',
         query.LeftShift: '<<',
         query.RightShift: '>>',
@@ -103,6 +104,8 @@ class SQLDB(DB):
                else table
 
     def binaryOp(self, op, left, right):
+        if isinstance(op, query.Divide):
+            left = 'CAST(%s AS %s)' % (left, self.types[Rational])
         return '(%s) %s (%s)' % (left, self.binaryops[op.__class__], right)
 
     def unaryOp(self, op, exp):
