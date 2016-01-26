@@ -232,7 +232,8 @@ class _ZooSet(dict, ZooProperty):
             if x not in self or self[x] is None:
                 self.add(x, other[x], store = store, cur = cur)
 
-def ZooSet(parent, name, fields, fieldparams = {}, use_tuples = None):
+def ZooSet(parent, name, spec, use_tuples = None):
+    fields = spec["params"]["fields"]
     if len(fields) != 1:
         use_tuples = True
     elif use_tuples is None:
@@ -263,8 +264,8 @@ def ZooSet(parent, name, fields, fieldparams = {}, use_tuples = None):
         }
 
     ZooSet._spec["fields"].update(fields)
-    ZooSet._spec["fieldparams"].update(fieldparams)
     ZooSet._spec["indices"] = [([fkey] + fields.keys(), {"unique"})]
+    ZooSet._init_spec(ZooSet, spec)
     return ZooSet
 
 register_type(ZooSet)

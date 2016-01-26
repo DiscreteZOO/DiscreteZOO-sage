@@ -211,8 +211,9 @@ class _ZooDict(dict, ZooProperty):
     def values(self):
         return [v[1] for v in dict.values(self)]
 
-def ZooDict(parent, name, keys, values, fieldparams = {},
-            use_key_tuples = None, use_val_tuples = None):
+def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
+    keys = spec["params"]["keys"]
+    values = spec["params"]["values"]
     if len(keys) != 1:
         use_key_tuples = True
     elif use_key_tuples is None:
@@ -250,8 +251,8 @@ def ZooDict(parent, name, keys, values, fieldparams = {},
 
     ZooDict._spec["fields"].update(keys)
     ZooDict._spec["fields"].update(values)
-    ZooDict._spec["fieldparams"].update(fieldparams)
     ZooDict._spec["indices"] = [([fkey] + keys.keys(), {"unique"})]
+    ZooDict._init_spec(ZooDict, spec)
     return ZooDict
 
 register_type(ZooDict)

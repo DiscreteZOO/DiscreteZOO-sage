@@ -17,13 +17,12 @@ names = {
 path = os.path.join(discretezoo.__path__[0], "spec")
 
 def normalize_type(t):
-    if isinstance(t, list):
-        t, s, p = t
-        t = (names[t], {str(k): init_fields(v) for k, v in s.items()},
-             init_fieldparams(p))
+    if isinstance(t, dict):
+        t = dict(t)
+        t["class"] = names[t["class"]]
+        t["params"] = {str(k): init_fields(v) for k, v in t["params"].items()}
+        init_spec(t)
     else:
-        s = None
-        p = None
         t = names[t]
     return t
 
@@ -35,9 +34,8 @@ def init_fieldparams(fieldparams):
 
 def init_metaclasses(cl):
     for k, v in cl._spec["fields"].items():
-        if isinstance(v, tuple):
-            m, f, p = v
-            t = m(cl, k, fieldparams = p, **f)
+        if isinstance(v, dict):
+            t = v["class"](cl, k, v)
             init_metaclasses(t)
             cl._spec["fields"][k] = t
 
@@ -50,6 +48,21 @@ def to_string(s):
 def register_type(cl):
     names[cl.__name__] = cl
 
+def init_spec(spec):
+    if "indices" in spec:
+        spec["indices"] = [tuple(t) if isinstance(t, list) else t
+                           for t in to_string(spec["indices"])]
+    if "skip" in spec:
+        spec["skip"] = to_string(spec["skip"])
+    if "fieldparams" in spec:
+        spec["fieldparams"] = init_fieldparams(spec["fieldparams"])
+    if "compute" in spec:
+        spec["compute"] = {names[c]: to_string(l)
+                            for c, l in spec["compute"].items()}
+    if "default" in spec:
+        spec["default"] = {names[c]: {str(k): v for k, v in d.items()}
+                            for c, d in spec["default"].items()}
+
 def init_class(cl, fields = None):
     register_type(cl)
     f = file(os.path.join(path, cl.__name__ + ".json"))
@@ -57,15 +70,8 @@ def init_class(cl, fields = None):
     f.close()
     spec["name"] = str(spec["name"])
     spec["primary_key"] = str(spec["primary_key"])
-    spec["indices"] = [tuple(t) if isinstance(t, list) else t
-                       for t in to_string(spec["indices"])]
-    spec["skip"] = to_string(spec["skip"])
     spec["fields"] = init_fields(spec["fields"])
-    spec["fieldparams"] = init_fieldparams(spec["fieldparams"])
-    spec["compute"] = {names[c]: to_string(l)
-                        for c, l in spec["compute"].items()}
-    spec["default"] = {names[c]: {str(k): v for k, v in d.items()}
-                        for c, d in spec["default"].items()}
+    init_spec(spec)
     cl._spec = spec
     init_metaclasses(cl)
     if fields is not None:
