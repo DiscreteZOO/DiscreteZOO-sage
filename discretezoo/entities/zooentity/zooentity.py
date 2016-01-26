@@ -278,7 +278,7 @@ class ZooInfo:
             if cols.issuperset({tbl for tbl, j, b in ct}):
                 return db.query(columns = columns, table = t, cond = cond,
                                 orderby = orderby, limit = limit,
-                                offset = offset, cur = cur)
+                                offset = offset, distinct = True, cur = cur)
             else:
                 tt = Table(t)
                 for tbl, j, b in ct:
@@ -289,7 +289,7 @@ class ZooInfo:
                                 cond = In(c, Subquery(columns = [c], table = t,
                                                       cond = cond)),
                                 orderby = orderby, limit = limit,
-                                offset = offset, cur = cur)
+                                offset = offset, distinct = True, cur = cur)
         else:
             return ZooInfo(self.cl._parent).query(db = db, join = t,
                                 by = frozenset([self.cl._spec["primary_key"]]),

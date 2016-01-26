@@ -1,9 +1,11 @@
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
+from sage.graphs.graph_coloring import edge_coloring
 from sage.misc.package import is_package_installed
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
+from inspect import getargspec
 from types import BuiltinFunctionType
 from types import MethodType
 import discretezoo
@@ -49,10 +51,13 @@ class ZooGraph(Graph, ZooObject):
     def _init_params(self, d):
         if isinstance(d["data"], GenericGraph):
             d["graph"] = d["data"]
-            d["data"] = None
         elif isinstance(d["data"], dict):
             d["props"] = d["data"]
-            d["data"] = None
+        elif d["data"] is not None:
+            args = getargspec(Graph.__init__)[0][1:]
+            d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
+            d["vertex_labels"] = None
+        d["data"] = None
 
     def _init_skip(self, d):
         if d["props"] is not None:
@@ -264,6 +269,10 @@ class ZooGraph(Graph, ZooObject):
                 update(self._graphprops, "average_degree", a)
             return a
 
+    @override.computed
+    def chromatic_index(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return edge_coloring(self, value_only = True)
+
     @override.derived
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
@@ -329,11 +338,10 @@ class ZooGraph(Graph, ZooObject):
             and self.is_long_antihole_free(store = store, cur = cur)
 
     @override.documented
-    def name(self, *largs, **kargs):
+    def name(self, new = None, *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
-        new = lookup(kargs, "new", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
         if default:
             if new is None:
@@ -347,7 +355,7 @@ class ZooGraph(Graph, ZooObject):
                                       cur = cur)
                 update(self._graphprops, "name", new)
         else:
-            return Graph.name(self, *largs, **kargs)
+            return Graph.name(self, new, *largs, **kargs)
 
     @override.determined(is_bipartite = PlusInfinity())
     def odd_girth(self, value, store = discretezoo.WRITE_TO_DB, cur = None):

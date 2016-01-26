@@ -57,4 +57,4 @@ def construct(cl, self, d):
     argspec = getargspec(cl.__init__)
     if argspec[2] is None:
         d = {k: v for k, v in d.items() if k in argspec[0]}
-    return cl.__init__(self, **d)
+    cl.__init__(self, **d)

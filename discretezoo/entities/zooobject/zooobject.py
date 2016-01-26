@@ -3,6 +3,7 @@ from types import MethodType
 from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
+from ...db.query import Column
 from ...db.query import Table
 from ...util.utility import default
 from ...util.utility import isinteger
@@ -27,14 +28,13 @@ class ZooObject(ZooEntity):
         default(d, "unique_id_algorithm")
 
     def _parse_params(self, d):
-        if isinteger(d["data"]):
-            d["zooid"] = Integer(d["data"])
-            d["data"] = None
+        if ZooEntity._parse_params(self, d):
             return True
         elif isinstance(d["data"], basestring) \
                 and re.match(r'^[0-9A-Fa-f]{64}$', d["data"]):
             d["unique_id"] = d["data"]
             d["data"] = None
+            return True
         else:
             return False
 
@@ -87,7 +87,8 @@ class ZooObject(ZooEntity):
         if self._unique_id is not None:
             uid = self._fields.unique_id
             query = {uid.column: self._unique_id}
-            cur = self._db.query([ZooObject._spec["primary_key"],
+            cur = self._db.query([Column(ZooObject._spec["primary_key"],
+                                         table = ZooObject._spec["name"]),
                                   uid.algorithm.column],
                                  uid.getJoin(), query, cur = cur)
             r = cur.fetchone()
