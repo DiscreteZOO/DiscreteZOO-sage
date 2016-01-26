@@ -3,6 +3,7 @@ from types import MethodType
 from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
+from ...db.query import Column
 from ...db.query import Table
 from ...util.utility import default
 from ...util.utility import isinteger
@@ -87,7 +88,8 @@ class ZooObject(ZooEntity):
         if self._unique_id is not None:
             uid = self._fields.unique_id
             query = {uid.column: self._unique_id}
-            cur = self._db.query([ZooObject._spec["primary_key"],
+            cur = self._db.query([Column(ZooObject._spec["primary_key"],
+                                         table = ZooObject._spec["name"]),
                                   uid.algorithm.column],
                                  uid.getJoin(), query, cur = cur)
             r = cur.fetchone()
