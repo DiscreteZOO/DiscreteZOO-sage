@@ -53,43 +53,6 @@ class ZooDecorator:
         decorated.func_name = fun.func_name
         return this.documented(decorated)
 
-    def implied(this, value = True, **attrs):
-        def _implied(fun):
-            def decorated(self, *largs, **kargs):
-                store = lookup(kargs, "store",
-                               default = discretezoo.WRITE_TO_DB,
-                               destroy = True)
-                cur = lookup(kargs, "cur", default = None, destroy = True)
-                default = len(largs) + len(kargs) == 0
-                d = self._getprops(fun.func_name)
-                try:
-                    if not default:
-                        raise NotImplementedError
-                    return all(lookup(self._getprops(k), k) == v
-                               for k, v in attrs.items()) == value
-                except (KeyError, NotImplementedError):
-                    a = type.__getattribute__(this.cl,
-                                              fun.func_name)(self,
-                                                             *largs, **kargs)
-                    if default and fun(self, a, store = store, cur = cur):
-                        if store:
-                            t = {}
-                            for k, v in attrs.items():
-                                cl = self._getclass(k)
-                                if cl not in t:
-                                    t[cl] = {}
-                                t[cl][k] = v
-                            for cl, at in t.items():
-                                self._update_rows(cl, at,
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
-                        for k, v in attrs.items():
-                            update(self._getprops(k), k, v)
-                    return a
-            decorated.func_name = fun.func_name
-            return this.documented(decorated)
-        return _implied
-
     def determined(this, **attrs):
         def _determined(fun):
             def decorated(self, *largs, **kargs):
@@ -113,13 +76,27 @@ class ZooDecorator:
                     a = type.__getattribute__(this.cl,
                                               fun.func_name)(self,
                                                              *largs, **kargs)
-                    if default and fun(self, a, store = store, cur = cur):
+                    if default:
+                        upd, ats = fun(self, a, attrs, store = store,
+                                       cur = cur)
                         if store:
-                            self._update_rows(self._getclass(fun.func_name),
-                                    {fun.func_name: a},
+                            t = {}
+                            if upd:
+                                t[self._getclass(fun.func_name)] = \
+                                                            {fun.func_name: a}
+                            for k, v in ats.items():
+                                cl = self._getclass(k)
+                                if cl not in t:
+                                    t[cl] = {}
+                                t[cl][k] = a == v
+                            for cl, at in t.items():
+                                self._update_rows(cl, at,
                                     {self._spec["primary_key"]: self._zooid},
                                     cur = cur)
-                        update(d, fun.func_name, a)
+                        if upd:
+                            update(d, fun.func_name, a)
+                        for k, v in ats.items():
+                            update(self._getprops(k), k, a == v)
                     return a
             decorated.func_name = fun.func_name
             return this.documented(decorated)

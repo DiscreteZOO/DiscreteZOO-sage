@@ -1,4 +1,5 @@
 from sage.graphs.graph import DiGraph
+from sage.categories.sets_cat import EmptySetError
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.graphs.graph_coloring import edge_coloring
@@ -279,6 +280,43 @@ class ZooGraph(Graph, ZooObject):
         o = self.order(store = store, cur = cur)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
 
+    @override.determined(is_planar = Integer(0))
+    def genus(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
+        return (True, attrs)
+
+    @override.documented
+    def hamiltonian_cycle(self, algorithm = "tsp", *largs, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                       destroy = True)
+        cur = lookup(kargs, "cur", default = None, destroy = True)
+        default = len(largs) + len(kargs) == 0 and \
+            algorithm in ["tsp", "backtrack"]
+        if default:
+            if algorithm == "tsp":
+                try:
+                    out = Graph.hamiltonian_cycle(self, algorithm, *largs,
+                                                  **kargs)
+                    h = True
+                except EmptySetError as out:
+                    h = False
+            elif algorithm == "backtrack":
+                out = Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
+                h = out[0]
+            try:
+                lookup(self._graphprops, "is_hamiltonian")
+            except KeyError:
+                if store:
+                    self._update_rows(ZooGraph, {"is_hamiltonian": h},
+                                      {self._spec["primary_key"]: self._zooid},
+                                      cur = cur)
+                update(self._graphprops, "is_hamiltonian", h)
+            if isinstance(out, BaseException):
+                raise out
+            else:
+                return out
+        else:
+            return Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
+
     @override.derived
     def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return self.number_of_loops(store = store, cur = cur) > 0
@@ -295,10 +333,6 @@ class ZooGraph(Graph, ZooObject):
             DiGraph([self.edges(labels = False), lambda (u1, u2), (v1, v2):
                 self.distance(u1, v1) + self.distance(u2, v2) !=
                 self.distance(u1, v2) + self.distance(u2, v1)]).is_transitive()
-
-    @override.implied(genus = Integer(0))
-    def is_planar(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
-        return value
 
     @override.documented
     def is_regular(self, k = None, *largs, **kargs):
@@ -352,9 +386,10 @@ class ZooGraph(Graph, ZooObject):
         cur = lookup(kargs, "cur", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
         if default:
+            old = lookup(self._graphprops, "name", default = "")
             if new is None:
-                return lookup(self._graphprops, "name", default = "")
-            else:
+                return old
+            elif new != old:
                 if new == "":
                     new = None
                 if store:
@@ -366,16 +401,9 @@ class ZooGraph(Graph, ZooObject):
             return Graph.name(self, new, *largs, **kargs)
 
     @override.determined(is_bipartite = PlusInfinity())
-    def odd_girth(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
-        if value == PlusInfinity():
-            if store:
-                self._update_rows(ZooGraph, {"is_bipartite": True},
-                                  {self._spec["primary_key"]: self._zooid},
-                                  cur = cur)
-            update(self._graphprops, "is_bipartite", True)
-            return False
-        else:
-            return True
+    def odd_girth(self, value, attrs, store = discretezoo.WRITE_TO_DB,
+                  cur = None):
+        return (value != PlusInfinity(), attrs)
 
 AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"
