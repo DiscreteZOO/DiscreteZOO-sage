@@ -344,9 +344,10 @@ class ZooGraph(Graph, ZooObject):
         cur = lookup(kargs, "cur", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
         if default:
+            old = lookup(self._graphprops, "name", default = "")
             if new is None:
-                return lookup(self._graphprops, "name", default = "")
-            else:
+                return old
+            elif new != old:
                 if new == "":
                     new = None
                 if store:
