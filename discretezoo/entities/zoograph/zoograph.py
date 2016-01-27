@@ -1,3 +1,4 @@
+from sage.categories.sets_cat import EmptySetError
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.graphs.graph_coloring import edge_coloring
@@ -277,6 +278,39 @@ class ZooGraph(Graph, ZooObject):
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
+
+    @override.documented
+    def hamiltonian_cycle(self, algorithm = "tsp", *largs, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                       destroy = True)
+        cur = lookup(kargs, "cur", default = None, destroy = True)
+        default = len(largs) + len(kargs) == 0 and \
+            algorithm in ["tsp", "backtrack"]
+        if default:
+            if algorithm == "tsp":
+                try:
+                    out = Graph.hamiltonian_cycle(self, algorithm, *largs,
+                                                  **kargs)
+                    h = True
+                except EmptySetError as out:
+                    h = False
+            elif algorithm == "backtrack":
+                out = Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
+                h = out[0]
+            try:
+                lookup(self._graphprops, "is_hamiltonian")
+            except KeyError:
+                if store:
+                    self._update_rows(ZooGraph, {"is_hamiltonian": h},
+                                      {self._spec["primary_key"]: self._zooid},
+                                      cur = cur)
+                update(self._graphprops, "is_hamiltonian", h)
+            if isinstance(out, BaseException):
+                raise out
+            else:
+                return out
+        else:
+            return Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
 
     @override.derived
     def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
