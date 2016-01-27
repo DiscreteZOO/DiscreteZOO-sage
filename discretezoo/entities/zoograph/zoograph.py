@@ -279,6 +279,10 @@ class ZooGraph(Graph, ZooObject):
         o = self.order(store = store, cur = cur)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
 
+    @override.determined(is_planar = Integer(0))
+    def genus(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
+        return (True, attrs)
+
     @override.documented
     def hamiltonian_cycle(self, algorithm = "tsp", *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
@@ -321,10 +325,6 @@ class ZooGraph(Graph, ZooObject):
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
-
-    @override.implied(genus = Integer(0))
-    def is_planar(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
-        return value
 
     @override.documented
     def is_regular(self, k = None, *largs, **kargs):
@@ -393,16 +393,9 @@ class ZooGraph(Graph, ZooObject):
             return Graph.name(self, new, *largs, **kargs)
 
     @override.determined(is_bipartite = PlusInfinity())
-    def odd_girth(self, value, store = discretezoo.WRITE_TO_DB, cur = None):
-        if value == PlusInfinity():
-            if store:
-                self._update_rows(ZooGraph, {"is_bipartite": True},
-                                  {self._spec["primary_key"]: self._zooid},
-                                  cur = cur)
-            update(self._graphprops, "is_bipartite", True)
-            return False
-        else:
-            return True
+    def odd_girth(self, value, attrs, store = discretezoo.WRITE_TO_DB,
+                  cur = None):
+        return (value != PlusInfinity(), attrs)
 
 AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"
