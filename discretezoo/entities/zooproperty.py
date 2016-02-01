@@ -96,3 +96,16 @@ class ZooProperty(ZooEntity):
 
     def _unique_index(self):
         return NotImplementedError
+
+    @staticmethod
+    def _init_spec(cl, spec):
+        if "indices" in spec:
+            cl._spec["indices"] += spec["indices"]
+        if "skip" in spec:
+            cl._spec["skip"].update(spec["skip"])
+        if "fieldparams" in spec:
+            cl._spec["fieldparams"].update(spec["fieldparams"])
+        if "compute" in spec:
+            cl._spec["compute"].update(spec["compute"])
+        if "default" in spec:
+            cl._spec["default"].update(spec["default"])
