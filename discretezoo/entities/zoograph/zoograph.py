@@ -8,8 +8,6 @@ from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
 from inspect import getargspec
-from types import BuiltinFunctionType
-from types import MethodType
 import discretezoo
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
@@ -22,11 +20,6 @@ from ...util.utility import lookup
 from ...util.utility import update
 
 override = ZooDecorator(Graph)
-aliases = {
-    "__len__": "order",
-    "num_edges": "size",
-    "num_verts": "order"
-}
 
 class ZooGraph(Graph, ZooObject):
     _graphprops = None
@@ -172,45 +165,7 @@ class ZooGraph(Graph, ZooObject):
         return name
 
     def __getattribute__(self, name):
-        def _graphattr(*largs, **kargs):
-            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                           destroy = True)
-            cur = lookup(kargs, "cur", default = None, destroy = True)
-            default = len(largs) + len(kargs) == 0
-            try:
-                if not default:
-                    raise NotImplementedError
-                return lookup(self._graphprops, name)
-            except (KeyError, NotImplementedError):
-                a = Graph.__getattribute__(self, name)(*largs, **kargs)
-                if default:
-                    if store:
-                        self._update_rows(ZooGraph, {name: a},
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
-                    update(self._graphprops, name, a)
-                return a
-        if name in aliases:
-            name = aliases[name]
-        attr = Graph.__getattribute__(self, name)
-        if isinstance(attr, MethodType) and \
-                (isinstance(attr.im_func, BuiltinFunctionType) or
-                    (attr.func_globals["__package__"] is not None and
-                     attr.func_globals["__package__"].startswith("sage.")) or
-                    (attr.func_globals["__name__"] is not None and
-                     attr.func_globals["__name__"].startswith("sage."))):
-            cl = type(self)
-            while cl is not None:
-                if name in cl._spec["fields"] and \
-                        name not in cl._spec["skip"]:
-                    _graphattr.func_name = name
-                    try:
-                        _graphattr.__doc__ = attr.__doc__
-                    except AttributeError:
-                        pass
-                    return _graphattr
-                cl = cl._parent
-        return attr
+        return ZooObject.__getattribute__(self, "_getattr")(name, Graph)
 
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
