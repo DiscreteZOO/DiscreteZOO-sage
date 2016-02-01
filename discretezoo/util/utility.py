@@ -36,7 +36,7 @@ def tomultidict(rows, dims):
     elif len(dims) == 1:
         return {r[1]: Integer(r[0]) for r in rows}
     d = {}
-    dims = [k.alias if isinstance(k, Column) else str(k) for k in dims]
+    dims = [k.colalias if isinstance(k, Column) else str(k) for k in dims]
     for r in rows:
         dd = d
         for i in range(len(dims)):
