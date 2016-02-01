@@ -56,6 +56,8 @@ def init_spec(spec):
         spec["skip"] = to_string(spec["skip"])
     if "fieldparams" in spec:
         spec["fieldparams"] = init_fieldparams(spec["fieldparams"])
+    if "aliases" in spec:
+        spec["aliases"] = {str(k): str(v) for k, v in spec["aliases"].items()}
     if "compute" in spec:
         spec["compute"] = {names[c]: to_string(l)
                             for c, l in spec["compute"].items()}
