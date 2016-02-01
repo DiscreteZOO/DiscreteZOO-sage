@@ -48,17 +48,13 @@ class PostgreSQLDB(SQLDB):
             return '%s ILIKE %s' % (left, right)
         return SQLDB.binaryOp(self, op, left, right)
 
-    def makeType(self, t):
-        if isinstance(t, tuple):
-            t, c = t
-        else:
-            c = set()
+    def makeType(self, t, c):
         if 'autoincrement' in c:
             t = enumerate
             c = set(c)
             c.remove('autoincrement')
             c.add('primary_key')
-        return SQLDB.makeType(self, (t, c))
+        return SQLDB.makeType(self, t, c)
 
     def createIndex(self, cur, name, idx):
         try:

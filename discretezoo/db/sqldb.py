@@ -45,7 +45,8 @@ class SQLDB(DB):
         Rational: 'REAL',
         RealNumber: 'REAL',
         str: 'TEXT',
-        bool: 'INTEGER'
+        bool: 'INTEGER',
+        ZooEntity: 'INTEGER'
     }
 
     constraints = {
@@ -116,14 +117,10 @@ class SQLDB(DB):
         else:
             return '%s(%s)' % (k, exp)
 
-    def makeType(self, t):
-        if isinstance(t, tuple):
-            t, c = t
-        else:
-            c = set()
+    def makeType(self, t, c):
         cons = ''.join([' ' + self.constraints[x] for x in c])
         if issubclass(t, ZooEntity):
-            return 'INTEGER' + cons + ' REFERENCES %s(%s)' \
+            return self.types[ZooEntity] + cons + ' REFERENCES %s(%s)' \
                                 % (self.quoteIdent(t._spec['name']),
                                     self.quoteIdent(t._spec['primary_key']))
         else:
@@ -240,32 +237,31 @@ class SQLDB(DB):
 
     def init_table(self, spec, commit = False):
         try:
-            pkey = enlist(spec["primary_key"])
+            pkey = enlist(spec['primary_key'])
             idxs = [k[0] if isinstance(k, tuple) else k
-                    for k in spec["indices"]]
+                    for k in spec['indices']]
             idxs = [enlist(k) for k in idxs]
-            if isinstance(spec["indices"], set):
+            if isinstance(spec['indices'], set):
                 idxs = sorted(idxs)
             idxs = sum(idxs, [])
-            ext = {k: v for k, v in [(kk, vv[0] if isinstance(vv, tuple)
-                                                else vv)
-                                     for kk, vv in spec['fields'].items()]
+            ext = {k: v for k, v in spec['fields'].items()
                     if issubclass(v, ZooProperty)}
             cols = pkey[:]
             cols += [idxs[i] for i in range(len(idxs))
                      if idxs[i] not in (cols + idxs[:i])]
-            cols += sorted([k for k, v in spec['fields'].items()
-                            if isinstance(v, tuple) and k not in cols])
+            cols += sorted([k for k in spec['fields'] if k not in ext
+                            and k in spec['fieldparams'] and k not in cols])
             cols += sorted([k for k in spec['fields']
-                            if k not in cols + ext.keys()])
+                            if k not in ext and k not in cols])
             colspec = ['%s %s' % (self.quoteIdent(k),
-                                            self.makeType(spec['fields'][k]))
-                                        for k in cols]
-            if len(pkey) == 1:
-                pkeytype = spec['fields'][pkey[0]]
-                if isinstance(pkeytype, tuple) \
-                        and "autoincrement" in pkeytype[1]:
-                    pkey = []
+                                  self.makeType(spec['fields'][k],
+                                                spec['fieldparams'][k]
+                                                    if k in spec['fieldparams']
+                                                    else set()))
+                       for k in cols]
+            if len(pkey) == 1 and pkey[0] in spec['fieldparams'] and \
+                    "autoincrement" in spec['fieldparams'][pkey[0]]:
+                pkey = []
             if len(pkey) > 0:
                 colspec += ["PRIMARY KEY (%s)" % ', '.join(pkey)]
             cur = self.cursor()
