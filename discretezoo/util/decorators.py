@@ -29,9 +29,9 @@ class ZooDecorator:
                 if not default:
                     raise NotImplementedError
                 a = lookup(d, fun.func_name)
-                if issubclass(cl._spec[fun.func_name], ZooObject) \
+                if issubclass(cl._spec["fields"][fun.func_name], ZooObject) \
                         and isinteger(a):
-                    a = cl._spec[name](zooid = a)
+                    a = cl._spec["fields"][fun.func_name](zooid = a)
                     update(d, fun.func_name, a)
                 return a
             except (KeyError, NotImplementedError):

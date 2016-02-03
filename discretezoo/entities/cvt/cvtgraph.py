@@ -9,6 +9,7 @@ from ..zooobject import ZooObject
 from ...db.query import Table
 from ...util.utility import isinteger
 from ...util.utility import lookup
+from ...util.utility import update
 
 class CVTGraph(ZooGraph):
     _cvtprops = None
@@ -90,29 +91,40 @@ class CVTGraph(ZooGraph):
                     (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    @override.computed
     def truncation(self, store = discretezoo.WRITE_TO_DB, cur = None):
         if lookup(self._graphprops, "is_arc_transitive", default = False):
             cl = CVTGraph
         else:
             cl = ZooGraph
+        try:
+            t = lookup(self._cvtprops, "truncation")
+            if isinteger(t):
+                t = cl(zooid = t, db = self._db)
+                update(self._cvtprops, "truncation", t)
+            return t
+        except KeyError:
+            pass
+        commit = False
         G = Graph([DiGraph(self).edges(labels = False),
                    lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
                   loops = False)
         try:
-            return cl(G, db = self._db)
+            t = cl(G, db = self._db)
         except KeyError as ex:
             if not store:
                 raise ex
-        if cur is None:
-            cur = self._db.cursor()
-            commit = True
-        else:
-            commit = False
-        G = cl(G, db = self._db, cur = cur)
+            if cur is None:
+                cur = self._db.cursor()
+                commit = True
+            t = cl(G, db = self._db, cur = cur)
+        if store:
+            self._update_rows(CVTGraph, {"truncation": t._zooid},
+                        {self._spec["primary_key"]: self._zooid},
+                        cur = cur)
         if commit:
             self._db.commit()
-        return G
+        update(self._cvtprops, "truncation", t)
+        return t
 
 info = ZooInfo(CVTGraph)
 
