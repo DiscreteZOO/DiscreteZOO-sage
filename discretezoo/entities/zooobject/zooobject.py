@@ -6,6 +6,7 @@ from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
 from ...db.query import Column
+from ...db.query import ColumnSet
 from ...db.query import Table
 from ...util.utility import default
 from ...util.utility import isinteger
@@ -177,6 +178,21 @@ class ZooObject(ZooEntity):
                 pass
             return _attr
         return attr
+
+    @staticmethod
+    def _get_column(cl, name, table, join = None, by = None):
+        if not isinstance(table, Table):
+            table = Table(table)
+        if name == cl._spec["primary_key"]:
+            return Column(name, table = table, join = join, by = by)
+        else:
+            if join is None:
+                join = table
+            else:
+                join = join.join(table, by = by)
+            return ColumnSet(cl, cl._spec["primary_key"], join = join,
+                             by = ((cl._spec["primary_key"],
+                                    Column(name, table = table)), ))
 
     def alias(self):
         try:

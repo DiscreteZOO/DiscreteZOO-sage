@@ -119,8 +119,8 @@ class CVTGraph(ZooGraph):
             t = cl(G, db = self._db, cur = cur)
         if store:
             self._update_rows(CVTGraph, {"truncation": t._zooid},
-                        {self._spec["primary_key"]: self._zooid},
-                        cur = cur)
+                              {self._spec["primary_key"]: self._zooid},
+                              cur = cur)
         if commit:
             self._db.commit()
         update(self._cvtprops, "truncation", t)

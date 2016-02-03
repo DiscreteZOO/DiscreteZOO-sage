@@ -196,8 +196,8 @@ class ZooEntity(object):
                                      and r[k] is not None}
 
     @staticmethod
-    def _get_column(cl, name, table = None, join = None, by = None):
-        return Column(name, table = table, join = join, by = by)
+    def _get_column(cl, name, table, join = None, by = None):
+        raise AttributeError("_get_column")
 
     def load_db_data(self):
         cl = self.__class__

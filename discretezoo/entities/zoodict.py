@@ -124,11 +124,12 @@ class _ZooDict(dict, ZooProperty):
         return (v, tv)
 
     @staticmethod
-    def _get_column(cl, name, table = None, join = None, by = None):
-        col = None if cl._use_val_tuples else cl._val_ordering[0]
+    def _get_column(cl, name, table, join = None, by = None):
+        if not isinstance(table, Table):
+            table = Table(table)
         if join is not None:
-            if not isinstance(table, Table):
-                table = join.join(Table(table), by = by)
+            table = join.join(table, by = by)
+        col = None if cl._use_val_tuples else cl._val_ordering[0]
         return ColumnSet(cl, col, join = table,
             by = (("deleted", False),
                   (cl._foreign_key,
