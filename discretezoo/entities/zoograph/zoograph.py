@@ -26,6 +26,7 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
     _parent = ZooObject
     _dict = "_graphprops"
+    _initialized = False
 
     def __init__(self, data = None, **kargs):
         ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
@@ -133,6 +134,7 @@ class ZooGraph(Graph, ZooObject):
         if d["multiedges"] is None:
             d["multiedges"] = self._graphprops["has_multiple_edges"]
         construct(Graph, self, d)
+        self._initialized = True
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()
@@ -167,6 +169,7 @@ class ZooGraph(Graph, ZooObject):
     def __getattribute__(self, name):
         return ZooObject.__getattribute__(self, "_getattr")(name, Graph)
 
+    @override.documented
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
         if immutable is False or (data_structure is not None
@@ -183,6 +186,7 @@ class ZooGraph(Graph, ZooObject):
                                     sparse = sparse,
                                     immutable = immutable)
 
+    @override.documented
     def relabel(self, perm = None, inplace = True, return_map = False,
                 check_input = True, complete_partial_function = True,
                 immutable = True):
@@ -197,6 +201,18 @@ class ZooGraph(Graph, ZooObject):
             return G, perm
         else:
             return G
+
+    @override.documented
+    def _subgraph_by_adding(self, vertices = None, edges = None,
+                            edge_property = None, immutable = None, *largs,
+                            **kargs):
+        if immutable is None:
+            immutable = True
+        return Graph(self)._subgraph_by_adding(vertices = vertices,
+                                               edges = edges,
+                                               edge_property = edge_property,
+                                               immutable = immutable,
+                                               *largs, **kargs)
 
     def data(self):
         try:
@@ -339,7 +355,8 @@ class ZooGraph(Graph, ZooObject):
 
     @override.documented
     def name(self, new = None, *largs, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+        store = lookup(kargs, "store",
+                       default = self._initialized and discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0

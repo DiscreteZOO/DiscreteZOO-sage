@@ -1,4 +1,4 @@
-class QueryObject:
+class QueryObject(object):
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
 
@@ -271,27 +271,27 @@ class ColumnSet(Column):
             self.foreign = cl.foreign
             self.ordering = cl.ordering
             self.table = Table(**{Table.alias(): cl.table})
+            self.join = cl.join
+            self.by = cl.by
             cond = cl.cond
             column = cl.column
             alias = cl.colalias
-            join = cl.join
-            by = cl.by
         else:
             self.cl = cl
             self.foreign = foreign
             self.ordering = ordering
-            self.table = cl._spec["name"]
+            self.table = Table(**{Table.alias(): cl._spec["name"]})
+            self.join = join
+            self.by = by
         if newcond is not None:
-            if by is None:
-                by = []
+            if self.by is None:
+                self.by = []
             elif isinstance(by, frozenset):
-                by = [(k, Column(k, table = join)) for k in by]
-            by = tuple(by + newcond)
-        makeFields(self.cl, self, join = join, by = by, table = self.table)
+                self.by = [(k, Column(k, table = self.join)) for k in self.by]
+            self.by = tuple(self.by + newcond)
         if column is not None:
-            Column.__init__(self, column = column,
-                            table = self.table, alias = alias,
-                            join = join, by = by)
+            Column.__init__(self, column = column, table = self.table,
+                            alias = alias, join = self.join, by = self.by)
 
     def __str__(self):
         cset = "Columns of %s" % self.cl
@@ -303,6 +303,22 @@ class ColumnSet(Column):
         if len(add) > 0:
             cset = "%s with %s" % (cset, " and ".join(add))
         return cset
+
+    def __getattr__(self, name):
+        cl = self.cl
+        while cl is not None:
+            if name in cl._spec["fields"]:
+                v = cl._spec["fields"][name]
+                try:
+                    col = v._get_column(v, name, table = self.table,
+                                        join = self.join, by = self.by)
+                except AttributeError:
+                    col = Column(name, table = self.table, join = self.join,
+                                 by = self.by)
+                self.__setattr__(name, col)
+                return col
+            cl = cl._parent
+        raise AttributeError(name)
 
     def __getitem__(self, k):
         tk = tuple(enlist(k))

@@ -1,6 +1,8 @@
 import discretezoo
+from .utility import isinteger
 from .utility import lookup
 from .utility import update
+from ..entities.zooobject import ZooObject
 
 class ZooDecorator:
     cl = None
@@ -21,17 +23,26 @@ class ZooDecorator:
                            destroy = True)
             cur = lookup(kargs, "cur", default = None, destroy = True)
             default = len(largs) + len(kargs) == 0
-            d = self._getprops(fun.func_name)
+            cl = self._getclass(fun.func_name)
+            d = self._getprops(cl)
             try:
                 if not default:
                     raise NotImplementedError
-                return lookup(d, fun.func_name)
+                a = lookup(d, fun.func_name)
+                if issubclass(cl._spec["fields"][fun.func_name], ZooObject) \
+                        and isinteger(a):
+                    a = cl._spec["fields"][fun.func_name](zooid = a)
+                    update(d, fun.func_name, a)
+                return a
             except (KeyError, NotImplementedError):
                 a = fun(self, store = store, cur = cur, *largs, **kargs)
                 if default:
                     if store:
-                        self._update_rows(self._getclass(fun.func_name),
-                                    {fun.func_name: a},
+                        if isinstance(a, ZooObject):
+                            v = a._zooid
+                        else:
+                            v = a
+                        self._update_rows(cl, {fun.func_name: v},
                                     {self._spec["primary_key"]: self._zooid},
                                     cur = cur)
                     update(d, fun.func_name, a)
