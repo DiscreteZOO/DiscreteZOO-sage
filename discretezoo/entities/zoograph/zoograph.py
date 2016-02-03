@@ -26,6 +26,7 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
     _parent = ZooObject
     _dict = "_graphprops"
+    _initialized = False
 
     def __init__(self, data = None, **kargs):
         ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
@@ -133,6 +134,7 @@ class ZooGraph(Graph, ZooObject):
         if d["multiedges"] is None:
             d["multiedges"] = self._graphprops["has_multiple_edges"]
         construct(Graph, self, d)
+        self._initialized = True
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()
@@ -353,7 +355,8 @@ class ZooGraph(Graph, ZooObject):
 
     @override.documented
     def name(self, new = None, *largs, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+        store = lookup(kargs, "store",
+                       default = self._initialized and discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
         default = len(largs) + len(kargs) == 0
