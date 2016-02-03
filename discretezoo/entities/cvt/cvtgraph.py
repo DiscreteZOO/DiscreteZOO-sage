@@ -1,3 +1,4 @@
+from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 import discretezoo
@@ -88,6 +89,30 @@ class CVTGraph(ZooGraph):
         return ((o % 4 == 0 and 4*d == o+4 and b) or
                     (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
+
+    @override.computed
+    def truncation(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        if lookup(self._graphprops, "is_arc_transitive", default = False):
+            cl = CVTGraph
+        else:
+            cl = ZooGraph
+        G = Graph([DiGraph(self).edges(labels = False),
+                   lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
+                  loops = False)
+        try:
+            return cl(G, db = self._db)
+        except KeyError as ex:
+            if not store:
+                raise ex
+        if cur is None:
+            cur = self._db.cursor()
+            commit = True
+        else:
+            commit = False
+        G = cl(G, db = self._db, cur = cur)
+        if commit:
+            self._db.commit()
+        return G
 
 info = ZooInfo(CVTGraph)
 

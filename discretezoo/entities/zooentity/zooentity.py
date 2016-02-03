@@ -1,5 +1,3 @@
-from types import BuiltinFunctionType
-from types import MethodType
 import discretezoo
 from .. import zootypes
 from ...db.query import A as All
@@ -196,54 +194,6 @@ class ZooEntity(object):
                                 lookup(fields, k, default = type(r[k])))
                 for k in r.keys() if k in fields and k not in skip
                                      and r[k] is not None}
-
-    def _getattr(self, name, parent):
-        try:
-            attr = parent.__getattribute__(self, name)
-            error = False
-        except AttributeError as ex:
-            attr = None
-            error = True
-        if error or (isinstance(attr, MethodType) and
-                (isinstance(attr.im_func, BuiltinFunctionType) or
-                    (attr.func_globals["__package__"] is not None and
-                     attr.func_globals["__package__"].startswith("sage.")) or
-                    (attr.func_globals["__name__"] is not None and
-                     attr.func_globals["__name__"].startswith("sage.")))):
-            try:
-                cl, name = self._getclass(name, alias = True)
-            except KeyError:
-                if error:
-                    raise ex
-                return attr
-            def _attr(*largs, **kargs):
-                store = lookup(kargs, "store",
-                               default = discretezoo.WRITE_TO_DB,
-                               destroy = True)
-                cur = lookup(kargs, "cur", default = None, destroy = True)
-                default = len(largs) + len(kargs) == 0
-                try:
-                    if not default:
-                        raise NotImplementedError
-                    return lookup(self._getprops(cl), name)
-                except (KeyError, NotImplementedError):
-                    if error:
-                        raise NotImplementedError
-                    a = attr(*largs, **kargs)
-                    if default:
-                        if store:
-                            self._update_rows(cl, {name: a},
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
-                        update(self._getprops(cl), name, a)
-                    return a
-            _attr.func_name = name
-            try:
-                _attr.__doc__ = attr.__doc__
-            except AttributeError:
-                pass
-            return _attr
-        return attr
 
     @staticmethod
     def _get_column(cl, name, table = None, join = None, by = None):

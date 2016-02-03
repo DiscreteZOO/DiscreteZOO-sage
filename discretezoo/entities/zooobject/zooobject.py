@@ -1,5 +1,7 @@
 import re
+from types import BuiltinFunctionType
 from types import MethodType
+import discretezoo
 from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
@@ -8,6 +10,7 @@ from ...db.query import Table
 from ...util.utility import default
 from ...util.utility import isinteger
 from ...util.utility import lookup
+from ...util.utility import update
 
 class ZooObject(ZooEntity):
     _zooprops = None
@@ -120,6 +123,60 @@ class ZooObject(ZooEntity):
 
     def _add_change(self, cl, cur):
         Change(self._zooid, cl, cur = cur)
+
+    def _getattr(self, name, parent):
+        try:
+            attr = parent.__getattribute__(self, name)
+            error = False
+        except AttributeError as ex:
+            attr = None
+            error = True
+        if error or (isinstance(attr, MethodType) and
+                (isinstance(attr.im_func, BuiltinFunctionType) or
+                    (attr.func_globals["__package__"] is not None and
+                     attr.func_globals["__package__"].startswith("sage.")) or
+                    (attr.func_globals["__name__"] is not None and
+                     attr.func_globals["__name__"].startswith("sage.")))):
+            try:
+                cl, name = self._getclass(name, alias = True)
+            except KeyError:
+                if error:
+                    raise ex
+                return attr
+            def _attr(*largs, **kargs):
+                store = lookup(kargs, "store",
+                               default = discretezoo.WRITE_TO_DB,
+                               destroy = True)
+                cur = lookup(kargs, "cur", default = None, destroy = True)
+                default = len(largs) + len(kargs) == 0
+                props = self._getprops(cl)
+                try:
+                    if not default:
+                        raise NotImplementedError
+                    a = lookup(props, name)
+                    if issubclass(cl._spec["fields"][name], ZooObject) \
+                            and isinteger(a):
+                        a = cl._spec["fields"][name](zooid = a)
+                        update(props, name, a)
+                    return a
+                except (KeyError, NotImplementedError):
+                    if error:
+                        raise NotImplementedError
+                    a = attr(*largs, **kargs)
+                    if default:
+                        if store:
+                            self._update_rows(cl, {name: a},
+                                    {self._spec["primary_key"]: self._zooid},
+                                    cur = cur)
+                        update(props, name, a)
+                    return a
+            _attr.func_name = name
+            try:
+                _attr.__doc__ = attr.__doc__
+            except AttributeError:
+                pass
+            return _attr
+        return attr
 
     def alias(self):
         try:
