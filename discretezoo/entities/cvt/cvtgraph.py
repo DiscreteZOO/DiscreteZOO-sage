@@ -17,14 +17,18 @@ class CVTGraph(ZooGraph):
     _spec = None
     _dict = "_cvtprops"
 
-    def __init__(self, data = None, index = None, **kargs):
-        ZooObject._init_(self, CVTGraph, kargs, defNone = ["order"],
-                         setVal = {"data": data, "index": index},
-                         setProp = {"cvt_index": "index"})
+    def __init__(self, data = None, index = None, symcubic_index = None,
+                 **kargs):
+        ZooObject._init_(self, CVTGraph, kargs,
+                         defNone = ["order"],
+                         setVal = {"data": data, "index": index,
+                                   "symcubic_index": symcubic_index},
+                         setProp = {"cvt_index": "index",
+                                    "symcubic_index": "symcubic_index"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
-            if d["index"] is None:
+            if d["index"] is None and d["symcubic_index"] is None:
                 d["zooid"] = Integer(d["data"])
             else:
                 d["order"] = Integer(d["data"])
@@ -33,18 +37,23 @@ class CVTGraph(ZooGraph):
         else:
             return ZooGraph._parse_params(self, d)
 
-    def _clear_params(self, d):
-        d["order"] = None
-        d["index"] = None
-
     def _construct_object(self, cl, d):
-        if d["order"] is not None and d["index"] is not None:
-            join = Table(cl._spec["name"]).join(Table(cl._parent._spec["name"]),
-                         by = frozenset([cl._spec["primary_key"]]))
-            r = self._db_read(cl._parent, join, {"order": d["order"],
-                                                 "cvt_index": d["index"]})
-            d["zooid"] = r["zooid"]
-            d["graph"] = None
+        if d["order"] is not None:
+            cond = {"order": d["order"]}
+            if d["index"] is not None:
+                cond["cvt_index"] = d["index"]
+            elif d["symcubic_index"] is not None:
+                cond["symcubic_index"] = d["symcubic_index"]
+            if len(cond) > 1:
+                join = Table(cl._spec["name"]).join(
+                                    Table(cl._parent._spec["name"]),
+                                    by = frozenset([cl._spec["primary_key"]]))
+                try:
+                    r = self._db_read(cl._parent, join, cond)
+                    d["zooid"] = r["zooid"]
+                    d["graph"] = None
+                except KeyError:
+                    pass
         ZooGraph.__init__(self, **d)
 
         if d["order"] is not None:
@@ -53,11 +62,21 @@ class CVTGraph(ZooGraph):
             self._db_read(cl)
 
     def _repr_generic(self):
-        return "cubic vertex-transitive graph on %d vertices, number %d" \
-                                            % (self.order(), self.cvt_index())
+        index = self.cvt_index()
+        tr = "vertex-transitive"
+        if index is None:
+            index = self.symcubic_index()
+            if index is not None or \
+                    lookup(self._graphprops, "is_arc_transitive",
+                           default = False):
+                tr = "symmetric"
+        out = "cubic %s graph on %d vertices" % (tr, self.order())
+        if index is not None:
+            out = "%s, number %s" % (out, index)
+        return out
 
     def cvt_index(self):
-        return lookup(self._cvtprops, "cvt_index")
+        return lookup(self._cvtprops, "cvt_index", default = None)
 
     @override.computed
     def is_moebius_ladder(self, store = discretezoo.WRITE_TO_DB, cur = None):
@@ -91,7 +110,12 @@ class CVTGraph(ZooGraph):
                     (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    def truncation(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def symcubic_index(self):
+        return lookup(self._cvtprops, "symcubic_index", default = None)
+
+    def truncation(self, name = None, store = discretezoo.WRITE_TO_DB,
+                   cur = None):
+        commit = False
         if lookup(self._graphprops, "is_arc_transitive", default = False):
             cl = CVTGraph
         else:
@@ -101,26 +125,26 @@ class CVTGraph(ZooGraph):
             if isinteger(t):
                 t = cl(zooid = t, db = self._db)
                 update(self._cvtprops, "truncation", t)
-            return t
         except KeyError:
-            pass
-        commit = False
-        G = Graph([DiGraph(self).edges(labels = False),
-                   lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
-                  loops = False)
-        try:
-            t = cl(G, db = self._db)
-        except KeyError as ex:
+            G = Graph([DiGraph(self).edges(labels = False),
+                       lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
+                      loops = False)
             if not store:
-                raise ex
-            if cur is None:
+                cur = None
+            elif cur is None:
                 cur = self._db.cursor()
                 commit = True
             t = cl(G, db = self._db, cur = cur)
-        if store:
-            self._update_rows(CVTGraph, {"truncation": t._zooid},
-                              {self._spec["primary_key"]: self._zooid},
-                              cur = cur)
+            if store:
+                self._update_rows(CVTGraph, {"truncation": t._zooid},
+                                  {self._spec["primary_key"]: self._zooid},
+                                  cur = cur)
+        if name is None:
+            nm = self.name()
+            if nm and not t.name():
+                name = "Truncated %s" % nm
+        if name is not None:
+            t.name(new = name, store = store, cur = cur)
         if commit:
             self._db.commit()
         update(self._cvtprops, "truncation", t)
@@ -128,7 +152,8 @@ class CVTGraph(ZooGraph):
 
 info = ZooInfo(CVTGraph)
 
-def import_cvt(file, db = None, format = "sparse6", verbose = False):
+def import_cvt(file, db = None, format = "sparse6", index = "index",
+               verbose = False):
     if db is None:
         db = info.getdb()
     info.initdb(db = db, commit = False)
@@ -148,7 +173,7 @@ def import_cvt(file, db = None, format = "sparse6", verbose = False):
                 previous = n
                 i = 0
             i += 1
-            CVTGraph(graph = g, order = n, index = i, cur = cur, db = db)
+            CVTGraph(graph = g, order = n, cur = cur, db = db, **{index: i})
         if verbose:
             print "Imported %d graphs of order %d" % (i, n)
         f.close()

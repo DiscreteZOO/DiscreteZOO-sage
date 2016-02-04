@@ -170,19 +170,55 @@ class ZooEntity(object):
             id = cl._spec["primary_key"]
         row = dict(self._getprops(cl).items() +
                 [(k, self.__getattribute__(k)()) for k in cl._spec["skip"]])
-        if self._zooid is False:
+        if self._zooid is False and "zooid" in row:
             del row["zooid"]
-        self._db.insert_row(cl._spec["name"], row, cur = cur, id = id)
-        if id is not None:
-            objid = self._db.lastrowid(cur)
-            if self._zooid is not False:
-                self._zooid = objid
-            return objid
-        cl._add_change(self, cl, cur)
+        if "zooid" not in row or not self._update_rows(cl, row,
+                                    {cl._spec["primary_key"]: row["zooid"]},
+                                    noupdate = cl._spec["noupdate"],
+                                    cur = cur):
+            self._db.insert_row(cl._spec["name"], row, cur = cur, id = id)
+            if id is not None:
+                objid = self._db.lastrowid(cur)
+                if self._zooid is not False:
+                    self._zooid = objid
+                return objid
+            cl._add_change(self, cl, cur)
         cl._db_write_nonprimary(self, cur)
 
     def _db_write_nonprimary(self, cur = None):
         pass
+
+    def _update_rows(self, cl, row, cond, noupdate = [], cur = None,
+                     commit = None):
+        if commit is None:
+            commit = cur is None
+        if cur is None:
+            cur = self._db.cursor()
+        self._db.query({cl._spec["primary_key"]}.union(row.keys()),
+                       cl._spec["name"], cond, distinct = True, cur = cur)
+        chg = False
+        skip = set()
+        rows = cur.fetchall()
+        if len(rows) == 0:
+            return False
+        if len(noupdate) > 0:
+            for r in rows:
+                for k, v in row.items():
+                    if k in noupdate and r[k] is not None and v != r[k]:
+                        skip.add(k)
+                        continue
+            row = {k: v for k, v in row.items() if k not in skip}
+        from ..change import Change
+        for r in rows:
+            for k, v in row.items():
+                if v != r[k]:
+                    Change(r[cl._spec["primary_key"]], cl, column = k,
+                           cur = cur, db = self._db)
+                    chg = True
+        if chg:
+            self._db.update_rows(cl._spec["name"], row, cond, cur = cur,
+                                 commit = commit)
+        return True
 
     def _add_change(self, cl, cur):
         pass

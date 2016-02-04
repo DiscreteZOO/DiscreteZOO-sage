@@ -64,13 +64,9 @@ class ZooGraph(Graph, ZooObject):
                 d["data"] = d["props"]["data"]
                 del d["props"]["data"]
 
-    def _clear_params(self, d):
-        pass
-
     def _init_object(self, cl, d, setProp = {}):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
-            cl._clear_params(self, d)
         else:
             d["cur"] = None
             self._init_props(cl, d)
@@ -94,6 +90,9 @@ class ZooGraph(Graph, ZooObject):
                 d["props"] = next(ZooInfo(cl).props(cl._fields.unique_id == \
                                                         Value(d["unique_id"]),
                                                     cur = d["cur"]))
+                for k, v in setProp.items():
+                    if k not in d["props"]:
+                        d["props"][k] = d[v]
         except StopIteration:
             if d["cur"] is not None:
                 self._compute_props(cl, d)
