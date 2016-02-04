@@ -111,7 +111,9 @@ class CVTGraph(ZooGraph):
     def symcubic_index(self):
         return lookup(self._cvtprops, "symcubic_index", default = None)
 
-    def truncation(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def truncation(self, name = None, store = discretezoo.WRITE_TO_DB,
+                   cur = None):
+        commit = False
         if lookup(self._graphprops, "is_arc_transitive", default = False):
             cl = CVTGraph
         else:
@@ -121,26 +123,26 @@ class CVTGraph(ZooGraph):
             if isinteger(t):
                 t = cl(zooid = t, db = self._db)
                 update(self._cvtprops, "truncation", t)
-            return t
         except KeyError:
-            pass
-        commit = False
-        G = Graph([DiGraph(self).edges(labels = False),
-                   lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
-                  loops = False)
-        try:
-            t = cl(G, db = self._db)
-        except KeyError as ex:
+            G = Graph([DiGraph(self).edges(labels = False),
+                       lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
+                      loops = False)
             if not store:
-                raise ex
-            if cur is None:
+                cur = None
+            elif cur is None:
                 cur = self._db.cursor()
                 commit = True
             t = cl(G, db = self._db, cur = cur)
-        if store:
-            self._update_rows(CVTGraph, {"truncation": t._zooid},
-                              {self._spec["primary_key"]: self._zooid},
-                              cur = cur)
+            if store:
+                self._update_rows(CVTGraph, {"truncation": t._zooid},
+                                  {self._spec["primary_key"]: self._zooid},
+                                  cur = cur)
+        if name is None:
+            nm = self.name()
+            if nm and not t.name():
+                name = "Truncated %s" % nm
+        if name is not None:
+            t.name(new = name, store = store, cur = cur)
         if commit:
             self._db.commit()
         update(self._cvtprops, "truncation", t)
