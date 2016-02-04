@@ -107,21 +107,6 @@ class ZooObject(ZooEntity):
         uid.__setitem__(self._unique_id_algorithm, self._unique_id,
                         store = True, cur = cur)
 
-    def _update_rows(self, cl, row, cond, cur = None, commit = None):
-        if commit is None:
-            commit = cur is None
-        if cur is None:
-            cur = self._db.cursor()
-        self._db.query([cl._spec["primary_key"]] + row.keys(),
-                       cl._spec["name"], cond, distinct = True, cur = cur)
-        for r in cur.fetchall():
-            for k, v in row.items():
-                if v != r[k]:
-                    Change(r[cl._spec["primary_key"]], cl, column = k,
-                           cur = cur, db = self._db)
-        self._db.update_rows(cl._spec["name"], row, cond, cur = cur,
-                             commit = commit)
-
     def _add_change(self, cl, cur):
         Change(self._zooid, cl, cur = cur)
 

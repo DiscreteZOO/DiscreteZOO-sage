@@ -54,6 +54,8 @@ def init_spec(spec):
                            for t in to_string(spec["indices"])]
     if "skip" in spec:
         spec["skip"] = to_string(spec["skip"])
+    if "noupdate" in spec:
+        spec["noupdate"] = to_string(spec["noupdate"])
     if "fieldparams" in spec:
         spec["fieldparams"] = init_fieldparams(spec["fieldparams"])
     if "aliases" in spec:

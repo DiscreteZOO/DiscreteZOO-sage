@@ -37,11 +37,6 @@ class CVTGraph(ZooGraph):
         else:
             return ZooGraph._parse_params(self, d)
 
-    def _clear_params(self, d):
-        d["order"] = None
-        d["index"] = None
-        d["symcubic_index"] = None
-
     def _construct_object(self, cl, d):
         if d["order"] is not None:
             cond = {"order": d["order"]}
@@ -53,9 +48,12 @@ class CVTGraph(ZooGraph):
                 join = Table(cl._spec["name"]).join(
                                     Table(cl._parent._spec["name"]),
                                     by = frozenset([cl._spec["primary_key"]]))
-                r = self._db_read(cl._parent, join, cond)
-                d["zooid"] = r["zooid"]
-                d["graph"] = None
+                try:
+                    r = self._db_read(cl._parent, join, cond)
+                    d["zooid"] = r["zooid"]
+                    d["graph"] = None
+                except KeyError:
+                    pass
         ZooGraph.__init__(self, **d)
 
         if d["order"] is not None:
