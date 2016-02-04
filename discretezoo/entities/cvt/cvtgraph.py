@@ -66,7 +66,9 @@ class CVTGraph(ZooGraph):
         tr = "vertex-transitive"
         if index is None:
             index = self.symcubic_index()
-            if index is not None:
+            if index is not None or \
+                    lookup(self._graphprops, "is_arc_transitive",
+                           default = False):
                 tr = "symmetric"
         out = "cubic %s graph on %d vertices" % (tr, self.order())
         if index is not None:
