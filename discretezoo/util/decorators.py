@@ -2,7 +2,16 @@ import discretezoo
 from .utility import isinteger
 from .utility import lookup
 from .utility import update
+from ..db.query import Expression
 from ..entities.zooobject import ZooObject
+
+def parse(obj, exp):
+    if isinstance(exp, basestring):
+        return lookup(obj._getprops(exp), exp)
+    elif isinstance(exp, Expression):
+        return exp.eval(lambda e: parse(obj, e))
+    else:
+        raise TypeError
 
 class ZooDecorator:
     cl = None
@@ -64,7 +73,8 @@ class ZooDecorator:
         decorated.func_name = fun.func_name
         return this.documented(decorated)
 
-    def determined(this, **attrs):
+    def determined(this, *lattrs, **kattrs):
+        attrs = list(lattrs) + kattrs.items()
         def _determined(fun):
             def decorated(self, *largs, **kargs):
                 store = lookup(kargs, "store",
@@ -76,9 +86,9 @@ class ZooDecorator:
                 try:
                     if not default:
                         raise NotImplementedError
-                    for a, v in attrs.items():
+                    for k, v in attrs:
                         try:
-                            if lookup(self._getprops(a), a):
+                            if parse(self, k):
                                 return v
                         except KeyError:
                             pass
@@ -95,7 +105,9 @@ class ZooDecorator:
                             if upd:
                                 t[self._getclass(fun.func_name)] = \
                                                             {fun.func_name: a}
-                            for k, v in ats.items():
+                            for k, v in ats:
+                                if not isinstance(k, basestring):
+                                    continue
                                 cl = self._getclass(k)
                                 if cl not in t:
                                     t[cl] = {}

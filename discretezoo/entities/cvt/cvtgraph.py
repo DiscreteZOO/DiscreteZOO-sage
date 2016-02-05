@@ -2,8 +2,10 @@ from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 import discretezoo
+from ..vt import VTGraph
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
+from ..zoograph import import_graphs
 from ..zoograph import override
 from ..zooobject import ZooObject
 from ...db.query import Table
@@ -11,9 +13,9 @@ from ...util.utility import isinteger
 from ...util.utility import lookup
 from ...util.utility import update
 
-class CVTGraph(ZooGraph):
+class CVTGraph(VTGraph):
     _cvtprops = None
-    _parent = ZooGraph
+    _parent = VTGraph
     _spec = None
     _dict = "_cvtprops"
 
@@ -21,40 +23,40 @@ class CVTGraph(ZooGraph):
                  **kargs):
         ZooObject._init_(self, CVTGraph, kargs,
                          defNone = ["order"],
-                         setVal = {"data": data, "index": index,
+                         setVal = {"data": data, "cvt_index": index,
                                    "symcubic_index": symcubic_index},
-                         setProp = {"cvt_index": "index",
+                         setProp = {"cvt_index": "cvt_index",
                                     "symcubic_index": "symcubic_index"})
 
     def _parse_params(self, d):
         if isinteger(d["data"]):
-            if d["index"] is None and d["symcubic_index"] is None:
+            if d["cvt_index"] is None and d["symcubic_index"] is None:
                 d["zooid"] = Integer(d["data"])
             else:
                 d["order"] = Integer(d["data"])
             d["data"] = None
             return True
         else:
-            return ZooGraph._parse_params(self, d)
+            return VTGraph._parse_params(self, d)
 
     def _construct_object(self, cl, d):
         if d["order"] is not None:
             cond = {"order": d["order"]}
-            if d["index"] is not None:
-                cond["cvt_index"] = d["index"]
+            if d["cvt_index"] is not None:
+                cond["cvt_index"] = d["cvt_index"]
             elif d["symcubic_index"] is not None:
                 cond["symcubic_index"] = d["symcubic_index"]
             if len(cond) > 1:
                 join = Table(cl._spec["name"]).join(
-                                    Table(cl._parent._spec["name"]),
+                                    Table(ZooGraph._spec["name"]),
                                     by = frozenset([cl._spec["primary_key"]]))
                 try:
-                    r = self._db_read(cl._parent, join, cond)
+                    r = self._db_read(ZooGraph, join, cond)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
                     pass
-        ZooGraph.__init__(self, **d)
+        VTGraph.__init__(self, **d)
 
         if d["order"] is not None:
             assert(d["order"] == self._graphprops["order"])
@@ -150,32 +152,9 @@ class CVTGraph(ZooGraph):
         update(self._cvtprops, "truncation", t)
         return t
 
-info = ZooInfo(CVTGraph)
-
 def import_cvt(file, db = None, format = "sparse6", index = "index",
                verbose = False):
-    if db is None:
-        db = info.getdb()
-    info.initdb(db = db, commit = False)
-    previous = 0
-    i = 0
-    cur = db.cursor()
-    with open(file) as f:
-        for line in f:
-            data = line.strip()
-            if format not in ["graph6", "sparse6"]:
-                data = eval(data)
-            g = Graph(data)
-            n = g.order()
-            if n > previous:
-                if verbose and n > 0:
-                    print "Imported %d graphs of order %d" % (i, previous)
-                previous = n
-                i = 0
-            i += 1
-            CVTGraph(graph = g, order = n, cur = cur, db = db, **{index: i})
-        if verbose:
-            print "Imported %d graphs of order %d" % (i, n)
-        f.close()
-    cur.close()
-    db.commit()
+    import_graphs(file, cl = CVTGraph, db = db, format = format, index = index,
+                  verbose = verbose)
+
+info = ZooInfo(CVTGraph)
