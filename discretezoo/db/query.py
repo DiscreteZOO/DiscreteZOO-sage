@@ -471,7 +471,7 @@ class Concatenate(BinaryOp):
     op = "++"
 
     def eval(self, parse):
-        return parse(self.left) + parse(self.right)
+        return str(parse(self.left)) + str(parse(self.right))
 
 class In(BinaryOp):
     op = "in"
