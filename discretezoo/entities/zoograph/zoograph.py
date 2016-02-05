@@ -397,7 +397,10 @@ class ZooGraph(Graph, ZooObject):
                          is_forest = PlusInfinity())
     def odd_girth(self, value, attrs, store = discretezoo.WRITE_TO_DB,
                   cur = None):
-        return (value != PlusInfinity(), [("is_bipartite", PlusInfinity())])
+        inf = value == PlusInfinity()
+        if inf:
+            del attrs["is_forest"]
+        return (not inf, attrs)
 
 AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"

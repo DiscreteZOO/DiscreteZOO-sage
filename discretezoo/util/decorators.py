@@ -73,8 +73,8 @@ class ZooDecorator:
         decorated.func_name = fun.func_name
         return this.documented(decorated)
 
-    def determined(this, *lattrs, **kattrs):
-        attrs = list(lattrs) + kattrs.items()
+    def determined(this, *lattrs, **attrs):
+        attrs.update(lattrs)
         def _determined(fun):
             def decorated(self, *largs, **kargs):
                 store = lookup(kargs, "store",
@@ -86,7 +86,7 @@ class ZooDecorator:
                 try:
                     if not default:
                         raise NotImplementedError
-                    for k, v in attrs:
+                    for k, v in attrs.items():
                         try:
                             if parse(self, k):
                                 return v
@@ -98,14 +98,14 @@ class ZooDecorator:
                                               fun.func_name)(self,
                                                              *largs, **kargs)
                     if default:
-                        upd, ats = fun(self, a, attrs, store = store,
+                        upd, ats = fun(self, a, dict(attrs), store = store,
                                        cur = cur)
                         if store:
                             t = {}
                             if upd:
                                 t[self._getclass(fun.func_name)] = \
                                                             {fun.func_name: a}
-                            for k, v in ats:
+                            for k, v in ats.items():
                                 if not isinstance(k, basestring):
                                     continue
                                 cl = self._getclass(k)
