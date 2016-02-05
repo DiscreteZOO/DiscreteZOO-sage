@@ -7,6 +7,7 @@ import fields
 init_class(ZooGraph, fields)
 fields.density = 2 * fields.size / (fields.order * (fields.order - 1))
 fields.has_loops = fields.number_of_loops != 0
+fields.is_connected = fields.connected_components_number <= 1
 fields.is_half_transitive = fields.is_edge_transitive & \
                             fields.is_vertex_transitive & \
                             ~fields.is_arc_transitive
