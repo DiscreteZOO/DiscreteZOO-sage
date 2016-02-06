@@ -67,7 +67,7 @@ class SQLDB(DB):
         query.Times: '*',
         query.Divide: '/',
         query.FloorDivide: '/',
-        query.Modulo: '%',
+        query.Modulo: '%%',
         query.LeftShift: '<<',
         query.RightShift: '>>',
         query.BitwiseAnd: '&',
