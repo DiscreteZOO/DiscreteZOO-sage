@@ -253,6 +253,8 @@ class ZooGraph(Graph, ZooObject):
     @override.derived
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
+        if o <= 1:
+            return Integer(0)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
 
     @override.determined((Column("connected_components_number") != Integer(1),
