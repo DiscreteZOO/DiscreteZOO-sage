@@ -113,6 +113,11 @@ class ZooGraph(Graph, ZooObject):
                     lookup(p, k)
                 except KeyError:
                     p[k] = d["graph"].__getattribute__(k)()
+        if cl is ZooGraph:
+            for k in ["diameter", "girth"]:
+                if k in self._graphprops and \
+                        self._graphprops[k] == PlusInfinity():
+                    del self._graphprops[k]
 
     def _construct_object(self, cl, d):
         ZooObject.__init__(self, **d)
@@ -248,11 +253,23 @@ class ZooGraph(Graph, ZooObject):
     @override.derived
     def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
         o = self.order(store = store, cur = cur)
+        if o <= 1:
+            return Integer(0)
         return 2*self.size(store = store, cur = cur)/(o*(o-1))
+
+    @override.determined((Column("connected_components_number") != Integer(1),
+                          PlusInfinity()))
+    def diameter(self, value, attrs, store = discretezoo.WRITE_TO_DB,
+                 cur = None):
+        return (value != PlusInfinity(), attrs)
 
     @override.determined(is_planar = Integer(0))
     def genus(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
         return (True, attrs)
+
+    @override.determined(is_forest = PlusInfinity())
+    def girth(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
+        return (value != PlusInfinity(), attrs)
 
     @override.documented
     def hamiltonian_cycle(self, algorithm = "tsp", *largs, **kargs):
@@ -290,6 +307,10 @@ class ZooGraph(Graph, ZooObject):
     @override.derived
     def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
         return self.number_of_loops(store = store, cur = cur) > 0
+
+    @override.derived
+    def is_connected(self, store = discretezoo.WRITE_TO_DB, cur = None):
+        return self.connected_components_number(store = store, cur = cur) <= 1
 
     @override.derived
     def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
@@ -374,10 +395,14 @@ class ZooGraph(Graph, ZooObject):
         else:
             return Graph.name(self, new, *largs, **kargs)
 
-    @override.determined(is_bipartite = PlusInfinity())
+    @override.determined(is_bipartite = PlusInfinity(),
+                         is_forest = PlusInfinity())
     def odd_girth(self, value, attrs, store = discretezoo.WRITE_TO_DB,
                   cur = None):
-        return (value != PlusInfinity(), attrs)
+        inf = value == PlusInfinity()
+        if inf:
+            del attrs["is_forest"]
+        return (not inf, attrs)
 
 AVAILABLE_ALGORITHMS = ["sage"]
 DEFAULT_ALGORITHM = "sage"
@@ -399,5 +424,34 @@ def unique_id(graph, algorithm = DEFAULT_ALGORITHM,
         graph.unique_id().__setitem__(algorithm, uid, store = store,
                                       cur = cur)
     return uid
+
+def import_graphs(file, cl = None, db = None, format = "sparse6",
+                  index = "index", verbose = False):
+    info = ZooInfo(cl)
+    if db is None:
+        db = info.getdb()
+    info.initdb(db = db, commit = False)
+    previous = 0
+    i = 0
+    cur = db.cursor()
+    with open(file) as f:
+        for line in f:
+            data = line.strip()
+            if format not in ["graph6", "sparse6"]:
+                data = eval(data)
+            g = Graph(data)
+            n = g.order()
+            if n > previous:
+                if verbose and previous > 0:
+                    print "Imported %d graphs of order %d" % (i, previous)
+                previous = n
+                i = 0
+            i += 1
+            cl(graph = g, order = n, cur = cur, db = db, **{index: i})
+        if verbose:
+            print "Imported %d graphs of order %d" % (i, n)
+        f.close()
+    cur.close()
+    db.commit()
 
 info = ZooInfo(ZooGraph)

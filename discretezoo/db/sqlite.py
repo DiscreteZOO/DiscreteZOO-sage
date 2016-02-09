@@ -2,6 +2,7 @@ import errno
 import os
 import shutil
 import sqlite3
+from .query import Modulo
 from .query import enlist
 from .sqldb import SQLDB
 
@@ -54,3 +55,5 @@ class SQLiteDB(SQLDB):
 
 SQLiteDB.constraints = dict(SQLDB.constraints)
 SQLiteDB.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
+SQLiteDB.binaryops = dict(SQLDB.binaryops)
+SQLiteDB.binaryops[Modulo] = '%'

@@ -54,8 +54,7 @@ class ZooObject(ZooEntity):
                 self._zooid = r["zooid"]
                 if self._unique_id is None:
                     uid = self._fields.unique_id
-                    cur = self._db.query([uid.algorithm.column, uid.column],
-                                         uid.getJoin(),
+                    cur = self._db.query([uid.algorithm, uid], uid.getJoin(),
                                          {uid.foreign: self._zooid},
                                           limit = 1, cur = d["cur"])
                     r = cur.fetchone()

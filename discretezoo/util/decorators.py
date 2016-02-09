@@ -2,7 +2,16 @@ import discretezoo
 from .utility import isinteger
 from .utility import lookup
 from .utility import update
+from ..db.query import Expression
 from ..entities.zooobject import ZooObject
+
+def parse(obj, exp):
+    if isinstance(exp, basestring):
+        return lookup(obj._getprops(exp), exp)
+    elif isinstance(exp, Expression):
+        return exp.eval(lambda e: parse(obj, e))
+    else:
+        raise TypeError
 
 class ZooDecorator:
     cl = None
@@ -64,7 +73,8 @@ class ZooDecorator:
         decorated.func_name = fun.func_name
         return this.documented(decorated)
 
-    def determined(this, **attrs):
+    def determined(this, *lattrs, **attrs):
+        attrs.update(lattrs)
         def _determined(fun):
             def decorated(self, *largs, **kargs):
                 store = lookup(kargs, "store",
@@ -76,9 +86,9 @@ class ZooDecorator:
                 try:
                     if not default:
                         raise NotImplementedError
-                    for a, v in attrs.items():
+                    for k, v in attrs.items():
                         try:
-                            if lookup(self._getprops(a), a):
+                            if parse(self, k):
                                 return v
                         except KeyError:
                             pass
@@ -88,7 +98,7 @@ class ZooDecorator:
                                               fun.func_name)(self,
                                                              *largs, **kargs)
                     if default:
-                        upd, ats = fun(self, a, attrs, store = store,
+                        upd, ats = fun(self, a, dict(attrs), store = store,
                                        cur = cur)
                         if store:
                             t = {}
@@ -96,6 +106,8 @@ class ZooDecorator:
                                 t[self._getclass(fun.func_name)] = \
                                                             {fun.func_name: a}
                             for k, v in ats.items():
+                                if not isinstance(k, basestring):
+                                    continue
                                 cl = self._getclass(k)
                                 if cl not in t:
                                     t[cl] = {}

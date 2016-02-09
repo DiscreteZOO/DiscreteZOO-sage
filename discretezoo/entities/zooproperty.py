@@ -12,7 +12,7 @@ class ZooProperty(ZooEntity):
             cur = self._db.cursor()
         uidx = self._unique_index()
         row = dict(row)
-        self._db.query([k for k in row.keys() if k not in uidx] +
+        self._db.query([Column(k) for k in row if k not in uidx] +
                         [cl._spec["primary_key"], "deleted"], cl._spec["name"],
                        [Column(k) == Value(v) for k, v in row.items()
                         if k in uidx], cur = cur)
@@ -42,8 +42,8 @@ class ZooProperty(ZooEntity):
             commit = cur is None
         if cur is None:
             cur = self._db.cursor()
-        self._db.query([cl._spec["primary_key"]], cl._spec["name"], cond,
-                       distinct = True, cur = cur)
+        self._db.query([Column(cl._spec["primary_key"])], cl._spec["name"],
+                       cond, distinct = True, cur = cur)
         for (id,) in cur.fetchall():
             Change(id, cl, column = "deleted", cur = cur, db = self._db)
         self._db.update_rows(cl._spec["name"], {"deleted": True}, cond,
@@ -56,13 +56,14 @@ class ZooProperty(ZooEntity):
             cur = self._db.cursor()
         uidx = self._unique_index()
         cond = cond & (~Column("deleted"))
-        self._db.query([cl._spec["primary_key"]] +
-                        list(set(row.keys()).union(uidx)), cl._spec["name"],
-                        cond, cur = cur)
+        self._db.query([Column(c) for c in {cl._spec["primary_key"]}
+                                           .union(row.keys()).union(uidx)],
+                       cl._spec["name"], cond, cur = cur)
         a = cur.fetchall()
         deleted = {}
         for r in a:
-            self._db.query([cl._spec["primary_key"], "deleted"] + row.keys(),
+            self._db.query([Column(c) for c in
+                            [cl._spec["primary_key"], "deleted"] + row.keys()],
                            cl._spec["name"],
                            {k: row[k] if k in row else r[k] for k in uidx},
                            cur = cur)

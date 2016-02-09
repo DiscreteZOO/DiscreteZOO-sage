@@ -1,3 +1,5 @@
+import re
+
 class QueryObject(object):
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
@@ -86,6 +88,9 @@ class Expression(QueryObject):
         raise NotImplementedError
 
     def getTables(self):
+        raise NotImplementedError
+
+    def eval(self, parse):
         raise NotImplementedError
 
     def __hash__(self):
@@ -205,6 +210,9 @@ class Value(Expression):
     def getTables(self):
         return set()
 
+    def eval(self, parse):
+        return self.value
+
     def __str__(self):
         if isinstance(self.value, basestring):
             return "'%s'" % self.value
@@ -245,6 +253,9 @@ class Column(Expression):
             return self.table
         else:
             return Table(self.join).join(self.table, by = self.by)
+
+    def eval(self, parse):
+        return parse(self.column)
 
     def __str__(self):
         column = '%s' % self.column
@@ -351,59 +362,116 @@ class BinaryOp(Expression):
 class LessThan(BinaryOp):
     op = "<"
 
+    def eval(self, parse):
+        return parse(self.left) < parse(self.right)
+
 class LessEqual(BinaryOp):
     op = "<="
+
+    def eval(self, parse):
+        return parse(self.left) <= parse(self.right)
 
 class Equal(BinaryOp):
     op = "="
 
+    def eval(self, parse):
+        return parse(self.left) == parse(self.right)
+
 class NotEqual(BinaryOp):
     op = "!="
+
+    def eval(self, parse):
+        return parse(self.left) != parse(self.right)
 
 class GreaterThan(BinaryOp):
     op = ">"
 
+    def eval(self, parse):
+        return parse(self.left) > parse(self.right)
+
 class GreaterEqual(BinaryOp):
     op = ">="
+
+    def eval(self, parse):
+        return parse(self.left) >= parse(self.right)
 
 class Plus(BinaryOp):
     op = "+"
 
+    def eval(self, parse):
+        return parse(self.left) + parse(self.right)
+
 class Minus(BinaryOp):
     op = "-"
+
+    def eval(self, parse):
+        return parse(self.left) - parse(self.right)
 
 class Times(BinaryOp):
     op = "*"
 
+    def eval(self, parse):
+        return parse(self.left) * parse(self.right)
+
 class Divide(BinaryOp):
     op = "/"
+
+    def eval(self, parse):
+        return parse(self.left) / parse(self.right)
 
 class FloorDivide(BinaryOp):
     op = "//"
 
+    def eval(self, parse):
+        return parse(self.left) // parse(self.right)
+
 class Modulo(BinaryOp):
     op = "mod"
+
+    def eval(self, parse):
+        return parse(self.left) % parse(self.right)
 
 class Power(BinaryOp):
     op = "**"
 
+    def eval(self, parse):
+        return parse(self.left) ** parse(self.right)
+
 class LeftShift(BinaryOp):
     op = "<<"
+
+    def eval(self, parse):
+        return parse(self.left) << parse(self.right)
 
 class RightShift(BinaryOp):
     op = ">>"
 
+    def eval(self, parse):
+        return parse(self.left) >> parse(self.right)
+
 class BitwiseAnd(BinaryOp):
     op = "&"
+
+    def eval(self, parse):
+        return parse(self.left) & parse(self.right)
 
 class BitwiseOr(BinaryOp):
     op = "|"
 
+    def eval(self, parse):
+        return parse(self.left) | parse(self.right)
+
 class BitwiseXOr(BinaryOp):
     op = "^"
 
+    def eval(self, parse):
+        return parse(self.left) ^ parse(self.right)
+
 class Concatenate(BinaryOp):
     op = "++"
+
+    def eval(self, parse):
+        return str(parse(self.left)) + str(parse(self.right))
 
 class In(BinaryOp):
     op = "in"
@@ -414,6 +482,9 @@ class In(BinaryOp):
             self.right = Subquery([self.right.column], Table(self.right.table),
                                   cond = Column(self.right.by, self.right.join)
                                     == Column(self.right.by, self.right.table))
+
+    def eval(self, parse):
+        return parse(self.left) in parse(self.right)
 
 class Like(BinaryOp):
     op = "like"
@@ -428,6 +499,11 @@ class Like(BinaryOp):
         if self.case:
             out += " (case insensitive)"
         return out
+
+    def eval(self, parse):
+        return re.match(re.escape(parse(self.left)).replace("_", ".") \
+                                                   .replace("%", ".*"),
+                        parse(self.right))
 
 class UnaryOp(Expression):
     exp = None
@@ -445,23 +521,41 @@ class UnaryOp(Expression):
 class Not(UnaryOp):
     op = "not"
 
+    def eval(self, parse):
+        return not parse(self.exp)
+
 class Negate(UnaryOp):
     op = "-"
+
+    def eval(self, parse):
+        return -parse(self.exp)
 
 class Absolute(UnaryOp):
     def __str__(self):
         return "|%s|" % self.exp
 
+    def eval(self, parse):
+        return abs(parse(self.exp))
+
 class Invert(UnaryOp):
     op = "~"
+
+    def eval(self, parse):
+        return ~parse(self.exp)
 
 class IsNull(UnaryOp):
     def __str__(self):
         return "%s is null" % self.exp
 
+    def eval(self, parse):
+        return parse(self.exp) is None
+
 class IsNotNull(UnaryOp):
     def __str__(self):
         return "%s is not null" % self.exp
+
+    def eval(self, parse):
+        return parse(self.exp) is not None
 
 class LogicalExpression(Expression):
     terms = None
@@ -485,8 +579,14 @@ class LogicalExpression(Expression):
 class And(LogicalExpression):
     op = " and "
 
+    def eval(self, parse):
+        return all(parse(t) for t in terms)
+
 class Or(LogicalExpression):
     op = " or "
+
+    def eval(self, parse):
+        return any(parse(t) for t in terms)
 
 class Count(Expression):
     column = None
@@ -505,6 +605,16 @@ class Count(Expression):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
                                  self.column)
 
+class Random(Expression):
+    def __init__(self):
+        pass
+
+    def getTables(self):
+        return set()
+
+    def __str__(self):
+        return 'Random'
+
 class Order(QueryObject):
     exp = None
     order = None
@@ -514,11 +624,17 @@ class Order(QueryObject):
             self.exp = exp.exp
             self.order = exp.order
         elif isinstance(exp, tuple):
-            self.exp = makeExpression(exp[0])
+            if isinstance(exp[0], basestring):
+                self.exp = Column(exp[0])
+            else:
+                self.exp = makeExpression(exp[0])
             self.order = False if isinstance(exp[1], basestring) \
                                 and exp[1].upper() == 'D' else exp[1]
         else:
-            self.exp = makeExpression(exp)
+            if isinstance(exp, basestring):
+                self.exp = Column(exp)
+            else:
+                self.exp = makeExpression(exp)
             if self.order is None:
                 self.order = True
 
@@ -589,8 +705,6 @@ def enlist(l):
 def makeExpression(val):
     if isinstance(val, Expression):
         return val
-    elif isinstance(val, basestring):
-        return Column(val)
     elif isinstance(val, dict):
         return And(**val)
     elif isinstance(val, (list, set, tuple)):
@@ -618,6 +732,7 @@ def makeFields(cl, module, join = None, by = None, table = None):
     cl._fields = module
 
 A = All()
+R = Random()
 C = Column
 V = Value
 Asc = Ascending

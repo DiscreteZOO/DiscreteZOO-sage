@@ -19,6 +19,7 @@ class SQLDB(DB):
     exceptions = ()
 
     none_val = 'NULL'
+    random = 'RANDOM()'
 
     convert_to = {
         Integer: int,
@@ -67,7 +68,7 @@ class SQLDB(DB):
         query.Times: '*',
         query.Divide: '/',
         query.FloorDivide: '/',
-        query.Modulo: '%',
+        query.Modulo: '%%',
         query.LeftShift: '<<',
         query.RightShift: '>>',
         query.BitwiseAnd: '&',
@@ -204,6 +205,8 @@ class SQLDB(DB):
         elif isinstance(exp, query.UnaryOp):
             q, d = self.makeExpression(exp.exp)
             return (self.unaryOp(exp, q), d)
+        elif isinstance(exp, query.Random):
+            return (self.random, [])
         elif isinstance(exp, query.Count):
             sql, data = self.makeExpression(exp.column)
             if exp.distinct:

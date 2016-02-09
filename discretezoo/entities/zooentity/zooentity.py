@@ -5,6 +5,7 @@ from ...db.query import And
 from ...db.query import Column
 from ...db.query import Count
 from ...db.query import In
+from ...db.query import R as Random
 from ...db.query import Subquery
 from ...db.query import Table
 from ...util.utility import default
@@ -194,7 +195,8 @@ class ZooEntity(object):
             commit = cur is None
         if cur is None:
             cur = self._db.cursor()
-        self._db.query({cl._spec["primary_key"]}.union(row.keys()),
+        self._db.query([Column(c) for c in
+                        {cl._spec["primary_key"]}.union(row.keys())],
                        cl._spec["name"], cond, distinct = True, cur = cur)
         chg = False
         skip = set()
@@ -317,10 +319,14 @@ class ZooInfo:
             orderby = lookup(kargs, "orderby", default = [], destroy = True)
             limit = lookup(kargs, "limit", default = None, destroy = True)
             offset = lookup(kargs, "offset", default = None, destroy = True)
+            random = lookup(kargs, "random", default = False, destroy = True)
             cond = And(*largs, **kargs)
             ct = cond.getTables()
             cols = t.getTables()
             columns = [Table(table) for table in cols]
+            if random:
+                orderby = [Random]
+                columns.append(Column(Random, alias = "_rand"))
             if cols.issuperset({tbl for tbl, j, b in ct}):
                 return db.query(columns = columns, table = t, cond = cond,
                                 orderby = orderby, limit = limit,
