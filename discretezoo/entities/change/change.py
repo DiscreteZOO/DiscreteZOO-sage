@@ -25,7 +25,7 @@ class Change(ZooEntity):
                 row = {"zooid": self._objid, "table": table,
                        "column": "" if column is None else column,
                        "commit": "" if commit is None else commit}
-                self._db.query([self._spec["primary_key"]],
+                self._db.query([Column(self._spec["primary_key"])],
                                Table(self._spec["name"]),
                                [Column(k) == Value(v) for k, v in row.items()],
                                cur = cur)

@@ -614,11 +614,17 @@ class Order(QueryObject):
             self.exp = exp.exp
             self.order = exp.order
         elif isinstance(exp, tuple):
-            self.exp = makeExpression(exp[0])
+            if isinstance(exp[0], basestring):
+                self.exp = Column(exp[0])
+            else:
+                self.exp = makeExpression(exp[0])
             self.order = False if isinstance(exp[1], basestring) \
                                 and exp[1].upper() == 'D' else exp[1]
         else:
-            self.exp = makeExpression(exp)
+            if isinstance(exp, basestring):
+                self.exp = Column(exp)
+            else:
+                self.exp = makeExpression(exp)
             if self.order is None:
                 self.order = True
 
@@ -689,8 +695,6 @@ def enlist(l):
 def makeExpression(val):
     if isinstance(val, Expression):
         return val
-    elif isinstance(val, basestring):
-        return Column(val)
     elif isinstance(val, dict):
         return And(**val)
     elif isinstance(val, (list, set, tuple)):

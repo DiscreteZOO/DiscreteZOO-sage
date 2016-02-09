@@ -194,7 +194,8 @@ class ZooEntity(object):
             commit = cur is None
         if cur is None:
             cur = self._db.cursor()
-        self._db.query({cl._spec["primary_key"]}.union(row.keys()),
+        self._db.query([Column(c) for c in
+                        {cl._spec["primary_key"]}.union(row.keys())],
                        cl._spec["name"], cond, distinct = True, cur = cur)
         chg = False
         skip = set()
