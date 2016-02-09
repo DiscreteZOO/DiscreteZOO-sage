@@ -605,6 +605,16 @@ class Count(Expression):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
                                  self.column)
 
+class Random(Expression):
+    def __init__(self):
+        pass
+
+    def getTables(self):
+        return set()
+
+    def __str__(self):
+        return 'Random'
+
 class Order(QueryObject):
     exp = None
     order = None
@@ -722,6 +732,7 @@ def makeFields(cl, module, join = None, by = None, table = None):
     cl._fields = module
 
 A = All()
+R = Random()
 C = Column
 V = Value
 Asc = Ascending
