@@ -40,12 +40,13 @@ def install():
         print("For an easily updatable version, clone the official repository by running\n")
         print("git clone %s\n" % GITREPO)
     if git:
-        print("Initializing the object specifications submodule...")
-        if call(["git", "submodule", "init", "spec"], cwd = gitdir):
-            raise ImportError("Error initializing the specifications submodule")
-        if call(["git", "submodule", "update", "spec"], cwd = gitdir):
-            raise ImportError("Error updating the specifications submodule")
-        print("Object specifications submodule successfully initialized!")
+        if len(os.listdir(specdir)) == 0:
+            print("Initializing the object specifications submodule...")
+            if call(["git", "submodule", "init", "spec"], cwd = gitdir):
+                raise ImportError("Error initializing the specifications submodule")
+            if call(["git", "submodule", "update", "spec"], cwd = gitdir):
+                raise ImportError("Error updating the specifications submodule")
+            print("Object specifications submodule successfully initialized!")
     else:
         if len(os.listdir(specdir)) == 0:
             if not os.access(specdir, os.W_OK):
