@@ -2,6 +2,10 @@ __all__ = ["entities", "db"]
 DEFAULT_DB = None
 WRITE_TO_DB = True
 TRACK_CHANGES = True
+
+from util.install import install
+install()
+
 from entities import *
 from db import *
 
