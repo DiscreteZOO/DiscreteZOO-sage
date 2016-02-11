@@ -15,9 +15,15 @@ ln -s /path/to/discretezoo/discretezoo /path/to/sage/local/lib/python/site-packa
 ```
 Depending on where your installation of Sage is located, you might need superuser privileges to do this. If you plan to contribute, symlinking is the preferred option.
 
+Importing the `discretezoo` package in Sage will first try symlinking to the appropriate path, if this has not been done yet. After that, the folder `discretezoo/spec` is tested for existence of the specifications. If they are not found, the latest version will be downloaded.
+
 ## The database
 
-Currently, a [database](http://baza.fmf.uni-lj.si/discretezoo.db) of all cubic vertex-transitive graphs with at most 1280 vertices is available. To import it, complete the above steps, download the database, run Sage, and execute the following commands:
+Currently, a [database](http://baza.fmf.uni-lj.si/discretezoo.db) is available which contains:
+* all connected cubic vertex-transitive graphs with at most 1280 vertices (from the [census](http://www.matapp.unimib.it/~spiga/census.html) by P. Potočnik, P. Spiga and G. Verret),
+* all connected cubic arc-transitive graphs with at most 2048 vertices (from the [extended Foster census](https://www.math.auckland.ac.nz/~conder/symmcubic2048list.txt) by M. Conder), and
+* all vertex-transitive graphs with at most 31 vertices (from the [census](http://staffhome.ecm.uwa.edu.au/~00013890/remote/trans/index.html) by G. Royle).
+To import it, complete the above steps, download the database, run Sage, and execute the following commands:
 ```sage
 import discretezoo
 discretezoo.DEFAULT_DB.importDB("/path/to/discretezoo.db")
