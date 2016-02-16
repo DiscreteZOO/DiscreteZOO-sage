@@ -1,3 +1,5 @@
+from sage.categories.cartesian_product import cartesian_product
+from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
@@ -31,12 +33,46 @@ class SPXGraph(ZooGraph):
         d["r"] = None
         d["s"] = None
 
+    def _init_object(self, cl, d, setProp = {}):
+        if d["graph"] is None and d["r"] is not None and d["s"] is not None:
+            try:
+                r = self._db_read(cl, query = {"spx_r": d["r"],
+                                               "spx_s": d["s"]})
+                d["zooid"] = r["zooid"]
+            except KeyError as ex:
+                if d["cur"] is None:
+                    raise ex
+                if not isinteger(d["r"]) or not isinteger(d["s"]):
+                    raise TypeError("r and s must be positive integers")
+                if d["r"] < 1 or d["s"] < 1:
+                    raise ValueError("r and s must be positive integers")
+                c = [tuple(x) for x
+                     in cartesian_product([[tuple(y) for y
+                                            in Integers(2)**Integer(d["s"])],
+                                           Integers(d["r"]),
+                                           [Integer(1), Integer(-1)]])]
+                if d["r"] == 1:
+                    if d["multiedges"] is False:
+                        raise ValueError("A SPX graph with r = 1 has multiple edges")
+                    d["data"] = sum([[((v, n, s), (v, n, -s)),
+                                      ((v, n, s),
+                                       (v[1:] + (Integer(0),), n, -s)),
+                                      ((v, n, s),
+                                       (v[1:] + (Integer(1),), n, -s))]
+                                     for v, n, s in c if s == 1], [])
+                    d["multiedges"] = True
+                else:
+                    d["data"] = [c, spx_adj]
+                self._construct_graph(d)
+                d["data"] = None
+        if d["graph"] is not None:
+            self._init_graph(cl, d, setProp)
+        else:
+            d["cur"] = None
+            self._init_props(cl, d)
+        cl._construct_object(self, cl, d)
+
     def _construct_object(self, cl, d):
-        if d["r"] is not None and d["s"] is not None:
-            r = self._db_read(cl, query = {"spx_r": d["r"],
-                                           "spx_s": d["s"]})
-            d["zooid"] = r["zooid"]
-            d["graph"] = None
         ZooGraph.__init__(self, **d)
 
         if d["r"] is not None and d["s"] is not None:
@@ -53,5 +89,18 @@ class SPXGraph(ZooGraph):
 
     def spx_s(self):
         return lookup(self._spxprops, "spx_s")
+
+def spx_adj(x, y):
+    xv, xn, xs = x
+    yv, yn, ys = y
+    if xs == ys:
+        return False
+    if xn == yn and xv == yv:
+        return True
+    if xn + xs != yn:
+        return False
+    if xs == -1:
+        xv, yv = yv, xv
+    return xv[1:] == yv[:-1]
 
 info = ZooInfo(SPXGraph)

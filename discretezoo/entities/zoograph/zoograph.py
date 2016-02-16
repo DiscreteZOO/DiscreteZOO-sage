@@ -50,10 +50,13 @@ class ZooGraph(Graph, ZooObject):
         elif isinstance(d["data"], dict):
             d["props"] = d["data"]
         elif d["data"] is not None:
-            args = getargspec(Graph.__init__)[0][1:]
-            d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
-            d["vertex_labels"] = None
+            self._construct_graph(d)
         d["data"] = None
+
+    def _construct_graph(self, d):
+        args = getargspec(Graph.__init__)[0][1:]
+        d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
+        d["vertex_labels"] = None
 
     def _init_skip(self, d):
         if d["props"] is not None:
