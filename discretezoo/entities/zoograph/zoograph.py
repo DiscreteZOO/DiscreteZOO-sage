@@ -318,16 +318,6 @@ class ZooGraph(Graph, ZooObject):
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
 
-    @override.computed
-    def is_partial_cube(self, store = discretezoo.WRITE_TO_DB, cur = None):
-        n = self.order(store = store, cur = cur)
-        if 2 ** ((2*self.size(store = store, cur = cur)) // n) > n:
-            return False
-        return self.is_bipartite(store = store, cur = cur) and \
-            DiGraph([self.edges(labels = False), lambda (u1, u2), (v1, v2):
-                self.distance(u1, v1) + self.distance(u2, v2) !=
-                self.distance(u1, v2) + self.distance(u2, v1)]).is_transitive()
-
     @override.documented
     def is_regular(self, k = None, *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
