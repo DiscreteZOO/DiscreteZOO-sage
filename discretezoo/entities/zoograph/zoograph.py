@@ -258,11 +258,13 @@ class ZooGraph(Graph, ZooObject):
             return a
 
     @override.computed
-    def chromatic_index(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def chromatic_index(self, **kargs):
         return edge_coloring(self, value_only = True)
 
     @override.derived
-    def density(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def density(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         o = self.order(store = store, cur = cur)
         if o <= 1:
             return Integer(0)
@@ -270,16 +272,15 @@ class ZooGraph(Graph, ZooObject):
 
     @override.determined((Column("connected_components_number") != Integer(1),
                           PlusInfinity()))
-    def diameter(self, value, attrs, store = discretezoo.WRITE_TO_DB,
-                 cur = None):
+    def diameter(self, value, attrs, **kargs):
         return (value != PlusInfinity(), attrs)
 
     @override.determined(is_planar = Integer(0))
-    def genus(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
+    def genus(self, value, attrs, **kargs):
         return (True, attrs)
 
     @override.determined(is_forest = PlusInfinity())
-    def girth(self, value, attrs, store = discretezoo.WRITE_TO_DB, cur = None):
+    def girth(self, value, attrs, **kargs):
         return (value != PlusInfinity(), attrs)
 
     @override.documented
@@ -316,15 +317,21 @@ class ZooGraph(Graph, ZooObject):
             return Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
 
     @override.derived
-    def has_loops(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def has_loops(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         return self.number_of_loops(store = store, cur = cur) > 0
 
     @override.derived
-    def is_connected(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_connected(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         return self.connected_components_number(store = store, cur = cur) <= 1
 
     @override.derived
-    def is_half_transitive(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_half_transitive(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
@@ -358,7 +365,9 @@ class ZooGraph(Graph, ZooObject):
             return r
 
     @override.derived
-    def is_semi_symmetric(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_semi_symmetric(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if not self.is_bipartite(store = store, cur = cur):
             return False
         return (self.is_regular(store = store, cur = cur) and
@@ -366,11 +375,15 @@ class ZooGraph(Graph, ZooObject):
                 not self.is_vertex_transitive(store = store, cur = cur))
 
     @override.derived
-    def is_triangle_free(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_triangle_free(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         return self.triangles_count(store = store, cur = cur) == 0
 
     @override.derived
-    def is_weakly_chordal(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_weakly_chordal(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         return self.is_long_hole_free(store = store, cur = cur) \
             and self.is_long_antihole_free(store = store, cur = cur)
 
@@ -398,8 +411,7 @@ class ZooGraph(Graph, ZooObject):
 
     @override.determined(is_bipartite = PlusInfinity(),
                          is_forest = PlusInfinity())
-    def odd_girth(self, value, attrs, store = discretezoo.WRITE_TO_DB,
-                  cur = None):
+    def odd_girth(self, value, attrs, **kargs):
         inf = value == PlusInfinity()
         if inf:
             del attrs["is_forest"]
@@ -411,15 +423,19 @@ if is_package_installed("bliss"):
     AVAILABLE_ALGORITHMS.append("bliss")
     DEFAULT_ALGORITHM = "bliss"
 
-def canonical_label(graph, algorithm = DEFAULT_ALGORITHM):
+def canonical_label(graph, **kargs):
+    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
     return graph.canonical_label(algorithm = algorithm)
 
-def data(graph, algorithm = DEFAULT_ALGORITHM):
+def data(graph, **kargs):
     # TODO: determine the most appropriate way of representing the graph
+    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
     return canonical_label(graph, algorithm = algorithm).sparse6_string()
 
-def unique_id(graph, algorithm = DEFAULT_ALGORITHM,
-              store = discretezoo.WRITE_TO_DB, cur = None):
+def unique_id(graph, **kargs):
+    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
+    store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+    cur = lookup(kargs, "cur", default = None)
     uid = sha256(data(graph, algorithm = algorithm)).hexdigest()
     if isinstance(graph, ZooGraph):
         graph.unique_id().__setitem__(algorithm, uid, store = store,

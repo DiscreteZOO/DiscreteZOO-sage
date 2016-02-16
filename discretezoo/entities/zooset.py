@@ -83,7 +83,9 @@ class _ZooSet(dict, ZooProperty):
                           table = table))),
             foreign = cl._foreign_key, ordering = cl._ordering)
 
-    def add(self, x, id = None, store = discretezoo.WRITE_TO_DB, cur = None):
+    def add(self, x, id = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         x, tx, id = self._normalize(x, id)
         if x in self:
             return
@@ -93,7 +95,9 @@ class _ZooSet(dict, ZooProperty):
             id = self._insert_row(self.__class__, row, cur = cur)
         self[x] = id
 
-    def clear(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def clear(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
                               cur = cur)
@@ -102,12 +106,15 @@ class _ZooSet(dict, ZooProperty):
     def difference(self, other):
         return set(self).difference(other)
 
-    def difference_update(self, other, store = discretezoo.WRITE_TO_DB,
-                          cur = None):
+    def difference_update(self, other, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         for x in other:
             self.discard(x, store = store, cur = cur)
 
-    def discard(self, x, store = discretezoo.WRITE_TO_DB, cur = None):
+    def discard(self, x, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         try:
             self.remove(x, store = store, cur = cur)
         except KeyError:
@@ -116,8 +123,9 @@ class _ZooSet(dict, ZooProperty):
     def intersection(self, other):
         return set(self).intersection(other)
 
-    def intersection_update(self, other, store = discretezoo.WRITE_TO_DB,
-                            cur = None):
+    def intersection_update(self, other, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         for x in self:
             if x not in other:
                 self.remove(x, store = store, cur = cur)
@@ -151,7 +159,9 @@ class _ZooSet(dict, ZooProperty):
             else:
                 raise ex
 
-    def popitem(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def popitem(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         k, v = dict.popitem(self)
         if store:
             try:
@@ -162,8 +172,9 @@ class _ZooSet(dict, ZooProperty):
                 raise ex
         return (k, v)
 
-    def remove(self, x = None, id = None, store = discretezoo.WRITE_TO_DB,
-               cur = None):
+    def remove(self, x = None, id = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if x is None:
             if id is None:
                 raise KeyError("element or ID not specified")
@@ -181,8 +192,9 @@ class _ZooSet(dict, ZooProperty):
                               cur = cur)
         del self[x]
 
-    def rename(self, old, new = None, id = None,
-               store = discretezoo.WRITE_TO_DB, cur = None):
+    def rename(self, old, new = None, id = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if new is None:
             if id is None:
                 raise KeyError("new value or ID not specified")
@@ -213,9 +225,9 @@ class _ZooSet(dict, ZooProperty):
     def symmetric_difference(self, other):
         return set(self).symmetric_difference(other)
 
-    def symmetric_difference_update(self, other,
-                                    store = discretezoo.WRITE_TO_DB,
-                                    cur = None):
+    def symmetric_difference_update(self, other, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:
@@ -227,7 +239,9 @@ class _ZooSet(dict, ZooProperty):
     def union(self, other):
         return set(self).union(other)
 
-    def update(self, other, store = discretezoo.WRITE_TO_DB, cur = None):
+    def update(self, other, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:

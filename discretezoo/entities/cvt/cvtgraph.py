@@ -85,7 +85,9 @@ class CVTGraph(VTGraph):
         return lookup(self._cvtprops, "cvt_index", default = None)
 
     @override.computed
-    def is_moebius_ladder(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_moebius_ladder(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         g = self.girth(store = store, cur = cur)
         if g != 4:
             return False
@@ -100,7 +102,9 @@ class CVTGraph(VTGraph):
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
     @override.computed
-    def is_prism(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_prism(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         o = self.order(store = store, cur = cur)
         b = self.is_bipartite(store = store, cur = cur)
         if o == 6:
@@ -119,8 +123,9 @@ class CVTGraph(VTGraph):
     def symcubic_index(self):
         return lookup(self._cvtprops, "symcubic_index", default = None)
 
-    def truncation(self, name = None, store = discretezoo.WRITE_TO_DB,
-                   cur = None):
+    def truncation(self, name = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         commit = False
         if lookup(self._graphprops, "is_arc_transitive", default = False):
             cl = CVTGraph
