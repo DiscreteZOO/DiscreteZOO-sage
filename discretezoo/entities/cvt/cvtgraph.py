@@ -136,7 +136,10 @@ class CVTGraph(VTGraph):
             elif cur is None:
                 cur = self._db.cursor()
                 commit = True
-            t = cl(G, db = self._db, cur = cur)
+            try:
+                t = cl(G, db = self._db, cur = cur)
+            except KeyError:
+                t = G
             if store:
                 self._update_rows(CVTGraph, {"truncation": t._zooid},
                                   {self._spec["primary_key"]: self._zooid},
@@ -146,7 +149,10 @@ class CVTGraph(VTGraph):
             if nm and not t.name():
                 name = "Truncated %s" % nm
         if name is not None:
-            t.name(new = name, store = store, cur = cur)
+            if isinstance(t, ZooGraph):
+                t.name(new = name, store = store, cur = cur)
+            else:
+                t.name(new = name)
         if commit:
             self._db.commit()
         update(self._cvtprops, "truncation", t)
