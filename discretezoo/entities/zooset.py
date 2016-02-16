@@ -13,26 +13,25 @@ class _ZooSet(dict, ZooProperty):
     _objid = None
     _use_tuples = None
 
-    def __init__(self, data, vals = None, cur = None, db = None):
+    def __init__(self, data, vals = None, **kargs):
         dict.__init__(self)
         self._zooid = False
         if isinstance(data, _ZooSet):
             self._objid = data._objid
             dict.update(self, data)
-            if db is None:
-                db = data._db
-            ZooProperty.__init__(self, db = db)
+            default(kargs, "db", data._db)
+            ZooProperty._init_(self, kargs)
         else:
-            ZooProperty.__init__(self, db = db)
+            ZooProperty._init_(self, kargs)
             self._objid = data
-            if vals is not None and cur is not None:
+            if vals is not None and kargs["store"]:
                 for val in vals:
-                    self.add(val, store = True, cur = cur)
+                    self.add(val, store = True, cur = kargs["cur"])
             else:
                 t = Table(self._spec["name"])
                 cur = self._db.query([t], t, {self._foreign_key: data,
                                               "deleted": False},
-                                     cur = cur)
+                                     cur = kargs["cur"])
                 r = cur.fetchone()
                 while r is not None:
                     v = tuple([r[k] for k in self._ordering])
@@ -40,6 +39,8 @@ class _ZooSet(dict, ZooProperty):
                         v = v[0]
                     self[v] = r[self._spec["primary_key"]]
                     r = cur.fetchone()
+            if kargs["commit"]:
+                self._db.commit()
 
     def __getattr__(self, name):
         if name == self._spec["primary_key"]:

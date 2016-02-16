@@ -51,7 +51,7 @@ class CVTGraph(VTGraph):
                                     Table(ZooGraph._spec["name"]),
                                     by = frozenset([cl._spec["primary_key"]]))
                 try:
-                    r = self._db_read(ZooGraph, join, cond)
+                    r = self._db_read(ZooGraph, join, cond, kargs = d)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
@@ -61,7 +61,11 @@ class CVTGraph(VTGraph):
         if d["order"] is not None:
             assert(d["order"] == self._graphprops["order"])
         if len(self._cvtprops) == 0:
-            self._db_read(cl)
+            try:
+                self._db_read(cl, kargs = d)
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
 
     def _repr_generic(self):
         index = self.cvt_index()

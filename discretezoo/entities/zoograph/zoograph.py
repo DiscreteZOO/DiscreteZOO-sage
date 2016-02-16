@@ -71,7 +71,6 @@ class ZooGraph(Graph, ZooObject):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
-            d["cur"] = None
             self._init_props(cl, d)
         cl._construct_object(self, cl, d)
 
@@ -97,7 +96,7 @@ class ZooGraph(Graph, ZooObject):
                     if k not in d["props"]:
                         d["props"][k] = d[v]
         except StopIteration:
-            if d["cur"] is not None:
+            if d["write"][cl]:
                 self._compute_props(cl, d)
                 for k, v in setProp.items():
                     self._getprops(cl)[k] = d[v]
@@ -125,7 +124,11 @@ class ZooGraph(Graph, ZooObject):
     def _construct_object(self, cl, d):
         ZooObject.__init__(self, **d)
         if d["data"] is None:
-            d["data"] = self._db_read(cl)["data"]
+            try:
+                d["data"] = self._db_read(cl, kargs = d)["data"]
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
         propname = lookup(self._graphprops, "name", default = None)
         if d["name"]:
             self._graphprops["name"] = d["name"]
@@ -146,6 +149,7 @@ class ZooGraph(Graph, ZooObject):
             raise ValueError("the requested graph has multiple edges")
         construct(Graph, self, d)
         self._initialized = True
+
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()
