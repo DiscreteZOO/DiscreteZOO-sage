@@ -1,7 +1,9 @@
+import discretezoo
 from ..zooentity import ZooEntity
 from ...db.query import Column
 from ...db.query import Table
 from ...db.query import Value
+from ...util.utility import default
 
 class Change(ZooEntity):
     _parent = None
@@ -9,7 +11,7 @@ class Change(ZooEntity):
     _chgid = None
 
     def __init__(self, id, table = None, column = None, commit = None,
-                 user = None, cur = None, db = None):
+                 user = None, **kargs):
         self._zooid = False
         if table is None:
             self._chgid = id
@@ -17,8 +19,11 @@ class Change(ZooEntity):
             self._objid = id
             if issubclass(table, ZooEntity):
                 table = table._spec["name"]
-        ZooEntity.__init__(self, db = db)
-        if cur is not None:
+        default(kargs, "store", discretezoo.WRITE_TO_DB)
+        kargs["write"] = {}
+        ZooEntity._init_(self, ZooEntity, kargs, defNone = ["data"])
+        if kargs["store"]:
+            cur = kargs["cur"]
             if self._db.track:
                 if self._objid is None:
                     raise KeyError("table not given")
@@ -41,6 +46,8 @@ class Change(ZooEntity):
             self.column = column
             self.commit = commit
             self.user = user
+            if kargs["commit"]:
+                self._db.commit()
         else:
             if self._chgid is None:
                 raise KeyError("change id not given")

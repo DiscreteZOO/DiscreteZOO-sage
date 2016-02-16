@@ -49,8 +49,8 @@ class ZooObject(ZooEntity):
             self._unique_id = d["unique_id"]
             self._unique_id_algorithm = d["unique_id_algorithm"]
         if self._zooid is None or self._unique_id is None:
-            if d["cur"] is None:
-                r = self._db_read(cl)
+            try:
+                r = self._db_read(cl, kargs = d)
                 self._zooid = r["zooid"]
                 if self._unique_id is None:
                     uid = self._fields.unique_id
@@ -60,6 +60,8 @@ class ZooObject(ZooEntity):
                     r = cur.fetchone()
                     if r is not None:
                         self._unique_id_algorithm, self._unique_id = r
+            except KeyError:
+                pass
         ZooEntity.__init__(self, **d)
 
     def _copy_props(self, cl, obj):

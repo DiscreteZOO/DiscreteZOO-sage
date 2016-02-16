@@ -40,7 +40,7 @@ class VTGraph(ZooGraph):
                 try:
                     r = self._db_read(ZooGraph, join,
                                       {"order": d["order"],
-                                       "vt_index": d["vt_index"]})
+                                       "vt_index": d["vt_index"]}, kargs = d)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
@@ -50,7 +50,11 @@ class VTGraph(ZooGraph):
         if d["order"] is not None:
             assert(d["order"] == self._graphprops["order"])
         if len(self._vtprops) == 0:
-            self._db_read(cl)
+            try:
+                self._db_read(cl, kargs = d)
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
 
     def _repr_generic(self):
         o = self.order()

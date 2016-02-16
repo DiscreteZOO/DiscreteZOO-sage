@@ -37,10 +37,10 @@ class SPXGraph(ZooGraph):
         if d["graph"] is None and d["r"] is not None and d["s"] is not None:
             try:
                 r = self._db_read(cl, query = {"spx_r": d["r"],
-                                               "spx_s": d["s"]})
+                                               "spx_s": d["s"]}, kargs = d)
                 d["zooid"] = r["zooid"]
             except KeyError as ex:
-                if d["cur"] is None:
+                if not d["store"]:
                     raise ex
                 if not isinteger(d["r"]) or not isinteger(d["s"]):
                     raise TypeError("r and s must be positive integers")
@@ -68,7 +68,6 @@ class SPXGraph(ZooGraph):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
-            d["cur"] = None
             self._init_props(cl, d)
         cl._construct_object(self, cl, d)
 
@@ -78,7 +77,11 @@ class SPXGraph(ZooGraph):
         if d["r"] is not None and d["s"] is not None:
             assert(d["r"] * 2**(d["s"]+1) == self._graphprops["order"])
         if len(self._spxprops) == 0:
-            self._db_read(cl)
+            try:
+                self._db_read(cl, kargs = d)
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
 
     def _repr_generic(self):
         return "split Praeger-Xu(2, %d, %d) graph on %d vertices" \

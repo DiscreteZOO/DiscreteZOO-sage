@@ -51,7 +51,7 @@ class CVTGraph(VTGraph):
                                     Table(ZooGraph._spec["name"]),
                                     by = frozenset([cl._spec["primary_key"]]))
                 try:
-                    r = self._db_read(ZooGraph, join, cond)
+                    r = self._db_read(ZooGraph, join, cond, kargs = d)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
@@ -61,7 +61,11 @@ class CVTGraph(VTGraph):
         if d["order"] is not None:
             assert(d["order"] == self._graphprops["order"])
         if len(self._cvtprops) == 0:
-            self._db_read(cl)
+            try:
+                self._db_read(cl, kargs = d)
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
 
     def _repr_generic(self):
         index = self.cvt_index()
@@ -81,7 +85,9 @@ class CVTGraph(VTGraph):
         return lookup(self._cvtprops, "cvt_index", default = None)
 
     @override.computed
-    def is_moebius_ladder(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_moebius_ladder(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         g = self.girth(store = store, cur = cur)
         if g != 4:
             return False
@@ -96,7 +102,9 @@ class CVTGraph(VTGraph):
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
     @override.computed
-    def is_prism(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def is_prism(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         o = self.order(store = store, cur = cur)
         b = self.is_bipartite(store = store, cur = cur)
         if o == 6:
@@ -115,8 +123,9 @@ class CVTGraph(VTGraph):
     def symcubic_index(self):
         return lookup(self._cvtprops, "symcubic_index", default = None)
 
-    def truncation(self, name = None, store = discretezoo.WRITE_TO_DB,
-                   cur = None):
+    def truncation(self, name = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         commit = False
         if lookup(self._graphprops, "is_arc_transitive", default = False):
             cl = CVTGraph
@@ -137,7 +146,7 @@ class CVTGraph(VTGraph):
                 cur = self._db.cursor()
                 commit = True
             try:
-                t = cl(G, db = self._db, cur = cur)
+                t = cl(G, store = store, db = self._db, cur = cur)
             except KeyError:
                 t = G
             if store:

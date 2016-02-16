@@ -38,13 +38,24 @@ class ZooEntity(object):
             d[k] = v
         default(d, "db")
         default(d, "cur")
+        default(d, "commit")
+        default(d, "store", discretezoo.WRITE_TO_DB)
         self._initdb(d["db"])
+        if self.__class__ is cl:
+            d["write"] = {}
+        d["write"][cl] = d["store"]
+        if d["store"] and d["cur"] is None:
+            d["cur"] = self._db.cursor()
+            if d["commit"] is None:
+                d["commit"] = True
         if not cl._parse_params(self, d):
             self._init_params(d)
         self._default_props(cl)
         cl._init_object(self, cl, d, setProp)
-        if self._zooid is not False and d["cur"] is not None:
+        if self._zooid is not False and d["write"][cl]:
             self._db_write(cl, d["cur"])
+        if self.__class__ is cl and d["commit"]:
+            self._db.commit()
 
     def setdb(self, db):
         self._db = db
@@ -122,9 +133,12 @@ class ZooEntity(object):
         if self._zooid is None:
             self._zooid = d["zooid"]
         if self._zooid is None:
-            if d["cur"] is None:
-                r = self._db_read(cl)
+            try:
+                r = self._db_read(cl, kargs = d)
                 self._zooid = r["zooid"]
+            except KeyError as ex:
+                if not d["store"]:
+                    raise ex
 
     def _default_props(self, cl):
         c = cl
@@ -143,12 +157,14 @@ class ZooEntity(object):
             d["props"] = {k: v for k, v in d["props"].items()
                             if k not in cl._spec["fields"]
                                 or k in cl._spec["skip"]}
+            d["write"][cl] = False
 
-    def _db_read(self, cl, join = None, query = None, cur = None):
+    def _db_read(self, cl, join = None, query = None, cur = None,
+                 kargs = None):
         if query is None:
             if self._zooid is None:
                 if not cl._db_read_nonprimary(self, cur = cur):
-                    raise IndexError("object id not given")
+                    raise KeyError("object id not given")
             query = {"zooid": self._zooid}
         t = Table(cl._spec["name"])
         if join is None:
@@ -160,6 +176,8 @@ class ZooEntity(object):
             raise KeyError(query)
         self._setprops(cl, self._todict(r, skip = cl._spec["skip"],
                                         fields = cl._spec["fields"]))
+        if kargs is not None and "write" in kargs:
+            kargs["write"][cl] = False
         return r
 
     def _db_read_nonprimary(self, cur = None):

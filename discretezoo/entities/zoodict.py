@@ -14,26 +14,25 @@ class _ZooDict(dict, ZooProperty):
     _use_key_tuples = None
     _use_val_tuples = None
 
-    def __init__(self, data, vals = None, cur = None, db = None):
+    def __init__(self, data, vals = None, **kargs):
         dict.__init__(self)
         self._zooid = False
         if isinstance(data, _ZooDict):
             self._objid = data._objid
             dict.update(self, data)
-            if db is None:
-                db = data._db
-            ZooProperty.__init__(self, db = db)
+            default(kargs, "db", data._db)
+            ZooProperty._init_(self, kargs)
         else:
-            ZooProperty.__init__(self, db = db)
+            ZooProperty._init_(self, kargs)
             self._objid = data
-            if vals is not None and cur is not None:
+            if vals is not None and kargs["store"]:
                 for k, v in vals.items():
-                    self.__setitem__(k, v, store = True, cur = cur)
+                    self.__setitem__(k, v, store = True, cur = kargs["cur"])
             else:
                 t = Table(self._spec["name"])
                 cur = self._db.query([t], t, {self._foreign_key: data,
                                               "deleted": False},
-                                     cur = cur)
+                                     cur = kargs["cur"])
                 r = cur.fetchone()
                 while r is not None:
                     key = tuple([r[k] for k in self._key_ordering])
@@ -46,6 +45,8 @@ class _ZooDict(dict, ZooProperty):
                                      id = r[self._spec["primary_key"]],
                                      store = False)
                     r = cur.fetchone()
+            if kargs["commit"]:
+                self._db.commit()
 
     def __getattr__(self, name):
         if name == self._spec["primary_key"]:
@@ -69,8 +70,9 @@ class _ZooDict(dict, ZooProperty):
         k, tk = self._normalize_key(k)
         return dict.__getitem__(self, k)[1]
 
-    def __setitem__(self, k, v, id = None, store = discretezoo.WRITE_TO_DB,
-                    cur = None):
+    def __setitem__(self, k, v, id = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         k, tk = self._normalize_key(k)
         v, tv = self._normalize_val(v)
         if k in self and self[k] == v:
@@ -82,8 +84,9 @@ class _ZooDict(dict, ZooProperty):
             id = self._insert_row(self.__class__, row, cur = cur)
         dict.__setitem__(self, k, (id, v))
 
-    def __delitem__(self, k = None, id = None, store = discretezoo.WRITE_TO_DB,
-                    cur = None):
+    def __delitem__(self, k = None, id = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if k is None:
             if id is None:
                 raise KeyError("key or ID not specified")
@@ -137,7 +140,9 @@ class _ZooDict(dict, ZooProperty):
                           table = table))),
             foreign = cl._foreign_key, ordering = cl._key_ordering)
 
-    def clear(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def clear(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
                               cur = cur)
@@ -175,7 +180,9 @@ class _ZooDict(dict, ZooProperty):
             else:
                 raise ex
 
-    def popitem(self, store = discretezoo.WRITE_TO_DB, cur = None):
+    def popitem(self, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         k, (id, v) = dict.popitem(self)
         if store:
             try:
@@ -186,15 +193,16 @@ class _ZooDict(dict, ZooProperty):
                 raise ex
         return (k, v)
 
-    def setdefault(self, k, v = None, store = discretezoo.WRITE_TO_DB,
-                   cur = None):
+    def setdefault(self, k, v = None, **kargs):
+        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default = None)
         k, tk = self._normalize_key(k)
         if k in self:
             return self[k]
         else:
             self.__setitem__(k, v, store = store, cur = cur)
 
-    def update(self, k, v = None, store = discretezoo.WRITE_TO_DB, cur = None):
+    def update(self, *largs, **kargs):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)

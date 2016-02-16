@@ -1,10 +1,17 @@
+import discretezoo
 from .change import Change
 from .zooentity import ZooEntity
 from ..db.query import Column
 from ..db.query import Or
 from ..db.query import Value
+from ..util.utility import default
 
 class ZooProperty(ZooEntity):
+    def _init_(self, kargs):
+        default(kargs, "store", discretezoo.WRITE_TO_DB)
+        kargs["write"] = {}
+        ZooEntity._init_(self, ZooEntity, kargs, defNone = ["data"])
+
     def _insert_row(self, cl, row, cur = None, commit = None):
         if commit is None:
             commit = cur is None
