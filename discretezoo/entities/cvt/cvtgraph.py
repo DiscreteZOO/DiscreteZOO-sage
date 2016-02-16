@@ -141,7 +141,7 @@ class CVTGraph(VTGraph):
                 cur = self._db.cursor()
                 commit = True
             try:
-                t = cl(G, db = self._db, cur = cur)
+                t = cl(G, store = store, db = self._db, cur = cur)
             except KeyError:
                 t = G
             if store:
