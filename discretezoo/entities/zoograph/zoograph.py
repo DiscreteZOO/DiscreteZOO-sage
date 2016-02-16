@@ -50,10 +50,13 @@ class ZooGraph(Graph, ZooObject):
         elif isinstance(d["data"], dict):
             d["props"] = d["data"]
         elif d["data"] is not None:
-            args = getargspec(Graph.__init__)[0][1:]
-            d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
-            d["vertex_labels"] = None
+            self._construct_graph(d)
         d["data"] = None
+
+    def _construct_graph(self, d):
+        args = getargspec(Graph.__init__)[0][1:]
+        d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
+        d["vertex_labels"] = None
 
     def _init_skip(self, d):
         if d["props"] is not None:
@@ -135,8 +138,12 @@ class ZooGraph(Graph, ZooObject):
                                                  inplace = False)
         if d["loops"] is None:
             d["loops"] = self._graphprops["number_of_loops"] > 0
+        elif not d["loops"] and self._graphprops["number_of_loops"] > 0:
+            raise ValueError("the requested graph has loops")
         if d["multiedges"] is None:
             d["multiedges"] = self._graphprops["has_multiple_edges"]
+        elif not d["multiedges"] and self._graphprops["has_multiple_edges"]:
+            raise ValueError("the requested graph has multiple edges")
         construct(Graph, self, d)
         self._initialized = True
 
@@ -317,16 +324,6 @@ class ZooGraph(Graph, ZooObject):
         return (self.is_edge_transitive(store = store, cur = cur) and
             self.is_vertex_transitive(store = store, cur = cur) and
             not self.is_arc_transitive(store = store, cur = cur))
-
-    @override.computed
-    def is_partial_cube(self, store = discretezoo.WRITE_TO_DB, cur = None):
-        n = self.order(store = store, cur = cur)
-        if 2 ** ((2*self.size(store = store, cur = cur)) // n) > n:
-            return False
-        return self.is_bipartite(store = store, cur = cur) and \
-            DiGraph([self.edges(labels = False), lambda (u1, u2), (v1, v2):
-                self.distance(u1, v1) + self.distance(u2, v2) !=
-                self.distance(u1, v2) + self.distance(u2, v1)]).is_transitive()
 
     @override.documented
     def is_regular(self, k = None, *largs, **kargs):
