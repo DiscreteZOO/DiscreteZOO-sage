@@ -68,6 +68,11 @@ class CVTGraph(VTGraph):
                     raise ex
 
     def _repr_generic(self):
+        if lookup(self._graphprops, "connected_components_number",
+                  default = 1) > 1:
+            out = "disconnected "
+        else:
+            out = ""
         index = self.cvt_index()
         tr = "vertex-transitive"
         if index is None:
@@ -76,7 +81,7 @@ class CVTGraph(VTGraph):
                     lookup(self._graphprops, "is_arc_transitive",
                            default = False):
                 tr = "symmetric"
-        out = "cubic %s graph on %d vertices" % (tr, self.order())
+        out += "cubic %s %s" % (tr, ZooGraph._repr_generic(self))
         if index is not None:
             out = "%s, number %s" % (out, index)
         return out

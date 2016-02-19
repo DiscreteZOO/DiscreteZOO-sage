@@ -57,9 +57,12 @@ class VTGraph(ZooGraph):
                     raise ex
 
     def _repr_generic(self):
-        o = self.order()
-        out = "vertex-transitive graph on %d vert%s" % \
-                                                (o, "ex" if o == 1 else "ices")
+        if lookup(self._graphprops, "connected_components_number",
+                  default = 1) > 1:
+            out = "disconnected "
+        else:
+            out = ""
+        out += "vertex-transitive %s" % ZooGraph._repr_generic(self)
         index = self.vt_index()
         if index is not None:
             out = "%s, number %s" % (out, index)
