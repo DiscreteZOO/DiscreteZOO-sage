@@ -1,3 +1,10 @@
+r"""
+Package installation
+
+This module contains a function which installs the necessary files for
+DiscreteZOO to work.
+"""
+
 import os
 from distutils.spawn import find_executable
 from shutil import copyfileobj
@@ -8,10 +15,22 @@ from StringIO import StringIO
 import sage
 import discretezoo
 
+# Repository locations
 GITREPO = "https://github.com/DiscreteZOO/DiscreteZOO-sage.git"
 SPECZIP = "https://github.com/DiscreteZOO/DiscreteZOO-spec/archive/master.zip"
 
 def install():
+    r"""
+    Install the package.
+
+    If the package has been loaded from a relative path, attempts to create a
+    symbolic link in Sage's Python distribution's package storage to the
+    directory containing the package. Then, the directory containing object
+    specification is checked. If no files are found, then the specification
+    files are fetched - if the package is in a git repository and git is
+    available, then git is used, otherwise the latest specification files are
+    downloaded.
+    """
     curdir = os.path.join(os.getcwd(), discretezoo.__path__[0])
 
     if not any(x.startswith('/') for x in discretezoo.__path__):
