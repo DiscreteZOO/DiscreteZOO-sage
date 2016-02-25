@@ -1,3 +1,10 @@
+r"""
+Method decorators
+
+This module provide some decorators for class methods.
+"""
+
+import re
 import discretezoo
 from .utility import isinteger
 from .utility import lookup
@@ -6,6 +13,15 @@ from ..db.query import Expression
 from ..entities.zooobject import ZooObject
 
 def parse(obj, exp):
+    r"""
+    Evaluate an expression with values from ``obj``.
+
+    INPUT:
+
+    - ``obj`` - the object to get the properties from
+
+    - ``exp`` - the expression to evaluate
+    """
     if isinstance(exp, basestring):
         return lookup(obj._getprops(exp), exp)
     elif isinstance(exp, Expression):
@@ -13,20 +29,94 @@ def parse(obj, exp):
     else:
         raise TypeError
 
-class ZooDecorator:
+class ZooDecorator(object):
+    r"""
+    A class providing decorators for overriding methods of a given class.
+
+    INPUT:
+
+    - ``cl`` - the class whose methods will be overridden.
+    """
     cl = None
 
     def __init__(this, cl):
+        r"""
+        Object constructor.
+
+        INPUT:
+
+        - ``cl`` - the class whose methods will be overridden.
+        """
         this.cl = cl
 
-    def documented(this, fun):
+    def documented(this, fun, attr = None):
+        r"""
+        Embed the overridden function's documentation.
+
+        If the overriding function has a docstring of its own, it is inserted
+        after the INPUT section of the overridden functions's docstring.
+        Otherwise, the inserted documentation describes the parameters
+        ``store`` and ``cur``.
+
+        INPUT:
+
+        - ``attr`` - if specified, the docstring of ``attr`` will be used
+          instead of the docstring of the overridden function.
+        """
+        doc = []
+        basedoc = None
+        end = None
         try:
-            fun.__doc__ = type.__getattribute__(this.cl, fun.func_name).__doc__
+            if attr is None:
+                attr = type.__getattribute__(this.cl, fun.func_name)
+            basedoc = attr.__doc__
         except AttributeError:
             pass
+        if basedoc is not None:
+            m = re.search(r'^\s*(OUTPUT|ALGORITHM|EXAMPLES?|TESTS?):', basedoc,
+                          re.MULTILINE)
+            if m is None:
+                doc.append(basedoc)
+            else:
+                st = m.start()
+                doc.append(basedoc[:st])
+                end = basedoc[st:]
+        if fun.__doc__ is None:
+            s = ''
+            if basedoc is not None:
+                m = re.search(r'^ +', basedoc, re.MULTILINE)
+                if m is not None:
+                    s = m.group()
+            doc.append(r"""
+{0}DiscreteZOO-specific parameters:
+
+{0}- ``store`` - whether to store the computed results back to the
+{0}  database (named parameter).
+
+{0}- ``cur`` - the cursor to use for database interaction (default:
+{0}  ``None``).
+{0}""".format(s))
+        else:
+            doc.append(fun.__doc__)
+        if end is not None:
+            doc.append(end)
+        fun.__doc__ = "\n".join(doc)
         return fun
 
     def computed(this, fun):
+        r"""
+        Wrap the computing function with database interaction.
+
+        The decorated function should compute the desired property. It should
+        accept the following parameters:
+
+        - ``store`` - whether to store the computed results back to the
+          database (named parameter).
+
+        - ``cur`` - the cursor to use for database interaction (named
+          parameter).
+
+        """
         def decorated(self, *largs, **kargs):
             store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                            destroy = True)
@@ -57,9 +147,21 @@ class ZooDecorator:
                     update(d, fun.func_name, a)
                 return a
         decorated.func_name = fun.func_name
-        return this.documented(decorated)
+        return this.documented(decorated, fun)
 
     def derived(this, fun):
+        r"""
+        Derive a property from other properties.
+
+        The decorated function should derive the desired property. It should
+        accept the following parameters:
+
+        - ``store`` - whether to store the computed results back to the
+          database (named parameter).
+
+        - ``cur`` - the cursor to use for database interaction (named
+          parameter).
+        """
         def decorated(self, *largs, **kargs):
             store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                            destroy = True)
@@ -71,9 +173,42 @@ class ZooDecorator:
                                              fun.func_name)(self,
                                                             *largs, **kargs)
         decorated.func_name = fun.func_name
+        decorated.__doc__ = fun.__doc__
         return this.documented(decorated)
 
     def determined(this, *lattrs, **attrs):
+        r"""
+        Determine the value of a property if a condition is satisfied.
+
+        The decorated function should return a pair ``(upd, ats)``, where
+        ``upd`` is a boolean signifying whether the computed value should be
+        updated, and ``ats`` is a dictionary whose keys are names of the
+        properties that should be updated to whether the corresponding value
+        matches the computed value of the attribute (note that any non-string
+        keys will be ignored). The function should accept the following
+        parameters:
+
+        - ``value`` - the value computed by the overridden function.
+
+        - ``attrs`` - a dictionary mapping boolean atributes or expressions
+          to the values of the sought attribute that they imply if true.
+
+        - ``store`` - whether to store the computed results back to the
+          database (named parameter).
+
+        - ``cur`` - the cursor to use for database interaction (named
+          parameter).
+
+        INPUT:
+
+        - an unnamed attribute should be a tuple whose first element is an
+          attribute name or an expressions, and the second element is the value
+          of the sought attribute that is implied when the value of the
+          attribute or expression represented by the first element is true.
+
+        - a named attribute is equivalent to a tuple containing its name and
+          value.
+        """
         attrs.update(lattrs)
         def _determined(fun):
             def decorated(self, *largs, **kargs):
@@ -119,8 +254,10 @@ class ZooDecorator:
                         if upd:
                             update(d, fun.func_name, a)
                         for k, v in ats.items():
-                            update(self._getprops(k), k, a == v)
+                            if isinstance(k, basestring):
+                                update(self._getprops(k), k, a == v)
                     return a
             decorated.func_name = fun.func_name
+            decorated.__doc__ = fun.__doc__
             return this.documented(decorated)
         return _determined

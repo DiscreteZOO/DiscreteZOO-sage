@@ -26,6 +26,7 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
     _parent = ZooObject
     _dict = "_graphprops"
+    _override = override
     _initialized = False
 
     def __init__(self, data = None, **kargs):
@@ -187,6 +188,10 @@ class ZooGraph(Graph, ZooObject):
     @override.documented
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that a mutable
+        copy will have type ``Graph``.
+        """
         if immutable is False or (data_structure is not None
                                   and data_structure is not 'static_sparse'):
             return Graph(self).copy(weighted = weighted,
@@ -205,6 +210,10 @@ class ZooGraph(Graph, ZooObject):
     def relabel(self, perm = None, inplace = True, return_map = False,
                 check_input = True, complete_partial_function = True,
                 immutable = True):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that a mutable
+        copy will have type ``Graph``.
+        """
         if inplace:
             raise ValueError("To relabel an immutable graph use inplace=False")
         G = Graph(self, immutable = False)
@@ -221,6 +230,10 @@ class ZooGraph(Graph, ZooObject):
     def _subgraph_by_adding(self, vertices = None, edges = None,
                             edge_property = None, immutable = None, *largs,
                             **kargs):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that the
+        subgraph will have type ``Graph``.
+        """
         if immutable is None:
             immutable = True
         return Graph(self)._subgraph_by_adding(vertices = vertices,
@@ -259,6 +272,10 @@ class ZooGraph(Graph, ZooObject):
 
     @override.computed
     def chromatic_index(self, **kargs):
+        r"""
+        Return the minimal number of colors needed to color the edges of the
+        graph.
+        """
         return edge_coloring(self, value_only = True)
 
     @override.derived

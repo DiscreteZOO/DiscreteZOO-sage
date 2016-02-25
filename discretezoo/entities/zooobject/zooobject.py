@@ -21,6 +21,7 @@ class ZooObject(ZooEntity):
     _unique_id_algorithm = None
     _parent = ZooEntity
     _dict = "_zooprops"
+    _override = None
     _fields = None
 
     def __init__(self, data = None, **kargs):
@@ -158,11 +159,10 @@ class ZooObject(ZooEntity):
                         update(props, name, a)
                     return a
             _attr.func_name = name
-            try:
-                _attr.__doc__ = attr.__doc__
-            except AttributeError:
-                pass
-            return _attr
+            if self._override is None:
+                return _attr
+            else:
+                return self._override.documented(_attr, attr)
         return attr
 
     @staticmethod
