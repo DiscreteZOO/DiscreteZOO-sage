@@ -1,7 +1,7 @@
 r"""
 Method decorators
 
-This module provide some decorators for class methods.
+This module provides some decorators for class methods.
 """
 
 import re
@@ -32,10 +32,6 @@ def parse(obj, exp):
 class ZooDecorator(object):
     r"""
     A class providing decorators for overriding methods of a given class.
-
-    INPUT:
-
-    - ``cl`` - the class whose methods will be overridden.
     """
     cl = None
 

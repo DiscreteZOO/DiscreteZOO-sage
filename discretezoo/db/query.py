@@ -1,19 +1,46 @@
+r"""
+Query objects
+
+This module implements objects used to build query expressions.
+"""
+
 import re
 
 class QueryObject(object):
+    r"""
+    A superclass for all query objects.
+    """
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
 
 class All(QueryObject):
+    r"""
+    The choice of all columns in a query.
+    """
     def __str__(self):
         return "All columns"
 
 class Table(QueryObject):
+    r"""
+    A table in the database.
+    """
     tables = []
     index = 0
 
     def __init__(self, *args, **kargs):
-        if len(args) == 1 and isinstance(args[0], Table):
+        r"""
+        Object constructor.
+
+        INPUT:
+
+        - an unnamed attribute can be either a ``Table`` object, or a string
+          representing the table's name - in the latter case it will also be
+          used as its alias.
+
+        - a named attribute can take the same values as an unnamed attribute,
+          but the attribute name will be used as an alias.
+        """
+        if len(args) == 1 and len(kargs) == 0 and isinstance(args[0], Table):
             self.tables = args[0].tables[:]
         else:
             self.tables = [{"table": t,
@@ -26,6 +53,31 @@ class Table(QueryObject):
                             "by": None} for a, t in kargs.items()]
 
     def join(self, table, by = None, left = False, alias = None, **kargs):
+        r"""
+        Join a table to the object.
+
+        Add a new table to be represented by ``self``, joining it according
+        to the parameters.
+
+        INPUT:
+
+        - ``table`` - a string or ``Table`` to join.
+
+        - ``by`` - either a ``frozenset`` of columns to join by, or a tuple of
+          pairs, where the first elements represent columns of the joined
+          table, and the second elements are expressions that respective
+          columns should match in value. The default value of ``None``
+          represents a full join.
+
+        - ``left`` - whether to perform a left join (default: ``False``).
+
+        - ``alias`` - the alias for the joined table. The default value of
+          ``None`` will keep the existing alias, if any, or will use the name
+          as an alias.
+
+        - any other named parameter will be used as ``table``, with the name
+          of the parameter being used as ``alias``.
+        """
         if len(kargs) == 1:
             alias, table = kargs.items()[0]
         elif len(kargs) != 0:
@@ -39,12 +91,27 @@ class Table(QueryObject):
         return self
 
     def getTables(self):
+        r"""
+        Return a set of tables joined by ``self``.
+        """
         return set(sum([list(t["table"].getTables())
                         if isinstance(t["table"], Table)
                         else [t["table"]] for t in self.tables], []))
 
     @staticmethod
     def alias(table = None):
+        r"""
+        Return a unique alias for the specified table.
+
+        If a ``Table`` containing a single table is given, returns ``None``
+        (i.e., no renaming takes place). If it contains multiple tables, a
+        fresh alias is generated. If any other input is given, it is returned
+        in string form. If no input is given, a fresh alias is generated, too.
+
+        INPUT:
+
+        - ``table`` - the table to return an alias for (default: ``None``).
+        """
         if table is None:
             alias = "_table%d" % Table.index
             Table.index += 1
@@ -60,13 +127,24 @@ class Table(QueryObject):
             return str(table)
 
     @staticmethod
-    def name(x):
-        if x["alias"] is not None:
-            return x["alias"]
-        if isinstance(x["table"], Table):
-            return Table.name(x["table"].tables[0])
+    def name(table):
+        r"""
+        Return the name of the specified table.
+
+        If a ``Table`` is given, its alias is returned if set, otherwise the
+        method is called recursicely on the first table. If any other input is
+        given, it is returned in string form.
+
+        INPUT:
+
+        - ``table`` - the table to return the name for.
+        """
+        if table["alias"] is not None:
+            return table["alias"]
+        if isinstance(table["table"], Table):
+            return Table.name(table["table"].tables[0])
         else:
-            return str(x["table"])
+            return str(table["table"])
 
     def __str__(self):
         if len(self.tables) == 0:
