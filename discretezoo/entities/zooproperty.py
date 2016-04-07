@@ -1,3 +1,10 @@
+r"""
+A superclass for properties of DiscreteZOO objects
+
+This module provides a superclass for multi-valued properties of DiscreteZOO
+objects.
+"""
+
 import discretezoo
 from .change import Change
 from .zooentity import ZooEntity
@@ -7,12 +14,45 @@ from ..db.query import Value
 from ..util.utility import default
 
 class ZooProperty(ZooEntity):
+    r"""
+    A superclass for properties of DiscreteZOO objects.
+    """
+
     def _init_(self, kargs):
+        """
+        Initialize the object.
+
+        This method is called by the object constructor.
+
+        INPUT:
+
+        - ``kargs``: a dictionary of explicit and implicit parameters
+          to the object constructor.
+        """
         default(kargs, "store", discretezoo.WRITE_TO_DB)
         kargs["write"] = {}
         ZooEntity._init_(self, ZooEntity, kargs, defNone = ["data"])
 
     def _insert_row(self, cl, row, cur = None, commit = None):
+        r"""
+        Insert a row into the database or replace an existing row.
+
+        A matching row (possibly marked as deleted) is first queried for. If
+        none exists, a new row is inserted. Otherwise, the old one is updated
+        with the changed values. Returns the ID of the inserted or updated row.
+
+        INPUT:
+
+        - ``cl`` - the class determining the table to insert the row into.
+
+        - ``row`` - a dictionary specifying the row to insert.
+
+        - ``cur`` - the cursor to use for database interaction
+          (default: ``None``).
+
+        - ``commit`` - whether to commit after a new row is inserted. If
+          ``None`` (default), commit only if ``cur`` is not specified.
+        """
         if commit is None:
             commit = cur is None
         if cur is None:
@@ -45,6 +85,25 @@ class ZooProperty(ZooEntity):
         return id
 
     def _delete_rows(self, cl, cond, cur = None, commit = None):
+        r"""
+        Delete rows from the database.
+
+        Matching rows are first queried for. If found, they are marked as
+        deleted.
+
+        INPUT:
+
+        - ``cl`` - the class determining the table to delete the rows from.
+
+        - ``cond`` - an ``Expression`` specifying the condition necessary for
+          the deletion to take place.
+
+        - ``cur`` - the cursor to use for database interaction
+          (default: ``None``).
+
+        - ``commit`` - whether to commit after rows are deleted. If ``None``
+          (default), commit only if ``cur`` is not specified.
+        """
         if commit is None:
             commit = cur is None
         if cur is None:
@@ -57,6 +116,27 @@ class ZooProperty(ZooEntity):
                              cur = cur, commit = True)
 
     def _update_rows(self, cl, row, cond, cur = None, commit = None):
+        r"""
+        Update rows in the database.
+
+        Matching rows are first queried for. If found, they are updated.
+
+        INPUT:
+
+        - ``cl`` - the class determining the table to delete the rows from.
+
+        - ``row`` - a dictionary specifying the new values of the specified
+          columns.
+
+        - ``cond`` - an ``Expression`` specifying the condition necessary for
+          the update to take place.
+
+        - ``cur`` - the cursor to use for database interaction
+          (default: ``None``).
+
+        - ``commit`` - whether to commit after rows are deleted. If ``None``
+          (default), commit only if ``cur`` is not specified.
+        """
         if commit is None:
             commit = cur is None
         if cur is None:
@@ -103,10 +183,25 @@ class ZooProperty(ZooEntity):
             self._db.commit()
 
     def _unique_index(self):
+        r"""
+        Return a list of columns uniquely determining a row in the database.
+
+        Not implemented, to be overridden.
+        """
         return NotImplementedError
 
     @staticmethod
     def _init_spec(cl, spec):
+        r"""
+        Initialize the class specification.
+
+        INPUT:
+
+        - ``cl`` - the class to initialize the specification for.
+
+        - ``spec`` - a partial specification to be added to the generic
+          specification.
+        """
         if "indices" in spec:
             cl._spec["indices"] += spec["indices"]
         if "skip" in spec:

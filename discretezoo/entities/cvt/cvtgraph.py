@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
@@ -91,6 +92,9 @@ class CVTGraph(VTGraph):
 
     @override.computed
     def is_moebius_ladder(self, **kargs):
+        r"""
+        Return whether the graph is a Möbius ladder.
+        """
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         g = self.girth(store = store, cur = cur)
@@ -108,6 +112,9 @@ class CVTGraph(VTGraph):
 
     @override.computed
     def is_prism(self, **kargs):
+        r"""
+        Return whether the graph is a prism.
+        """
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         o = self.order(store = store, cur = cur)

@@ -26,6 +26,7 @@ class ZooGraph(Graph, ZooObject):
     _spec = None
     _parent = ZooObject
     _dict = "_graphprops"
+    _override = override
     _initialized = False
 
     def __init__(self, data = None, **kargs):
@@ -71,7 +72,7 @@ class ZooGraph(Graph, ZooObject):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
-            self._init_props(cl, d)
+            self._apply_props(cl, d)
         cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
@@ -96,25 +97,17 @@ class ZooGraph(Graph, ZooObject):
                     if k not in d["props"]:
                         d["props"][k] = d[v]
         except StopIteration:
-            if d["write"][cl]:
-                self._compute_props(cl, d)
-                for k, v in setProp.items():
-                    self._getprops(cl)[k] = d[v]
-            else:
+            if not d["write"][cl]:
                 raise KeyError("graph not found in database")
 
-        self._init_props(cl, d)
+        self._apply_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
+        self._graphprops["number_of_loops"] = d["data"].number_of_loops()
+        self._graphprops["has_multiple_edges"] = d["data"].has_multiple_edges()
 
-    def _compute_props(self, cl, d):
-        for c, s in cl._spec["compute"].items():
-            p = self._getprops(c)
-            for k in s:
-                try:
-                    lookup(p, k)
-                except KeyError:
-                    p[k] = d["graph"].__getattribute__(k)()
+    def _compute_props(self, cl, d, setProps = {}):
+        ZooObject._compute_props(self, cl, d, setProps)
         if cl is ZooGraph:
             for k in ["diameter", "girth"]:
                 if k in self._graphprops and \
@@ -149,7 +142,6 @@ class ZooGraph(Graph, ZooObject):
             raise ValueError("the requested graph has multiple edges")
         construct(Graph, self, d)
         self._initialized = True
-
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()
@@ -187,6 +179,10 @@ class ZooGraph(Graph, ZooObject):
     @override.documented
     def copy(self, weighted = None, implementation = 'c_graph',
              data_structure = None, sparse = None, immutable = None):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that a mutable
+        copy will have type ``Graph``.
+        """
         if immutable is False or (data_structure is not None
                                   and data_structure is not 'static_sparse'):
             return Graph(self).copy(weighted = weighted,
@@ -205,6 +201,10 @@ class ZooGraph(Graph, ZooObject):
     def relabel(self, perm = None, inplace = True, return_map = False,
                 check_input = True, complete_partial_function = True,
                 immutable = True):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that a mutable
+        copy will have type ``Graph``.
+        """
         if inplace:
             raise ValueError("To relabel an immutable graph use inplace=False")
         G = Graph(self, immutable = False)
@@ -221,6 +221,10 @@ class ZooGraph(Graph, ZooObject):
     def _subgraph_by_adding(self, vertices = None, edges = None,
                             edge_property = None, immutable = None, *largs,
                             **kargs):
+        r"""
+        This method has been overridden by DiscreteZOO to ensure that the
+        subgraph will have type ``Graph``.
+        """
         if immutable is None:
             immutable = True
         return Graph(self)._subgraph_by_adding(vertices = vertices,
@@ -229,11 +233,16 @@ class ZooGraph(Graph, ZooObject):
                                                immutable = immutable,
                                                *largs, **kargs)
 
-    def data(self):
+    def data(self, **kargs):
         try:
+            lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                   destroy = True)
+            lookup(kargs, "cur", default = None, destroy = True)
+            if len(kargs) > 0:
+                raise NotImplementedError
             return lookup(self._graphprops, "data")
-        except (KeyError, TypeError):
-            return data(self)
+        except (KeyError, TypeError, NotImplementedError):
+            return data(self, **kargs)
 
     @override.documented
     def average_degree(self, *largs, **kargs):
@@ -259,6 +268,10 @@ class ZooGraph(Graph, ZooObject):
 
     @override.computed
     def chromatic_index(self, **kargs):
+        r"""
+        Return the minimal number of colors needed to color the edges of the
+        graph.
+        """
         return edge_coloring(self, value_only = True)
 
     @override.derived

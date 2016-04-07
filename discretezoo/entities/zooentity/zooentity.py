@@ -50,10 +50,10 @@ class ZooEntity(object):
                 d["commit"] = True
         if not cl._parse_params(self, d):
             self._init_params(d)
-        self._default_props(cl)
+        self._init_props(cl)
         cl._init_object(self, cl, d, setProp)
         if self._zooid is not False and d["write"][cl]:
-            self._assert_conditions(cl)
+            self._compute_props(cl, d, setProp)
             self._db_write(cl, d["cur"])
         if self.__class__ is cl and d["commit"]:
             self._db.commit()
@@ -141,15 +141,17 @@ class ZooEntity(object):
                 if not d["store"]:
                     raise ex
 
-    def _default_props(self, cl):
+    def _init_props(self, cl):
         c = cl
         while c is not None:
             self._setprops(c, {})
             c = c._parent
+
+    def _default_props(self, cl):
         for c, m in cl._spec["default"].items():
             self._getprops(c).update(m)
 
-    def _init_props(self, cl, d):
+    def _apply_props(self, cl, d):
         if d["props"] is not None:
             self._init_skip(d)
             self._setprops(cl, self._todict(d["props"],
@@ -160,11 +162,18 @@ class ZooEntity(object):
                                 or k in cl._spec["skip"]}
             d["write"][cl] = False
 
-    def _assert_conditions(self, cl):
+    def _compute_props(self, cl, d, setProp = {}):
         for c, m in cl._spec["condition"].items():
             for k, v in m.items():
-                assert self.__getattribute__(k)() == v, \
+                assert self.__getattribute__(k)(store = (c is not cl)) == v, \
                     "Attribute %s does not have value %s" % (k, v)
+        self._default_props(cl)
+        p = self._getprops(cl)
+        for k, v in setProp.items():
+            p[k] = d[v]
+        for c, s in cl._spec["compute"].items():
+            for k in s:
+                self.__getattribute__(k)(store = (c is not cl))
 
     def _db_read(self, cl, join = None, query = None, cur = None,
                  kargs = None):
@@ -191,11 +200,15 @@ class ZooEntity(object):
         return False
 
     def _db_write(self, cl, cur):
+        from ..zooproperty import ZooProperty
         id = None
         if cl._parent is None:
             id = cl._spec["primary_key"]
         row = dict(self._getprops(cl).items() +
-                [(k, self.__getattribute__(k)()) for k in cl._spec["skip"]])
+                [(k, self.__getattribute__(k)(store = False))
+                 for k in cl._spec["skip"]])
+        row = {k: v for k, v in row.items()
+               if not issubclass(cl._spec['fields'][k], ZooProperty)}
         if self._zooid is False and "zooid" in row:
             del row["zooid"]
         if "zooid" not in row or not self._update_rows(cl, row,
@@ -216,10 +229,14 @@ class ZooEntity(object):
 
     def _update_rows(self, cl, row, cond, noupdate = [], cur = None,
                      commit = None):
+        from ..change import Change
+        from ..zooproperty import ZooProperty
         if commit is None:
             commit = cur is None
         if cur is None:
             cur = self._db.cursor()
+        row = {k: v for k, v in row.items()
+               if not issubclass(cl._spec['fields'][k], ZooProperty)}
         self._db.query([Column(c) for c in
                         {cl._spec["primary_key"]}.union(row.keys())],
                        cl._spec["name"], cond, distinct = True, cur = cur)
@@ -235,7 +252,6 @@ class ZooEntity(object):
                         skip.add(k)
                         continue
             row = {k: v for k, v in row.items() if k not in skip}
-        from ..change import Change
         for r in rows:
             for k, v in row.items():
                 if v != r[k]:
@@ -268,7 +284,7 @@ class ZooEntity(object):
             cl._db_read(self)
             cl = cl._parent
 
-    def zooid(self):
+    def zooid(self, **kargs):
         return self._zooid
 
 class ZooInfo:
