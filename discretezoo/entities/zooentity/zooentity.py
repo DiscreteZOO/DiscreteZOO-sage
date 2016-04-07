@@ -53,7 +53,7 @@ class ZooEntity(object):
         self._init_props(cl)
         cl._init_object(self, cl, d, setProp)
         if self._zooid is not False and d["write"][cl]:
-            self._assert_conditions(cl)
+            self._compute_props(cl, d, setProp)
             self._db_write(cl, d["cur"])
         if self.__class__ is cl and d["commit"]:
             self._db.commit()
@@ -151,7 +151,7 @@ class ZooEntity(object):
         for c, m in cl._spec["default"].items():
             self._getprops(c).update(m)
 
-    def _set_props(self, cl, d):
+    def _apply_props(self, cl, d):
         if d["props"] is not None:
             self._init_skip(d)
             self._setprops(cl, self._todict(d["props"],
@@ -162,12 +162,18 @@ class ZooEntity(object):
                                 or k in cl._spec["skip"]}
             d["write"][cl] = False
 
-    def _assert_conditions(self, cl):
+    def _compute_props(self, cl, d, setProp = {}):
         for c, m in cl._spec["condition"].items():
             for k, v in m.items():
-                assert self.__getattribute__(k)() == v, \
+                assert self.__getattribute__(k)(store = (c is not cl)) == v, \
                     "Attribute %s does not have value %s" % (k, v)
         self._default_props(cl)
+        p = self._getprops(cl)
+        for k, v in setProp.items():
+            p[k] = d[v]
+        for c, s in cl._spec["compute"].items():
+            for k in s:
+                self.__getattribute__(k)(store = (c is not cl))
 
     def _db_read(self, cl, join = None, query = None, cur = None,
                  kargs = None):
