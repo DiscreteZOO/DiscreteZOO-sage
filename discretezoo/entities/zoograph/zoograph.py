@@ -231,11 +231,16 @@ class ZooGraph(Graph, ZooObject):
                                                immutable = immutable,
                                                *largs, **kargs)
 
-    def data(self):
+    def data(self, **kargs):
         try:
+            lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                   destroy = True)
+            lookup(kargs, "cur", default = None, destroy = True)
+            if len(kargs) > 0:
+                raise NotImplementedError
             return lookup(self._graphprops, "data")
-        except (KeyError, TypeError):
-            return data(self)
+        except (KeyError, TypeError, NotImplementedError):
+            return data(self, **kargs)
 
     @override.documented
     def average_degree(self, *largs, **kargs):
