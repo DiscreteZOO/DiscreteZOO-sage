@@ -103,6 +103,8 @@ class ZooGraph(Graph, ZooObject):
         self._apply_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
+        self._graphprops["number_of_loops"] = d["data"].number_of_loops()
+        self._graphprops["has_multiple_edges"] = d["data"].has_multiple_edges()
 
     def _compute_props(self, cl, d, setProps = {}):
         ZooObject._compute_props(self, cl, d, setProps)
@@ -130,15 +132,15 @@ class ZooGraph(Graph, ZooObject):
         if d["vertex_labels"] is not None:
             d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
                                                  inplace = False)
-        construct(Graph, self, d)
         if d["loops"] is None:
-            d["loops"] = self.number_of_loops() > 0
-        elif not d["loops"] and self.number_of_loops() > 0:
+            d["loops"] = self._graphprops["number_of_loops"] > 0
+        elif not d["loops"] and self._graphprops["number_of_loops"] > 0:
             raise ValueError("the requested graph has loops")
         if d["multiedges"] is None:
-            d["multiedges"] = self.has_multiple_edges()
-        elif not d["multiedges"] and self.has_multiple_edges():
+            d["multiedges"] = self._graphprops["has_multiple_edges"]
+        elif not d["multiedges"] and self._graphprops["has_multiple_edges"]:
             raise ValueError("the requested graph has multiple edges")
+        construct(Graph, self, d)
         self._initialized = True
 
     def _db_write_nonprimary(self, cur = None):
