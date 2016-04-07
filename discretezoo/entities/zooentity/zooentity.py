@@ -50,7 +50,7 @@ class ZooEntity(object):
                 d["commit"] = True
         if not cl._parse_params(self, d):
             self._init_params(d)
-        self._default_props(cl)
+        self._init_props(cl)
         cl._init_object(self, cl, d, setProp)
         if self._zooid is not False and d["write"][cl]:
             self._assert_conditions(cl)
@@ -141,15 +141,17 @@ class ZooEntity(object):
                 if not d["store"]:
                     raise ex
 
-    def _default_props(self, cl):
+    def _init_props(self, cl):
         c = cl
         while c is not None:
             self._setprops(c, {})
             c = c._parent
+
+    def _default_props(self, cl):
         for c, m in cl._spec["default"].items():
             self._getprops(c).update(m)
 
-    def _init_props(self, cl, d):
+    def _set_props(self, cl, d):
         if d["props"] is not None:
             self._init_skip(d)
             self._setprops(cl, self._todict(d["props"],
@@ -165,6 +167,7 @@ class ZooEntity(object):
             for k, v in m.items():
                 assert self.__getattribute__(k)() == v, \
                     "Attribute %s does not have value %s" % (k, v)
+        self._default_props(cl)
 
     def _db_read(self, cl, join = None, query = None, cur = None,
                  kargs = None):

@@ -71,7 +71,7 @@ class ZooGraph(Graph, ZooObject):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
-            self._init_props(cl, d)
+            self._set_props(cl, d)
         cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
@@ -103,7 +103,7 @@ class ZooGraph(Graph, ZooObject):
             else:
                 raise KeyError("graph not found in database")
 
-        self._init_props(cl, d)
+        self._set_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
 
