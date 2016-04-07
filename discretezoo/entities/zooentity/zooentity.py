@@ -146,8 +146,6 @@ class ZooEntity(object):
         while c is not None:
             self._setprops(c, {})
             c = c._parent
-        for c, m in cl._spec["condition"].items():
-            self._getprops(c).update(m)
         for c, m in cl._spec["default"].items():
             self._getprops(c).update(m)
 
