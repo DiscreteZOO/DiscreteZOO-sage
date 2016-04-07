@@ -72,7 +72,7 @@ class ZooGraph(Graph, ZooObject):
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
-            self._init_props(cl, d)
+            self._apply_props(cl, d)
         cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
@@ -97,25 +97,15 @@ class ZooGraph(Graph, ZooObject):
                     if k not in d["props"]:
                         d["props"][k] = d[v]
         except StopIteration:
-            if d["write"][cl]:
-                self._compute_props(cl, d)
-                for k, v in setProp.items():
-                    self._getprops(cl)[k] = d[v]
-            else:
+            if not d["write"][cl]:
                 raise KeyError("graph not found in database")
 
-        self._init_props(cl, d)
+        self._apply_props(cl, d)
         d["data"] = d["graph"]
         d["graph"] = None
 
-    def _compute_props(self, cl, d):
-        for c, s in cl._spec["compute"].items():
-            p = self._getprops(c)
-            for k in s:
-                try:
-                    lookup(p, k)
-                except KeyError:
-                    p[k] = d["graph"].__getattribute__(k)()
+    def _compute_props(self, cl, d, setProps = {}):
+        ZooObject._compute_props(self, cl, d, setProps)
         if cl is ZooGraph:
             for k in ["diameter", "girth"]:
                 if k in self._graphprops and \
@@ -140,17 +130,16 @@ class ZooGraph(Graph, ZooObject):
         if d["vertex_labels"] is not None:
             d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
                                                  inplace = False)
+        construct(Graph, self, d)
         if d["loops"] is None:
-            d["loops"] = self._graphprops["number_of_loops"] > 0
-        elif not d["loops"] and self._graphprops["number_of_loops"] > 0:
+            d["loops"] = self.number_of_loops() > 0
+        elif not d["loops"] and self.number_of_loops() > 0:
             raise ValueError("the requested graph has loops")
         if d["multiedges"] is None:
-            d["multiedges"] = self._graphprops["has_multiple_edges"]
-        elif not d["multiedges"] and self._graphprops["has_multiple_edges"]:
+            d["multiedges"] = self.has_multiple_edges()
+        elif not d["multiedges"] and self.has_multiple_edges():
             raise ValueError("the requested graph has multiple edges")
-        construct(Graph, self, d)
         self._initialized = True
-
 
     def _db_write_nonprimary(self, cur = None):
         uid = self.unique_id()

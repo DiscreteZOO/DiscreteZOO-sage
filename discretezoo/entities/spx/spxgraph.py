@@ -65,11 +65,7 @@ class SPXGraph(ZooGraph):
                     d["data"] = [c, spx_adj]
                 self._construct_graph(d)
                 d["data"] = None
-        if d["graph"] is not None:
-            self._init_graph(cl, d, setProp)
-        else:
-            self._init_props(cl, d)
-        cl._construct_object(self, cl, d)
+        ZooGraph._init_object(self, cl, d, setProp = setProp)
 
     def _construct_object(self, cl, d):
         ZooGraph.__init__(self, **d)
