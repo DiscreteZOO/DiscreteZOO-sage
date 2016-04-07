@@ -115,5 +115,7 @@ class ZooProperty(ZooEntity):
             cl._spec["fieldparams"].update(spec["fieldparams"])
         if "compute" in spec:
             cl._spec["compute"].update(spec["compute"])
+        if "condition" in spec:
+            cl._spec["condition"].update(spec["condition"])
         if "default" in spec:
             cl._spec["default"].update(spec["default"])

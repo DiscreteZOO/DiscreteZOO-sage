@@ -276,6 +276,7 @@ def ZooSet(parent, name, spec, use_tuples = None):
                 "deleted": {"not_null"}
             },
             "compute": {},
+            "condition": {},
             "default": {}
         }
 

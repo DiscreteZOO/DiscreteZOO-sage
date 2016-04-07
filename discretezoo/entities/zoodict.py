@@ -255,6 +255,7 @@ def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
                 "deleted": {"not_null"}
             },
             "compute": {},
+            "condition": {},
             "default": {}
         }
 

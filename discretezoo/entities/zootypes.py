@@ -63,6 +63,9 @@ def init_spec(spec):
     if "compute" in spec:
         spec["compute"] = {names[c]: to_string(l)
                             for c, l in spec["compute"].items()}
+    if "condition" in spec:
+        spec["condition"] = {names[c]: {str(k): v for k, v in d.items()}
+                                for c, d in spec["condition"].items()}
     if "default" in spec:
         spec["default"] = {names[c]: {str(k): v for k, v in d.items()}
                             for c, d in spec["default"].items()}
