@@ -37,7 +37,7 @@ class _ZooDict(dict, ZooProperty):
         - ``vals`` - a dictionary of keys and values to be stored
           (default: ``None``). Only used if ``store`` is ``True``.
 
-        - ``db`` -- the database being used (must be a named parameter;
+        - ``db`` - the database being used (must be a named parameter;
           default: ``None``).
 
         - ``store`` - whether to store the data in ``vals`` to the database
@@ -238,7 +238,7 @@ class _ZooDict(dict, ZooProperty):
     @staticmethod
     def _get_column(cl, name, table, join = None, by = None):
         r"""
-        Return a ``ColumnSet`` object for the given class.
+        Return a ``ColumnSet`` object for a property of the given class.
 
         INPUT:
 
@@ -252,7 +252,7 @@ class _ZooDict(dict, ZooProperty):
         - ``join`` - a join of tables needed to determine the object
           (default: ``None``).
 
-        - ``by`` - - ``by`` - the criterion to join by (default: ``None``).
+        - ``by`` - the criterion to join by (default: ``None``).
           See ``db.query.Table.join`` for more information.
         """
         if not isinstance(table, Table):
