@@ -104,7 +104,7 @@ class ZooObject(ZooEntity):
             return True
         return False
 
-    def _db_write_nonprimary(self, cur = None):
+    def _db_write_nonprimary(self, cur):
         uid = self.unique_id()
         uid.__setitem__(self._unique_id_algorithm, self._unique_id,
                         store = True, cur = cur)

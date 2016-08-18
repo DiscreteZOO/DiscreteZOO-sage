@@ -143,7 +143,7 @@ class ZooGraph(Graph, ZooObject):
         construct(Graph, self, d)
         self._initialized = True
 
-    def _db_write_nonprimary(self, cur = None):
+    def _db_write_nonprimary(self, cur):
         uid = self.unique_id()
         for algo in AVAILABLE_ALGORITHMS:
             if algo not in uid:

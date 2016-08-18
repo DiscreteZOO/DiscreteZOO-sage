@@ -1,3 +1,9 @@
+r"""
+A set metaclass
+
+This module provides a function to create set-like classes.
+"""
+
 import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
@@ -126,7 +132,7 @@ class _ZooSet(dict, ZooProperty):
     @staticmethod
     def _get_column(cl, name, table, join = None, by = None):
         r"""
-        Return a ``ColumnSet`` object for the given class.
+        Return a ``ColumnSet`` object for a property of the given class.
 
         INPUT:
 
@@ -140,7 +146,7 @@ class _ZooSet(dict, ZooProperty):
         - ``join`` - a join of tables needed to determine the object
           (default: ``None``).
 
-        - ``by`` - - ``by`` - the criterion to join by (default: ``None``).
+        - ``by`` - the criterion to join by (default: ``None``).
           See ``db.query.Table.join`` for more information.
         """
         if not isinstance(table, Table):
@@ -316,7 +322,7 @@ class _ZooSet(dict, ZooProperty):
         r"""
         Remove and return an arbitrary set element.
 
-        Raises ``KeyError`` if the set is empty.
+        Raise ``KeyError`` if the set is empty.
 
         INPUT:
 
