@@ -10,6 +10,7 @@ Currently, a [database](http://discretezoo.xyz/discretezoo.db) is available whic
 * all connected cubic vertex-transitive graphs with at most 1280 vertices (from the [census](http://www.matapp.unimib.it/~spiga/census.html) by P. Potočnik, P. Spiga and G. Verret),
 * all connected cubic arc-transitive graphs with at most 2048 vertices (from the [extended Foster census](https://www.math.auckland.ac.nz/~conder/symmcubic2048list.txt) by M. Conder), and
 * all vertex-transitive graphs with at most 31 vertices (from the [census](http://staffhome.ecm.uwa.edu.au/~00013890/remote/trans/index.html) by G. Royle).
+
 To import it, download it, and then run in Sage:
 ```sage
 import discretezoo
