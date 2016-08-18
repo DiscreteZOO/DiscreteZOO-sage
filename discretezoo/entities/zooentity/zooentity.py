@@ -5,6 +5,7 @@ This module contains a class which all DiscreteZOO entities extend,
 and also a class for making queries about entities of a given class.
 """
 
+from sage.rings.integer import Integer
 import discretezoo
 from .. import zootypes
 from ...db.query import A as All
