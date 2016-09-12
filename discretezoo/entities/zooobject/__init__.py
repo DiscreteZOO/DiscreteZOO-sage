@@ -1,3 +1,8 @@
+r"""
+ZooObject module
+
+Contains a superclass for all DiscreteZOO objects.
+"""
 __all__ = ['fields', 'ZooObject', 'info']
 
 from .zooobject import *

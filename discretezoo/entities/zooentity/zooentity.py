@@ -48,7 +48,7 @@ class ZooEntity(object):
         - ``db`` - the database being used (must be a named parameter;
           default: ``None``).
 
-        - ``store`` - whether to store the data in ``vals`` to the database
+        - ``store`` - whether to store the entity to the database
           (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
 
         - ``cur`` - the cursor to use for database interaction
