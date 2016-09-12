@@ -1,4 +1,5 @@
 from sage.categories.cartesian_product import cartesian_product
+from sage.graphs.graph import Graph
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
 from ..zooentity import ZooInfo
@@ -33,6 +34,45 @@ class SPXGraph(ZooGraph):
         d["r"] = None
         d["s"] = None
 
+    @staticmethod
+    def _construct_spx(r, s, multiedges = None, **kargs):
+        r"""
+        Construct a SPX(2, r, s) graph.
+
+        Return a tuple containing the data that can be used to construct
+        the requested SPX graph, and a boolean indicating whether the
+        constructed graph should be considered a multigraph.
+
+        INPUT:
+
+        - ``r`` - the ``r`` parameter indicating the range of the counter.
+
+        - ``s`` - the ``s`` parameter indicating the length of the string.
+
+        - ``multiedges`` - whether the constructed graph should be considered
+          a multigraph. If ``None`` (default), the second element of the output
+          will be set to ``True`` when ``r = 1``. If ``False`` and ``r = 1``,
+          a ``ValueError`` is raised. Otherwise, the second element of the
+          output will be ``multiedges``.
+
+        - any other named parameters are silently ignored.
+        """
+        c = [tuple(x) for x
+             in cartesian_product([[tuple(y) for y
+                                    in Integers(2)**Integer(s)], Integers(r),
+                                   [Integer(1), Integer(-1)]])]
+        if r == 1:
+            if multiedges is False:
+                raise ValueError("A SPX graph with r = 1 has multiple edges")
+            data = sum([[((v, n, t), (v, n, -t)),
+                         ((v, n, t), (v[1:] + (Integer(0),), n, -t)),
+                         ((v, n, t), (v[1:] + (Integer(1),), n, -t))]
+                        for v, n, t in c if t == 1], [])
+            multiedges = True
+        else:
+            data = [c, spx_adj]
+        return (data, multiedges)
+
     def _init_object(self, cl, d, setProp = {}):
         if d["graph"] is None and d["r"] is not None and d["s"] is not None:
             try:
@@ -46,23 +86,7 @@ class SPXGraph(ZooGraph):
                     raise TypeError("r and s must be positive integers")
                 if d["r"] < 1 or d["s"] < 1:
                     raise ValueError("r and s must be positive integers")
-                c = [tuple(x) for x
-                     in cartesian_product([[tuple(y) for y
-                                            in Integers(2)**Integer(d["s"])],
-                                           Integers(d["r"]),
-                                           [Integer(1), Integer(-1)]])]
-                if d["r"] == 1:
-                    if d["multiedges"] is False:
-                        raise ValueError("A SPX graph with r = 1 has multiple edges")
-                    d["data"] = sum([[((v, n, s), (v, n, -s)),
-                                      ((v, n, s),
-                                       (v[1:] + (Integer(0),), n, -s)),
-                                      ((v, n, s),
-                                       (v[1:] + (Integer(1),), n, -s))]
-                                     for v, n, s in c if s == 1], [])
-                    d["multiedges"] = True
-                else:
-                    d["data"] = [c, spx_adj]
+                d["data"], d["multiedges"] = self._construct_spx(**d)
                 self._construct_graph(d)
                 d["data"] = None
         ZooGraph._init_object(self, cl, d, setProp = setProp)
@@ -78,6 +102,81 @@ class SPXGraph(ZooGraph):
             except KeyError as ex:
                 if not d["store"]:
                     raise ex
+
+    def _check_conditions(self, cl, d):
+        r"""
+        Check the necessary conditions required by the class specification.
+
+        Raise ``AssertionError`` on failure to meet the conditions.
+        Also set the parameters ``r`` and ``s``.
+
+        INPUT:
+
+        - ``cl`` - the class to compute the properties for.
+
+        - ``d`` - the dictionary of parameters.
+        """
+        ZooGraph._check_conditions(self, cl, d)
+        d["r"], d["s"] = self._check_spx()
+
+    def _check_spx(self):
+        r"""
+        Check whether the graph is an SPX graph.
+
+        Raise ``AssertionError`` if the graph is found not to be an SPX graph.
+        Otherwise, return a tuple containing the parameters ``r`` and ``s``.
+        """
+        n = self.order()
+        assert n % 4 == 0, "A SPX graph has order divisible by 4"
+        A = self.automorphism_group()
+        a = A.order()
+        O = A.orbits()
+        p = len(O)
+        q = n//p
+        assert q % 2 == 0, "The vertex orbits of an SPX graph have even size"
+        t = 0
+        while p > 1:
+            assert p % 2 == 0, \
+                "The number of vertex orbits of an SPX graph is a power of 2"
+            p //= 2
+            t += 1
+        assert all(len(o) == q for o in O), \
+               "All vertex orbits of an SPX graph have the same size"
+        if t == 0:
+            if n == 4:
+                return (1, 1)
+            elif n == 8:
+                return (2, 1)
+            elif n == 16:
+                assert self.girth() == 4, \
+                       "A SPX graph with 16 vertices has girth 4"
+                return (2, 2) if a == 32 else (4, 1)
+            q = a
+        q //= 2
+        r = 0
+        while q > r:
+            assert q % 2 == 0, \
+                "The size of the automorphism group of an SPX graph is of form r*2^r"
+            q //= 2
+            r += 1
+        assert q == r, \
+            "The size of the automorphism group of an SPX graph is of form r*2^r"
+        if t == 0:
+            assert n % (2*r) == 0, \
+                "The order of an SPX graph is a multiple of 2r"
+            p = n//(2*r)
+            s = 0
+            while p > 1:
+                assert p % 2 == 0, \
+                    "The order of an SPX graph is a r times a power of 2"
+                p //= 2
+                s += 1
+        else:
+            s = r + t
+        data, multiedges = self._construct_spx(r, s)
+        G = Graph(data, multiedges = multiedges)
+        assert self.is_isomorphic(G), "The given graph is not an SPX graph"
+        return (r, s)
 
     def _repr_generic(self):
         return "split Praeger-Xu(2, %d, %d) graph on %d vertices" \

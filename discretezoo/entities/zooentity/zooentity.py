@@ -362,10 +362,7 @@ class ZooEntity(object):
 
     def _compute_props(self, cl, d, setProp = {}):
         r"""
-        Check the necessary conditions and compute the properties required by
-        the class specification.
-
-        Raise ``AssertionError`` on failure to meet the conditions.
+        Compute the properties required by the class specification.
 
         INPUT:
 
@@ -376,10 +373,7 @@ class ZooEntity(object):
         - ``setProp`` - a dictionary mapping field names to names of the
           parameters they should take their value from (default: ``{}``).
         """
-        for c, m in cl._spec["condition"].items():
-            for k, v in m.items():
-                assert self.__getattribute__(k)(store = (c is not cl)) == v, \
-                    "Attribute %s does not have value %s" % (k, v)
+        cl._check_conditions(self, cl, d)
         self._default_props(cl)
         p = self._getprops(cl)
         for k, v in setProp.items():
@@ -387,6 +381,23 @@ class ZooEntity(object):
         for c, s in cl._spec["compute"].items():
             for k in s:
                 self.__getattribute__(k)(store = (c is not cl))
+
+    def _check_conditions(self, cl, d):
+        r"""
+        Check the necessary conditions required by the class specification.
+
+        Raise ``AssertionError`` on failure to meet the conditions.
+
+        INPUT:
+
+        - ``cl`` - the class to compute the properties for.
+
+        - ``d`` - the dictionary of parameters.
+        """
+        for c, m in cl._spec["condition"].items():
+            for k, v in m.items():
+                assert self.__getattribute__(k)(store = (c is not cl)) == v, \
+                    "Attribute %s does not have value %s" % (k, v)
 
     def _db_read(self, cl, join = None, query = None, cur = None,
                  kargs = None):
