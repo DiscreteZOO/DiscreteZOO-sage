@@ -41,7 +41,7 @@ class ZooObject(ZooEntity):
 
         INPUT:
 
-        - ``data`` - the data to construct the entity from.
+        - ``data`` - the data to construct the entity from (ID or unique ID).
 
         - ``db`` - the database being used (must be a named parameter;
           default: ``None``).
