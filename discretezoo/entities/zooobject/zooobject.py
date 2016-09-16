@@ -55,7 +55,7 @@ class ZooObject(ZooEntity):
         - ``commit`` - whether to commit the changes to the database
           (must be a named parameter; default: ``None``).
 
-        - other named parameters accepted by subclasses.
+        - other named parameters are silently ignored.
         """
         self._init_(ZooObject, kargs, setVal = {"data": data})
 

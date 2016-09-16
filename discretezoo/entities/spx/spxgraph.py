@@ -56,7 +56,8 @@ class SPXGraph(ZooGraph):
         - ``commit`` - whether to commit the changes to the database
           (must be a named parameter; default: ``None``).
 
-        - other named parameters accepted by subclasses or Sage's ``Graph``.
+        - named parameters accepted by or Sage's ``Graph`` class.
+          Other named parameters are silently ignored.
         """
         ZooObject._init_(self, SPXGraph, kargs, defNone = ["r"],
                          setVal = {"data": data, "s": s},

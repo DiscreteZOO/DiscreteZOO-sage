@@ -62,7 +62,8 @@ class ZooGraph(Graph, ZooObject):
         - ``commit`` - whether to commit the changes to the database
           (must be a named parameter; default: ``None``).
 
-        - other named parameters accepted by subclasses or Sage's ``Graph``.
+        - named parameters accepted by or Sage's ``Graph`` class.
+          Other named parameters are silently ignored.
         """
         ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
                          setVal = {"data": data,
