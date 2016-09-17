@@ -200,6 +200,8 @@ class ZooObject(ZooEntity):
 
         - ``cur`` - the cursor to use for database interaction.
         """
+        if self._unique_id is None:
+            raise ValueError("Insufficient data to construct the object")
         uid = self.unique_id()
         uid.__setitem__(self._unique_id_algorithm, self._unique_id,
                         store = True, cur = cur)

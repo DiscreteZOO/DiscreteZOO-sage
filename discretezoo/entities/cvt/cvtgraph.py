@@ -256,8 +256,10 @@ class CVTGraph(VTGraph):
                 t = cl(zooid = t, db = self._db)
                 update(self._cvtprops, "truncation", t)
         except KeyError:
-            G = Graph([DiGraph(self).edges(labels = False),
-                       lambda (u, v), (x, y): u == x or (u, v) == (y, x)],
+            G = Graph([sum([[(n, e, 0), (n, e, 1)] for n, e
+                            in enumerate(self.edge_iterator(labels = False))],
+                           []),
+                       lambda (n, e, i), (m, f, j): n == m or e[i] == f[j]],
                       loops = False)
             if not store:
                 cur = None
