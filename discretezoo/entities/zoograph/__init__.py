@@ -1,3 +1,8 @@
+r"""
+ZooGraph module
+
+Contains a class representing DiscreteZOO graphs.
+"""
 __all__ = ['fields', 'ZooGraph', 'info']
 
 from .zoograph import *

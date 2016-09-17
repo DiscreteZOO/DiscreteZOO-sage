@@ -1,3 +1,8 @@
+r"""
+VTGraph module
+
+Contains a class representing vertex-transitive graphs.
+"""
 __all__ = ['fields', 'VTGraph', 'info']
 
 from .vtgraph import *

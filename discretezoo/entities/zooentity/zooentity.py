@@ -48,7 +48,7 @@ class ZooEntity(object):
         - ``db`` - the database being used (must be a named parameter;
           default: ``None``).
 
-        - ``store`` - whether to store the data in ``vals`` to the database
+        - ``store`` - whether to store the entity to the database
           (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
 
         - ``cur`` - the cursor to use for database interaction
@@ -57,7 +57,7 @@ class ZooEntity(object):
         - ``commit`` - whether to commit the changes to the database
           (must be a named parameter; default: ``None``).
 
-        - other named parameters accepted by subclasses.
+        - other named parameters are silently ignored.
         """
         self._init_(ZooEntity, kargs, setVal = {"data": data})
 

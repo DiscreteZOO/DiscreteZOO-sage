@@ -1,3 +1,10 @@
+r"""
+A class representing DiscreteZOO graphs
+
+This module contains a class extending Sage's ``Graph`` class
+and some helper functions.
+"""
+
 from sage.categories.sets_cat import EmptySetError
 from sage.graphs.graph import DiGraph
 from sage.graphs.graph import GenericGraph
@@ -22,6 +29,11 @@ from ...util.utility import update
 override = ZooDecorator(Graph)
 
 class ZooGraph(Graph, ZooObject):
+    r"""
+    A graph in DiscreteZOO.
+
+    Extends Sage's ``Graph`` class.
+    """
     _graphprops = None
     _spec = None
     _parent = ZooObject
@@ -30,12 +42,42 @@ class ZooGraph(Graph, ZooObject):
     _initialized = False
 
     def __init__(self, data = None, **kargs):
+        r"""
+        Object constructor.
+
+        INPUT:
+
+        - ``data`` - the data to construct the graph from (anything accepted
+          by ``ZooObject`` or Sage's ``Graph``).
+
+        - ``db`` - the database being used (must be a named parameter;
+          default: ``None``).
+
+        - ``store`` - whether to store the graph to the database
+          (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+
+        - ``cur`` - the cursor to use for database interaction
+          (must be a named parameter; default: ``None``).
+
+        - ``commit`` - whether to commit the changes to the database
+          (must be a named parameter; default: ``None``).
+
+        - named parameters accepted by or Sage's ``Graph`` class.
+          Other named parameters are silently ignored.
+        """
         ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
                          setVal = {"data": data,
                                    "immutable": True,
                                    "data_structure": "static_sparse"})
 
     def _init_defaults(self, d):
+        r"""
+        Initialize the default parameters.
+
+        INPUT:
+
+        - ``d`` - the dictionary of parameters.
+        """
         default(d, "zooid")
         default(d, "unique_id")
         default(d, "props")
@@ -46,6 +88,18 @@ class ZooGraph(Graph, ZooObject):
         default(d, "multiedges")
 
     def _init_params(self, d):
+        r"""
+        Class-specific parsing of the ``data`` parameter of the constructor
+        after a generic parsing fails.
+
+        If ``data`` is a graph, then its copy will be constructed. If ``data``
+        is a dictionary, then it is taken as the dictionary of properties.
+        Otherwise, ``data`` is passed to Sage's ``Graph``.
+
+        INPUT:
+
+        - ``d`` - the dictionary of parameters.
+        """
         if isinstance(d["data"], GenericGraph):
             d["graph"] = d["data"]
         elif isinstance(d["data"], dict):
@@ -55,11 +109,24 @@ class ZooGraph(Graph, ZooObject):
         d["data"] = None
 
     def _construct_graph(self, d):
+        r"""
+        Construct a graph from the given data.
+        """
         args = getargspec(Graph.__init__)[0][1:]
         d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
         d["vertex_labels"] = None
 
     def _init_skip(self, d):
+        r"""
+        Initialize the properties to be stored separately.
+
+        The ``zooid`` and ``data`` entries are not considered properties
+        and are not stored as such.
+
+        INPUT:
+
+        - ``d`` - the dictionary of parameters.
+        """
         if d["props"] is not None:
             if "zooid" in d["props"]:
                 d["zooid"] = d["props"]["zooid"]
@@ -69,6 +136,21 @@ class ZooGraph(Graph, ZooObject):
                 del d["props"]["data"]
 
     def _init_object(self, cl, d, setProp = {}):
+        r"""
+        Initialize the object being represented.
+
+        If a graph has been given, the object is initialized to its copy.
+        Otherwise, properties are stored in the appropriate dictionary.
+
+        INPUT:
+
+        - ``cl`` - the class to initialize the object for.
+
+        - ``d`` - the dictionary of parameters.
+
+        - ``setProp`` - a dictionary mapping field names to names of the
+          parameters they should take their value from (default: ``{}``).
+        """
         if d["graph"] is not None:
             self._init_graph(cl, d, setProp)
         else:
@@ -76,6 +158,18 @@ class ZooGraph(Graph, ZooObject):
         cl._construct_object(self, cl, d)
 
     def _init_graph(self, cl, d, setProp = {}):
+        r"""
+        Initialize the propreties from the given graph.
+
+        INPUT:
+
+        - ``cl`` - the class to initialize the properties for.
+
+        - ``d`` - the dictionary of parameters.
+
+        - ``setProp`` - a dictionary mapping field names to names of the
+          parameters they should take their value from (default: ``{}``).
+        """
         if not isinstance(d["graph"], GenericGraph):
             raise TypeError("not a graph")
         if d["name"] is None:
@@ -106,8 +200,20 @@ class ZooGraph(Graph, ZooObject):
         self._graphprops["number_of_loops"] = d["data"].number_of_loops()
         self._graphprops["has_multiple_edges"] = d["data"].has_multiple_edges()
 
-    def _compute_props(self, cl, d, setProps = {}):
-        ZooObject._compute_props(self, cl, d, setProps)
+    def _compute_props(self, cl, d, setProp = {}):
+        r"""
+        Compute the properties required by the class specification.
+
+        INPUT:
+
+        - ``cl`` - the class to compute the properties for.
+
+        - ``d`` - the dictionary of parameters.
+
+        - ``setProp`` - a dictionary mapping field names to names of the
+          parameters they should take their value from (default: ``{}``).
+        """
+        ZooObject._compute_props(self, cl, d, setProp)
         if cl is ZooGraph:
             for k in ["diameter", "girth"]:
                 if k in self._graphprops and \
@@ -115,6 +221,15 @@ class ZooGraph(Graph, ZooObject):
                     del self._graphprops[k]
 
     def _construct_object(self, cl, d):
+        r"""
+        Prepare all necessary data and construct the graph.
+
+        INPUT:
+
+        - ``cl`` - the class to construct the graph for.
+
+        - ``d`` - the dictionary of parameters.
+        """
         ZooObject.__init__(self, **d)
         if d["data"] is None:
             try:
@@ -144,6 +259,13 @@ class ZooGraph(Graph, ZooObject):
         self._initialized = True
 
     def _db_write_nonprimary(self, cur):
+        r"""
+        Write the unique IDs for all available algorithms to the database.
+
+        INPUT:
+
+        - ``cur`` - the cursor to use for database interaction.
+        """
         uid = self.unique_id()
         for algo in AVAILABLE_ALGORITHMS:
             if algo not in uid:
@@ -151,6 +273,9 @@ class ZooGraph(Graph, ZooObject):
                                 store = True, cur = cur)
 
     def _repr_generic(self):
+        r"""
+        Return an uncapitalized string representation.
+        """
         name = ""
         if self.allows_loops():
             name += "looped "
@@ -165,7 +290,9 @@ class ZooGraph(Graph, ZooObject):
             name += "ices"
         return name
 
+    @override.documented
     def _repr_(self):
+        r""
         name = self._repr_generic()
         if self.name() != '':
             name = self.name() + ": " + name
@@ -234,6 +361,19 @@ class ZooGraph(Graph, ZooObject):
                                                *largs, **kargs)
 
     def data(self, **kargs):
+        r"""
+        Return graph data.
+
+        INPUT:
+
+        - ``store`` - whether to store the graph to the database
+          (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+
+        - ``cur`` - the cursor to use for database interaction
+          (must be a named parameter; default: ``None``).
+
+        - other named parameters accepted by the ``data`` function.
+        """
         try:
             lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                    destroy = True)
@@ -437,15 +577,57 @@ if is_package_installed("bliss"):
     DEFAULT_ALGORITHM = "bliss"
 
 def canonical_label(graph, **kargs):
+    r"""
+    Return the canonical labeling of ``graph``.
+
+    INPUT:
+
+    - ``graph`` - the graph to compute the canonical labelling for.
+
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling
+      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+    """
     algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
     return graph.canonical_label(algorithm = algorithm)
 
 def data(graph, **kargs):
+    r"""
+    Return the data for the canonical labeling of ``graph``.
+
+    Currently, it returns the sparse6 string.
+
+    INPUT:
+
+    - ``graph`` - the graph to get the data for.
+
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling
+      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+    """
     # TODO: determine the most appropriate way of representing the graph
     algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
     return canonical_label(graph, algorithm = algorithm).sparse6_string()
 
 def unique_id(graph, **kargs):
+    r"""
+    Return the unique ID of ``graph``.
+
+    The unique ID is the SHA256 hash of the string returned by ``data``.
+    If ``graph`` is an instance of ``ZooGraph`` and ``store`` is set to
+    ``True``, the computed unique ID is stored to the database.
+
+    INPUT:
+
+    - ``graph`` - the graph to compute the unique ID for.
+
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling
+      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+
+    - ``store`` - whether to store the computed unique ID to the database
+      (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+
+    - ``cur`` - the cursor to use for database interaction
+      (must be a named parameter; default: ``None``).
+    """
     algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
     store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
     cur = lookup(kargs, "cur", default = None)
@@ -455,8 +637,39 @@ def unique_id(graph, **kargs):
                                       cur = cur)
     return uid
 
-def import_graphs(file, cl = None, db = None, format = "sparse6",
+def import_graphs(file, cl = ZooGraph, db = None, format = "sparse6",
                   index = "index", verbose = False):
+    r"""
+    Import graphs from ``file`` into the database.
+
+    This function is used to import new censuses of graphs and is not meant
+    to be used by users of DiscreteZOO.
+
+    To properly import the graphs, all graphs of the same order must be
+    together in the file, and no graph of this order must be present in the
+    database.
+
+    INPUT:
+
+    - ``file`` - the filename containing a graph in each line.
+
+    - ``cl`` - the class to be used for imported graphs
+      (default: ``ZooGraph``).
+
+    - ``db`` - the database to import into. The default value of ``None`` means
+      that the default database should be used.
+
+    - ``format`` - the format the graphs are given in. If ``format`` is
+      ``'graph6'`` or ``'sparse6'`` (default), then the graphs are read as
+      strings, otherwised they are evaluated as Python expressions before
+      being passed to Sage's ``Graph``.
+
+    - ``index``: the name of the parameter of the constructor of ``cl``
+      to which the serial number of the graph of a given order is passed.
+
+    - ``verbose``: whether to print information about the progress of importing
+      (default: ``False``).
+    """
     info = ZooInfo(cl)
     if db is None:
         db = info.getdb()

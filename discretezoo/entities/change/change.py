@@ -1,3 +1,10 @@
+r"""
+A class representing changes to the database
+
+This module contains a class for representing and logging
+changes to the database.
+"""
+
 import discretezoo
 from ..zooentity import ZooEntity
 from ...db.query import Column
@@ -6,12 +13,47 @@ from ...db.query import Value
 from ...util.utility import default
 
 class Change(ZooEntity):
+    r"""
+    A change to the database
+
+    Each time a row in the database is changed,
+    this change is logged to a special table.
+    These changes can then be gathered in a commit
+    and submitted to the master database.
+    """
     _parent = None
     _objid = None
     _chgid = None
 
-    def __init__(self, id, table = None, column = None, commit = None,
+    def __init__(self, id, table = None, column = None, commithash = None,
                  user = None, **kargs):
+        r"""
+        Object constructor.
+
+        INPUT:
+
+        - ``id`` - the ID of the changed row. Alternatively, if ``table``
+          is not given, the ID of an existing change.
+
+        - ``table`` - the table to which the change was made
+          (default: ``None``).
+
+        - ``column`` - the column to which the change was made.
+          The default value of ``None`` is used for a new row.
+
+        - ``commithash`` - the hash of the commit containing the change.
+
+        - ``user`` - the user who commited the change.
+
+        - ``store`` - whether to store the change to the database
+          (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+
+        - ``cur`` - the cursor to use for database interaction
+          (must be a named parameter; default: ``None``).
+
+        - ``commit`` - whether to commit the changes to the database
+          (must be a named parameter; default: ``None``).
+        """
         self._zooid = False
         if table is None:
             self._chgid = id
@@ -29,7 +71,7 @@ class Change(ZooEntity):
                     raise KeyError("table not given")
                 row = {"zooid": self._objid, "table": table,
                        "column": "" if column is None else column,
-                       "commit": "" if commit is None else commit}
+                       "commit": "" if commithash is None else commithash}
                 self._db.query([Column(self._spec["primary_key"])],
                                Table(self._spec["name"]),
                                [Column(k) == Value(v) for k, v in row.items()],
@@ -44,7 +86,7 @@ class Change(ZooEntity):
                     self._chgid = r[0]
             self.table =  table
             self.column = column
-            self.commit = commit
+            self.commit = commithash
             self.user = user
             if kargs["commit"]:
                 self._db.commit()
@@ -72,13 +114,27 @@ class Change(ZooEntity):
             out = "%s at commit %s" % (out, self.commit)
         return "Change to object with ID %d in %s" % (self._objid, out)
 
-    def commit(commit, user, cur = None):
+    def commit(commithash, user, cur = None, commit = None):
+        r"""
+        Include the change in a commit.
+
+        - ``commit`` - the hash of the commit containing the change.
+
+        - ``user`` - the user who commited the change.
+
+        - ``cur`` - the cursor to use for database interaction
+          (default: ``None``).
+
+        - ``commit`` - whether to commit the changes to the database
+          (default: ``None``).
+        """
         if self._chgid is None:
             raise KeyError
         if self.commit is not None:
             raise KeyError("change is already included in a commit")
         self._db.update_rows(self._spec["name"],
-                             {"commit" : commit, "user": user},
-                             Column("change_id") == Value(self._chgid))
-        self.commit = commit
+                             {"commit" : commithash, "user": user},
+                             Column("change_id") == Value(self._chgid),
+                             cur = cur, commit = commit)
+        self.commit = commithash
         self.user = user
