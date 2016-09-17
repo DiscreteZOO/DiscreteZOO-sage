@@ -25,7 +25,7 @@ class VTGraph(ZooGraph):
     _spec = None
     _dict = "_vtprops"
 
-    def __init__(self, data = None, index = None, **kargs):
+    def __init__(self, data = None, vt_index = None, **kargs):
         r"""
         Object constructor.
 
@@ -34,7 +34,7 @@ class VTGraph(ZooGraph):
         - ``data`` - the data to construct the graph from (anything accepted
           by ``ZooObject`` or Sage's ``Graph``), or the order of the graph.
 
-        - ``index`` - the index of the graph in the census by Royle
+        - ``vt_index`` - the index of the graph in the census by Royle
           (default: ``None``).
 
         - ``db`` - the database being used (must be a named parameter;
@@ -54,7 +54,7 @@ class VTGraph(ZooGraph):
         """
         ZooObject._init_(self, VTGraph, kargs,
                          defNone = ["order"],
-                         setVal = {"data": data, "vt_index": index},
+                         setVal = {"data": data, "vt_index": vt_index},
                          setProp = {"vt_index": "vt_index"})
 
     def _parse_params(self, d):
@@ -128,13 +128,6 @@ class VTGraph(ZooGraph):
             out = "%s, number %s" % (out, index)
         return out
 
-    def vt_index(self):
-        r"""
-        Return the index of the graph among the graphs of the same order
-        in the census by G. Royle.
-        """
-        return lookup(self._vtprops, "vt_index", default = None)
-
     def vt_id(self):
         r"""
         Return the order and index of the graph in the census by G. Royle.
@@ -146,12 +139,19 @@ class VTGraph(ZooGraph):
             return None
         return (self.order(), index)
 
-def import_vt(file, db = None, format = "sparse6", index = "index",
+    def vt_index(self):
+        r"""
+        Return the index of the graph among the graphs of the same order
+        in the census by G. Royle.
+        """
+        return lookup(self._vtprops, "vt_index", default = None)
+
+def import_vt(file, db = None, format = "sparse6", index = "vt_index",
               verbose = False):
     r"""
     Import vertex-transitive graphs from ``file`` into the database.
 
-    This function has been used to import the census of vertex.transitive
+    This function has been used to import the census of vertex-transitive
     graphs by G. Royle and is not meant to be used by users of DiscreteZOO.
 
     To properly import the graphs, all graphs of the same order must be
