@@ -180,8 +180,18 @@ class ZooGraph(Graph, ZooObject):
             d["unique_id_algorithm"] = d["graph"]._unique_id_algorithm
             self._copy_props(cl, d["graph"])
         else:
-            d["unique_id"] = unique_id(d["graph"], store = False)
-            d["unique_id_algorithm"] = DEFAULT_ALGORITHM
+            uid_done = False
+            for algo in AVAILABLE_ALGORITHMS:
+                try:
+                    d["unique_id"] = unique_id(d["graph"], algorithm = algo,
+                                               store = False)
+                    d["unique_id_algorithm"] = algo
+                    uid_done = True
+                    break
+                except NotImplementedError:
+                    pass
+            if not uid_done:
+                raise NotImplementedError("no suitable unique ID algorithm found")
         try:
             if d["zooid"] is None:
                 d["props"] = next(ZooInfo(cl).props(cl._fields.unique_id == \
@@ -269,8 +279,11 @@ class ZooGraph(Graph, ZooObject):
         uid = self.unique_id()
         for algo in AVAILABLE_ALGORITHMS:
             if algo not in uid:
-                uid.__setitem__(algo, unique_id(self, algorithm = algo),
-                                store = True, cur = cur)
+                try:
+                    uid.__setitem__(algo, unique_id(self, algorithm = algo),
+                                    store = True, cur = cur)
+                except NotImplementedError:
+                    pass
 
     def _repr_generic(self):
         r"""
@@ -571,10 +584,8 @@ class ZooGraph(Graph, ZooObject):
         return (not inf, attrs)
 
 AVAILABLE_ALGORITHMS = ["sage"]
-DEFAULT_ALGORITHM = "sage"
 if is_package_installed("bliss"):
-    AVAILABLE_ALGORITHMS.append("bliss")
-    DEFAULT_ALGORITHM = "bliss"
+    AVAILABLE_ALGORITHMS.insert(0, "bliss")
 
 def canonical_label(graph, **kargs):
     r"""
@@ -584,10 +595,11 @@ def canonical_label(graph, **kargs):
 
     - ``graph`` - the graph to compute the canonical labelling for.
 
-    - ``algorithm`` - the algorithm to use to compute the canonical labelling
-      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling.
+      The default value ``None`` means that ``'bliss'`` will be used if
+      available, and ``'sage'`` otherwise.
     """
-    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
+    algorithm = lookup(kargs, "algorithm", default = None)
     return graph.canonical_label(algorithm = algorithm)
 
 def data(graph, **kargs):
@@ -600,11 +612,12 @@ def data(graph, **kargs):
 
     - ``graph`` - the graph to get the data for.
 
-    - ``algorithm`` - the algorithm to use to compute the canonical labelling
-      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling.
+      The default value ``None`` means that ``'bliss'`` will be used if
+      available, and ``'sage'`` otherwise.
     """
     # TODO: determine the most appropriate way of representing the graph
-    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
+    algorithm = lookup(kargs, "algorithm", default = None)
     return canonical_label(graph, algorithm = algorithm).sparse6_string()
 
 def unique_id(graph, **kargs):
@@ -619,8 +632,9 @@ def unique_id(graph, **kargs):
 
     - ``graph`` - the graph to compute the unique ID for.
 
-    - ``algorithm`` - the algorithm to use to compute the canonical labelling
-      (default: ``'bliss'`` if available, ``'sage'`` otherwise).
+    - ``algorithm`` - the algorithm to use to compute the canonical labelling.
+      The default value ``None`` means that ``'bliss'`` will be used if
+      available, and ``'sage'`` otherwise.
 
     - ``store`` - whether to store the computed unique ID to the database
       (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
@@ -628,7 +642,7 @@ def unique_id(graph, **kargs):
     - ``cur`` - the cursor to use for database interaction
       (must be a named parameter; default: ``None``).
     """
-    algorithm = lookup(kargs, "algorithm", default = DEFAULT_ALGORITHM)
+    algorithm = lookup(kargs, "algorithm", default = None)
     store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
     cur = lookup(kargs, "cur", default = None)
     uid = sha256(data(graph, algorithm = algorithm)).hexdigest()
