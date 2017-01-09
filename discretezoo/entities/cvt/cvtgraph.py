@@ -167,13 +167,15 @@ class CVTGraph(VTGraph):
         """
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
-        g = self.girth(store = store, cur = cur)
-        if g != 4:
+        if not self.is_connected(store = store, cur = cur):
             return False
         o = self.order(store = store, cur = cur)
+        g = self.girth(store = store, cur = cur)
+        if o <= 6:
+            return o+2 == 2*g
+        if g != 4:
+            return False
         b = self.is_bipartite(store = store, cur = cur)
-        if o == 6:
-            return b
         d = self.diameter(store = store, cur = cur)
         og = self.odd_girth(store = store, cur = cur)
         return ((o % 4 == 0 and 4*d == o and og == 2*d+1) or
@@ -187,15 +189,17 @@ class CVTGraph(VTGraph):
         """
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
+        if not self.is_connected(store = store, cur = cur):
+            return False
         o = self.order(store = store, cur = cur)
-        b = self.is_bipartite(store = store, cur = cur)
-        if o == 6:
-            return not b
-        if o == 8:
-            return b
         g = self.girth(store = store, cur = cur)
+        if o <= 6:
+            return o == 2*g
         if g != 4:
             return False
+        b = self.is_bipartite(store = store, cur = cur)
+        if o == 8:
+            return b
         d = self.diameter(store = store, cur = cur)
         og = self.odd_girth(store = store, cur = cur)
         return ((o % 4 == 0 and 4*d == o+4 and b) or
