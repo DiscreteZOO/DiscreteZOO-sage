@@ -154,6 +154,6 @@ def construct(cl, self, d):
     - ``d`` -- the dictionary containing the parameters.
     """
     argspec = getargspec(cl.__init__)
-    if argspec[2] is None:
-        d = {k: v for k, v in d.items() if k in argspec[0]}
+    if argspec.keywords is None:
+        d = {k: v for k, v in d.items() if k in argspec.args}
     cl.__init__(self, **d)

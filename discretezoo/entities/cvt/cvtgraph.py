@@ -162,7 +162,7 @@ class CVTGraph(VTGraph):
         """
         return lookup(self._cvtprops, "cvt_index", default = None)
 
-    @override.computed
+    @override.computed()
     def is_moebius_ladder(self, **kargs):
         r"""
         Return whether the graph is a Möbius ladder.
@@ -184,7 +184,7 @@ class CVTGraph(VTGraph):
                     (o % 4 == 2 and 4*d == o+2 and b)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    @override.computed
+    @override.computed()
     def is_prism(self, **kargs):
         r"""
         Return whether the graph is a prism.
@@ -208,7 +208,7 @@ class CVTGraph(VTGraph):
                     (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
                 len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    @override.computed
+    @override.computed(acceptArgs = ["parameters"])
     def is_spx(self, parameters = False, **kargs):
         r"""
         Return whether the graph is an SPX graph.
@@ -223,21 +223,21 @@ class CVTGraph(VTGraph):
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         try:
+            assert lookup(self._cvtprops, "is_spx", default = True)
             if store:
                 G = SPXGraph(self, store = store, cur = cur)
                 if parameters:
-                    return (G.spx_r(), G.spx_s())
+                    return (True, (G.spx_r(), G.spx_s()))
             else:
-                assert lookup(self._cvtprops, "is_spx", default = True)
                 pars = check_spx(self)
                 if parameters:
-                    return pars
+                    return (True, pars)
         except AssertionError:
-            return None if parameters else False
+            return (False, None if parameters else False)
         except KeyError as ex:
             if parameters:
                 raise ex
-        return True
+        return (True, True)
 
     def symcubic_id(self):
         r"""
