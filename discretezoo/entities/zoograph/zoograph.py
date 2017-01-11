@@ -419,7 +419,7 @@ class ZooGraph(Graph, ZooObject):
                 update(self._graphprops, "average_degree", a)
             return a
 
-    @override.computed
+    @override.computed()
     def chromatic_index(self, **kargs):
         r"""
         Return the minimal number of colors needed to color the edges of the

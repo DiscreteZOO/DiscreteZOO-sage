@@ -6,6 +6,7 @@ This module provides some decorators for class methods.
 
 import re
 import discretezoo
+from inspect import getargspec
 from .utility import isinteger
 from .utility import lookup
 from .utility import update
@@ -99,7 +100,7 @@ class ZooDecorator(object):
         fun.__doc__ = "\n".join(doc)
         return fun
 
-    def computed(this, fun):
+    def computed(this, acceptArgs = None):
         r"""
         Wrap the computing function with database interaction.
 
@@ -112,38 +113,54 @@ class ZooDecorator(object):
         - ``cur`` - the cursor to use for database interaction (named
           parameter).
 
+        INPUT:
+
+        - ``acceptArgs`` - if specified, the decorated function should
+          return a pair containing the value to be stored in the database
+          and the actual output. The decorated function will be called only
+          if all of the specified arguments are present in ``acceptArgs``.
         """
-        def decorated(self, *largs, **kargs):
-            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                           destroy = True)
-            cur = lookup(kargs, "cur", default = None, destroy = True)
-            default = len(largs) + len(kargs) == 0
-            cl = self._getclass(fun.func_name)
-            d = self._getprops(cl)
-            try:
-                if not default:
-                    raise NotImplementedError
-                a = lookup(d, fun.func_name)
-                if issubclass(cl._spec["fields"][fun.func_name], ZooObject) \
-                        and isinteger(a):
-                    a = cl._spec["fields"][fun.func_name](zooid = a)
-                    update(d, fun.func_name, a)
-                return a
-            except (KeyError, NotImplementedError):
-                a = fun(self, store = store, cur = cur, *largs, **kargs)
-                if default:
-                    if store:
-                        if isinstance(a, ZooObject):
-                            v = a._zooid
-                        else:
-                            v = a
-                        self._update_rows(cl, {fun.func_name: v},
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
-                    update(d, fun.func_name, a)
-                return a
-        decorated.func_name = fun.func_name
-        return this.documented(decorated, fun)
+        def _computed(fun):
+            def decorated(self, *largs, **kargs):
+                store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
+                               destroy = True)
+                cur = lookup(kargs, "cur", default = None, destroy = True)
+                default = len(largs) + len(kargs) == 0
+                cl = self._getclass(fun.func_name)
+                d = self._getprops(cl)
+                try:
+                    if not default:
+                        raise NotImplementedError
+                    a = lookup(d, fun.func_name)
+                    if issubclass(cl._spec["fields"][fun.func_name], ZooObject) \
+                            and isinteger(a):
+                        a = cl._spec["fields"][fun.func_name](zooid = a)
+                        update(d, fun.func_name, a)
+                    return a
+                except (KeyError, NotImplementedError):
+                    a = fun(self, store = store, cur = cur, *largs, **kargs)
+                    if acceptArgs is None:
+                        out = a
+                    else:
+                        a, out = a
+                        args = getargspec(fun).args
+                        default = all(arg in acceptArgs
+                                      for arg in args[1:len(largs)+1]) and \
+                                  all(arg in acceptArgs for arg in kargs)
+                    if default:
+                        if store:
+                            if isinstance(a, ZooObject):
+                                v = a._zooid
+                            else:
+                                v = a
+                            self._update_rows(cl, {fun.func_name: v},
+                                        {self._spec["primary_key"]: self._zooid},
+                                        cur = cur)
+                        update(d, fun.func_name, a)
+                    return out
+            decorated.func_name = fun.func_name
+            return this.documented(decorated, fun)
+        return _computed
 
     def derived(this, fun):
         r"""
