@@ -450,7 +450,7 @@ class SQLDB(DB):
         r"""
         Format a LIMIT clause.
 
-        An OFFSET clause will only be added if ``limit`` is not ``None``.
+        An OFFSET clause will only be added if ``offset`` is not ``None``.
 
         INPUT:
 
