@@ -4,7 +4,10 @@
 
 ## The Sage interface
 
-To use the Sage interface, you will first have to obtain [Sage](http://www.sagemath.org/) (any version from 6.7 on should do, although 6.10 contains some fixes that allow using all applicable methods on graphs from *DiscreteZOO*). Then either [download](https://github.com/DiscreteZOO/DiscreteZOO-sage/archive/master.zip) the contents of the repository and unzip it, or clone the repository to your local computer.
+To use the Sage interface, you will first have to obtain [Sage](http://www.sagemath.org/) version 6.10 or newer. Then either [download](https://github.com/DiscreteZOO/DiscreteZOO-sage/archive/master.zip) the contents of the repository and unzip it, or clone the repository to your local computer:
+```bash
+git clone --recursive https://github.com/DiscreteZOO/DiscreteZOO-sage.git
+```
 
 Your local copy will contain a folder named `discretezoo`, which contains the Python module that acts as the Sage interface. To use it, you should make sure that it is in the serach path of Sage's copy of Python. There are two basic ways of achieving this:
 * Run Sage from the root folder of this repository.
@@ -23,6 +26,7 @@ Currently, a [database](http://discretezoo.xyz/discretezoo.db) is available whic
 * all connected cubic vertex-transitive graphs with at most 1280 vertices (from the [census](http://www.matapp.unimib.it/~spiga/census.html) by P. Potočnik, P. Spiga and G. Verret),
 * all connected cubic arc-transitive graphs with at most 2048 vertices (from the [extended Foster census](https://www.math.auckland.ac.nz/~conder/symmcubic2048list.txt) by M. Conder), and
 * all vertex-transitive graphs with at most 31 vertices (from the [census](http://staffhome.ecm.uwa.edu.au/~00013890/remote/trans/index.html) by G. Royle).
+
 To import it, complete the above steps, download the database, run Sage, and execute the following commands:
 ```sage
 import discretezoo
