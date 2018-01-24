@@ -33,7 +33,7 @@ class SQLiteDB(SQLDB):
 
         INPUT:
 
-        - ``file`` - the file containig the database (default: ``DBFILE``).
+        - ``file`` - the file containing the database (default: ``DBFILE``).
         """
         dir = os.path.dirname(file)
         if dir:
