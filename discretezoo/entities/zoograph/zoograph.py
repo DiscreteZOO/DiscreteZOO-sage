@@ -600,7 +600,8 @@ def canonical_label(graph, **kargs):
       available, and ``'sage'`` otherwise.
     """
     algorithm = lookup(kargs, "algorithm", default = None)
-    return graph.canonical_label(algorithm = algorithm)
+    return graph.canonical_label(partition = None, edge_labels = False,
+                                 algorithm = algorithm)
 
 def data(graph, **kargs):
     r"""
