@@ -600,6 +600,8 @@ def canonical_label(graph, **kargs):
       available, and ``'sage'`` otherwise.
     """
     algorithm = lookup(kargs, "algorithm", default = None)
+    if isinstance(graph, ZooGraph):
+        graph = Graph(graph)
     return graph.canonical_label(partition = None, edge_labels = False,
                                  algorithm = algorithm)
 
