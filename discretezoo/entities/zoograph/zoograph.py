@@ -572,6 +572,8 @@ class ZooGraph(Graph, ZooObject):
                                       {self._spec["primary_key"]: self._zooid},
                                       cur = cur)
                 update(self._graphprops, "name", new)
+                if new is not None:
+                    self.alias().add(new, store = store, cur = cur)
         else:
             return Graph.name(self, new, *largs, **kargs)
 
