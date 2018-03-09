@@ -301,7 +301,7 @@ class _ZooDict(dict, ZooProperty):
             while True:
                 k, (_, v) = next(it)
                 yield (k, v)
-        return iter
+        return iter()
 
     def itervalues(self):
         r"""
@@ -311,7 +311,7 @@ class _ZooDict(dict, ZooProperty):
         def iter():
             while True:
                 yield next(it)[1]
-        return iter
+        return iter()
 
     def pop(self, k, *largs, **kargs):
         r"""
