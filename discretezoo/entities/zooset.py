@@ -13,6 +13,7 @@ from ..db.query import ColumnSet
 from ..db.query import Table
 from ..db.query import enlist
 from ..util.utility import lookup
+from ..util.utility import to_json
 
 class _ZooSet(dict, ZooProperty):
     r"""
@@ -160,6 +161,15 @@ class _ZooSet(dict, ZooProperty):
                    Column(cl._foreign_obj._spec["primary_key"],
                           table = table))),
             foreign = cl._foreign_key, ordering = cl._ordering)
+
+    def _to_json(self):
+        r"""
+        Return an object suitable for conversion to JSON.
+
+        Returns a ``list`` with sorted values recursively converted
+        to a suitable format.
+        """
+        return sorted(to_json(v) for v in self)
 
     def add(self, x, id = None, **kargs):
         r"""

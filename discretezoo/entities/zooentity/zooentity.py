@@ -624,6 +624,14 @@ class ZooEntity(object):
         """
         raise AttributeError("_get_column")
 
+    def _to_json(self):
+        r"""
+        Return an object suitable for conversion to JSON.
+
+        Not implemented for entities. To be overridden.
+        """
+        raise NotImplementedError
+
     def load_db_data(self):
         r"""
         Load data from the database.
