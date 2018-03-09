@@ -4,9 +4,12 @@ A superclass for all DiscreteZOO objects
 This module contains a class which all DiscreteZOO objects extend.
 """
 
+import json
+import os
 import re
 from types import BuiltinFunctionType
 from types import MethodType
+from warnings import warn
 import discretezoo
 from ..change import Change
 from ..zooentity import ZooEntity
@@ -17,6 +20,7 @@ from ...db.query import Table
 from ...util.utility import default
 from ...util.utility import isinteger
 from ...util.utility import lookup
+from ...util.utility import to_json
 from ...util.utility import update
 
 class ZooObject(ZooEntity):
@@ -324,6 +328,58 @@ class ZooObject(ZooEntity):
                              by = ((cl._spec["primary_key"],
                                     Column(name, table = table)), ))
 
+    def _to_json(self):
+        r"""
+        Return an object suitable for conversion to JSON.
+
+        Returns a tuple containing an algorithm and the unique ID
+        produced by the former.
+        """
+        return next(self.unique_id().iteritems())
+
+    def _to_json_dict(self):
+        r"""
+        Return the complete description of the object as a ``dict``
+        suitable for conversion to JSON.
+        """
+        c = self.__class__
+        d = {}
+        while c is not ZooEntity:
+            d[c._spec["name"]] = self._to_json_field(c)
+            c = c._parent
+        for c in self._extra_classes:
+            d[c._spec["name"]] = self._to_json_field(c)
+        return d
+
+    def _to_json_field(self, cl = None):
+        r"""
+        Return a dictionary with fields corresponding to the class ``cl``.
+        """
+        if cl is None:
+            cl = self.__class__
+        elif not issubclass(cl, ZooObject):
+            return ZooEntity._to_json_field(self, cl = cl)
+        d = self.__getattribute__(cl._dict)
+        for f, t in cl._spec["fields"].items():
+            if f != cl._spec["primary_key"] and f not in d and \
+                    issubclass(t, ZooEntity) and not issubclass(t, ZooObject):
+                self.__getattribute__(f)()
+        d = dict(d)
+        self._to_json_field_extra(cl, d)
+        for f in cl._spec["skip"]:
+            if f != cl._spec["primary_key"]:
+                d[f] = self.__getattribute__(f)()
+        return {f: to_json(v, cl._spec["fields"][f]) for f, v in d.items()
+                if v is not None}
+
+    def _to_json_field_extra(self, cl, d):
+        r"""
+        Perform extra tweaking of the dictionary for the JSON encoding.
+
+        To be overridden.
+        """
+        pass
+
     def alias(self):
         r"""
         Return the set of aliases of the object.
@@ -343,5 +399,57 @@ class ZooObject(ZooEntity):
         except KeyError:
             self._zooprops["unique_id"] = ZooObject._spec["fields"]["unique_id"](self._zooid)
             return self._zooprops["unique_id"]
+
+    def write_json(self, location):
+        r"""
+        Write a JSON representation of the object to the appropriate file
+        in the repository at ``location``.
+        """
+        targets = {}
+        target = None
+        links = []
+        found = False
+        obj = os.path.join(location, "objects")
+        for a, u in self.unique_id().items():
+            auu = (a, u[:2], u[2:])
+            path = os.path.join(obj, *auu)
+            if os.path.exists(path):
+                realpath = os.path.realpath(path)
+                targets[realpath] = auu
+                if target is None and os.path.abspath(path) == realpath:
+                    target = auu
+            else:
+                links.append(auu)
+                if os.path.islink(path):
+                    os.remove(path)
+        if len(targets) > 0:
+            if target is None:
+                path, target = next(targets.iteritems())
+                warn("Existing symlinks point to target "
+                     "not corresponding to a known unique ID")
+            else:
+                path = os.path.join(obj, *target)
+            if len(targets) > 1:
+                warn("More than one target found, using %s" % path)
+            with open(path) as f:
+                d = json.load(f)
+        else:
+            if len(links) == 0:
+                raise ValueError("No unique ID found")
+            target = links.pop(0)
+            dir = os.path.join(obj, *target[:-1])
+            path = os.path.join(dir, target[-1])
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            d = {}
+        d.update(self._to_json_dict())
+        with open(path, "w") as f:
+            json.dump(d, f, indent = 4, sort_keys = True)
+        rel = os.path.join("..", "..", *target)
+        for l in links:
+            dir = os.path.join(obj, *l[:-1])
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            os.symlink(rel, os.path.join(dir, l[-1]))
 
 info = ZooInfo(ZooObject)

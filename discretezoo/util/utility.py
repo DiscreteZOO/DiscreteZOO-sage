@@ -5,7 +5,10 @@ This module contains utility functions used throughout the package.
 """
 
 from sage.rings.integer import Integer
+from sage.rings.rational import Rational
 from sage.rings.real_mpfr import create_RealNumber
+from sage.rings.real_mpfr import RealNumber
+from sage.sets.set import Set_generic as Set
 from inspect import getargspec
 from ..db.query import Column
 
@@ -140,6 +143,32 @@ def todict(r, db):
     """
     return {k: db.from_db_type(v, type(v))
             for k, v in dict(r).items() if v is not None}
+
+def to_json(x, t = None):
+    """
+    Return an object suitable for conversion to JSON.
+    """
+    from ..entities.zooentity import ZooEntity
+    from ..entities.zooobject import ZooObject
+    if t is None:
+        t = type(x)
+    if issubclass(t, ZooObject) and not isinstance(x, ZooObject):
+        x = ZooObject(x)
+    if issubclass(t, ZooEntity):
+        return x._to_json()
+    elif issubclass(t, (list, tuple)):
+        return [to_json(v) for v in x]
+    elif issubclass(t, (set, frozenset, Set)):
+        return sorted(to_json(v) for v in x)
+    elif issubclass(t, dict):
+        return {to_json(k): to_json(v) for k, v in x.items()}
+    elif issubclass(t, Integer):
+        return int(x)
+    elif issubclass(t, (RealNumber, Rational)):
+        return float(x)
+    elif not isinstance(x, t):
+        x = t(x)
+    return x
 
 def construct(cl, self, d):
     r"""

@@ -313,6 +313,22 @@ class ZooGraph(Graph, ZooObject):
             name = name[0].capitalize() + name[1:]
         return name
 
+    def _to_json_field_extra(self, cl, d):
+        r"""
+        Perform extra tweaking of the dictionary for the JSON encoding.
+
+        Fetches the canonical name of the graph from the database
+        as the graph might have inherited its name from the object
+        it was built from.
+        """
+        if cl is ZooGraph:
+            name, = self._db.query([Column("name")], cl._spec["name"],
+                                   {"zooid": self._zooid}).fetchone()
+            if name is None:
+                del d["name"]
+            else:
+                d["name"] = name
+
     def __getattribute__(self, name):
         return ZooObject.__getattribute__(self, "_getattr")(name, Graph)
 
@@ -572,6 +588,8 @@ class ZooGraph(Graph, ZooObject):
                                       {self._spec["primary_key"]: self._zooid},
                                       cur = cur)
                 update(self._graphprops, "name", new)
+                if new is not None:
+                    self.alias().add(new, store = store, cur = cur)
         else:
             return Graph.name(self, new, *largs, **kargs)
 

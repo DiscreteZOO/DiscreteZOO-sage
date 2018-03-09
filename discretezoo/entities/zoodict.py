@@ -13,6 +13,7 @@ from ..db.query import ColumnSet
 from ..db.query import Table
 from ..db.query import enlist
 from ..util.utility import lookup
+from ..util.utility import to_json
 
 class _ZooDict(dict, ZooProperty):
     r"""
@@ -267,6 +268,15 @@ class _ZooDict(dict, ZooProperty):
                           table = table))),
             foreign = cl._foreign_key, ordering = cl._key_ordering)
 
+    def _to_json(self):
+        r"""
+        Return an object suitable for conversion to JSON.
+
+        Returns a ``dict`` with keys and values recursively converted
+        to a suitable format.
+        """
+        return {to_json(k): to_json(v) for k, v in self.items()}
+
     def clear(self, **kargs):
         r"""
         Remove all entries.
@@ -301,7 +311,7 @@ class _ZooDict(dict, ZooProperty):
             while True:
                 k, (_, v) = next(it)
                 yield (k, v)
-        return iter
+        return iter()
 
     def itervalues(self):
         r"""
@@ -311,7 +321,7 @@ class _ZooDict(dict, ZooProperty):
         def iter():
             while True:
                 yield next(it)[1]
-        return iter
+        return iter()
 
     def pop(self, k, *largs, **kargs):
         r"""

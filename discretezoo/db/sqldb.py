@@ -6,7 +6,6 @@ databases.
 """
 
 import os
-import sqlite3
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import RealNumber
