@@ -12,7 +12,7 @@ from sage.rings.real_mpfr import RealNumber
 import discretezoo
 from ..db.query import makeFields
 
-# Mappping of strings to types
+# Mapping of strings to types
 # Initially contains the builtin Sage types
 names = {
     "bool": bool,
@@ -21,6 +21,10 @@ names = {
     "Rational": Rational,
     "RealNumber": RealNumber
 }
+
+# Mapping of table names to types
+# Initially empty
+tables = {}
 
 # Specification file path
 path = os.path.join(discretezoo.__path__[0], "spec")
@@ -106,6 +110,16 @@ def to_string(s):
     else:
         return [to_string(x) for x in s]
 
+def register_table(cl):
+    r"""
+    For a given class, map its table name to it.
+
+    INPUT:
+
+    - ``cl`` -- the class to be registered.
+    """
+    tables[cl._spec["name"]] = cl
+
 def register_type(cl):
     r"""
     For a given class, map its name to it.
@@ -171,6 +185,7 @@ def init_class(cl, fields = None):
     spec["fields"] = init_fields(spec["fields"])
     init_spec(spec)
     cl._spec = spec
+    register_table(cl)
     init_metaclasses(cl)
     if fields is not None:
         makeFields(cl, fields)

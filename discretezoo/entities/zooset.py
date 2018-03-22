@@ -7,6 +7,7 @@ This module provides a function to create set-like classes.
 import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
+from .zootypes import register_table
 from .zootypes import register_type
 from ..db.query import Column
 from ..db.query import ColumnSet
@@ -58,18 +59,13 @@ class _ZooSet(dict, ZooProperty):
             ZooProperty._init_(self, kargs)
         else:
             ZooProperty._init_(self, kargs)
-            self._objid = data
             if vals is not None and kargs["store"]:
                 for val in vals:
                     self.add(val, store = True, cur = kargs["cur"])
                 if kargs["commit"]:
                     self._db.commit()
             else:
-                t = Table(self._spec["name"])
-                cur = self._db.query([t], t, {self._foreign_key: data,
-                                              "deleted": False},
-                                     cur = kargs["cur"])
-                for r in cur:
+                for r in self._db_fetch(data, cur = kargs["cur"]):
                     v = tuple([r[k] for k in self._ordering])
                     if not self._use_tuples:
                         v = v[0]
@@ -171,6 +167,30 @@ class _ZooSet(dict, ZooProperty):
         """
         return sorted(to_json(v) for v in self)
 
+    @staticmethod
+    def _init_json_field():
+        """
+        Return an empty list.
+        """
+        return []
+
+    @staticmethod
+    def _update_json_field(field, data):
+        """
+        Update ``field`` with ``data``.
+
+        INPUT:
+
+        - ``field`` - list field to be updated.
+
+        - ``data`` - data object to update with.
+        """
+        for x in data:
+            if x in field:
+                continue
+            field.append(x)
+        field.sort()
+
     def add(self, x, id = None, **kargs):
         r"""
         Add an element to the set.
@@ -187,6 +207,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         x, tx, id = self._normalize(x, id)
@@ -210,6 +232,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if store:
@@ -241,6 +265,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         for other in largs:
@@ -261,6 +287,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         try:
@@ -292,6 +320,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         for x in set(self):
@@ -347,6 +377,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
@@ -381,6 +413,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         k, v = dict.popitem(self)
@@ -412,6 +446,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if x is None:
@@ -453,6 +489,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if new is None:
@@ -506,6 +544,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if not isinstance(other, dict):
@@ -540,6 +580,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only set")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if not isinstance(other, dict):
@@ -582,6 +624,7 @@ def ZooSet(parent, name, spec, use_tuples = None):
         '_ordering': sorted(fields.keys()),
         '_foreign_key': fkey,
         '_foreign_obj': parent,
+        "_foreign_field": name,
         '_spec': {
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
@@ -605,6 +648,7 @@ def ZooSet(parent, name, spec, use_tuples = None):
     clsdict["_spec"]["fields"].update(fields)
     ZooSet = type("ZooSet", (_ZooSet,), clsdict)
     ZooSet._init_spec(ZooSet, spec)
+    register_table(ZooSet)
     return ZooSet
 
 register_type(ZooSet)

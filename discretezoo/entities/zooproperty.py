@@ -8,8 +8,10 @@ objects.
 import discretezoo
 from .change import Change
 from .zooentity import ZooEntity
+from ..db.query import All
 from ..db.query import Column
 from ..db.query import Or
+from ..db.query import Table
 from ..db.query import Value
 from ..util.utility import default
 
@@ -17,6 +19,10 @@ class ZooProperty(ZooEntity):
     r"""
     A superclass for properties of DiscreteZOO objects.
     """
+    _deleted = None
+    _foreign_key = None
+    _foreign_obj = None
+    _foreign_field = None
 
     def _init_(self, kargs):
         """
@@ -32,6 +38,33 @@ class ZooProperty(ZooEntity):
         default(kargs, "store", discretezoo.WRITE_TO_DB)
         kargs["write"] = {}
         ZooEntity._init_(self, ZooEntity, kargs, defNone = ["data"])
+
+    def _db_fetch(self, data, cur = None):
+        """
+        Fetch data from the database.
+
+        INPUT:
+
+        - ``data``: either the ID of an object whose properties will be
+          fetched, or the ID of an entry of the property.
+          In the latter case, the ``ZooProperty`` object will contain a single
+          entry and will be read-only.
+
+        - ``cur``: the cursor to use for database interaction
+          (default: ``None``).
+        """
+        t = Table(self._spec["name"])
+        c = self._db.query([t], t, {self._spec["primary_key"]: data},
+                           cur = cur).fetchall()
+        if len(c) == 0:
+            self._objid = data
+            c = self._db.query([t], t, {self._foreign_key: data,
+                                        "deleted": False}, cur = cur)
+        else:
+            self._zooid = data
+            self._objid = c[0][self._foreign_key]
+            self._deleted = bool(c[0]["deleted"])
+        return c
 
     def _insert_row(self, cl, row, cur = None, commit = None):
         r"""
@@ -214,3 +247,59 @@ class ZooProperty(ZooEntity):
             cl._spec["condition"].update(spec["condition"])
         if "default" in spec:
             cl._spec["default"].update(spec["default"])
+
+    @staticmethod
+    def _init_json_field():
+        """
+        Return an empty object suitable for conversion to JSON.
+
+        Not implemented, to be overridden.
+        """
+        raise NotImplementedError
+
+    @staticmethod
+    def _update_json_field(field, data):
+        """
+        Update ``field`` with ``data``.
+
+        Not implemented, to be overridden.
+
+        INPUT:
+
+        - ``field`` - field object (``list`` or ``dict``) to be updated.
+
+        - ``data`` - data object to update with.
+        """
+        raise NotImplementedError
+
+    def _update_json(self, obj):
+        """
+        Update the appropriate field of the object ``obj``
+        to be converted to JSON.
+
+        INPUT:
+
+        - ``obj`` - object to be converted.
+        """
+        if self._foreign_field not in obj:
+            obj[self._foreign_field] = self._init_json_field()
+        self._update_json_field(obj[self._foreign_field], self._to_json())
+
+    def write_json(self, location, folder = "objects", field = None,
+                   link = True):
+        r"""
+        Write a JSON representation of the object the property belongs to
+        to the appropriate file in the repository at ``location``.
+
+        INPUT:
+
+        - ``location`` - the location of the repository containing the
+          objects.
+
+        - ``folder`` - the path to the folder within the repository where
+          the objects will be written (default: ``"objects"``).
+
+        - ``field`` - which fields to export (ignored for ``ZooProperty``).
+        """
+        self._foreign_obj(self._objid).write_json(location, folder = folder,
+                                                  field = self, link = link)

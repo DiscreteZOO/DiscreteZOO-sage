@@ -7,6 +7,7 @@ This module provides a function to create dictionary-like classes.
 import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
+from .zootypes import register_table
 from .zootypes import register_type
 from ..db.query import Column
 from ..db.query import ColumnSet
@@ -59,18 +60,13 @@ class _ZooDict(dict, ZooProperty):
             ZooProperty._init_(self, kargs)
         else:
             ZooProperty._init_(self, kargs)
-            self._objid = data
             if vals is not None and kargs["store"]:
                 for k, v in vals.items():
                     self.__setitem__(k, v, store = True, cur = kargs["cur"])
                 if kargs["commit"]:
                     self._db.commit()
             else:
-                t = Table(self._spec["name"])
-                cur = self._db.query([t], t, {self._foreign_key: data,
-                                              "deleted": False},
-                                     cur = kargs["cur"])
-                for r in cur:
+                for r in self._db_fetch(data, cur = kargs["cur"]):
                     key = tuple([r[k] for k in self._key_ordering])
                     val = tuple([r[v] for v in self._val_ordering])
                     if not self._use_key_tuples:
@@ -79,7 +75,7 @@ class _ZooDict(dict, ZooProperty):
                         val = val[0]
                     self.__setitem__(key, val,
                                      id = r[self._spec["primary_key"]],
-                                     store = False)
+                                     store = False, force = True)
 
     def __getattr__(self, name):
         r"""
@@ -139,6 +135,9 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False and not lookup(kargs, "force",
+                                                   default = False):
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         k, tk = self._normalize_key(k)
@@ -169,6 +168,8 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         if k is None:
@@ -277,6 +278,26 @@ class _ZooDict(dict, ZooProperty):
         """
         return {to_json(k): to_json(v) for k, v in self.items()}
 
+    @staticmethod
+    def _init_json_field():
+        """
+        Return an empty dictionary.
+        """
+        return {}
+
+    @staticmethod
+    def _update_json_field(field, data):
+        """
+        Update ``field`` with ``data``.
+
+        INPUT:
+
+        - ``field`` - dictionary field to be updated.
+
+        - ``data`` - data object to update with.
+        """
+        field.update(data)
+
     def clear(self, **kargs):
         r"""
         Remove all entries.
@@ -342,6 +363,8 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         try:
@@ -368,6 +391,8 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         k, (id, v) = dict.popitem(self)
@@ -397,6 +422,8 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
+        if self._zooid is not False:
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
         cur = lookup(kargs, "cur", default = None)
         k, tk = self._normalize_key(k)
@@ -423,6 +450,8 @@ class _ZooDict(dict, ZooProperty):
         - any other named parameter will be added to the dictionary with its
           name as the key.
         """
+        if self._zooid is not False:
+            raise TypeError("read-only dictionary")
         store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
                        destroy = True)
         cur = lookup(kargs, "cur", default = None, destroy = True)
@@ -488,6 +517,7 @@ def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
         "_val_ordering": sorted(values.keys()),
         "_foreign_key": fkey,
         "_foreign_obj": parent,
+        "_foreign_field": name,
         "_spec": {
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
@@ -511,6 +541,7 @@ def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
     clsdict["_spec"]["fields"].update(values)
     ZooDict = type("ZooDict", (_ZooDict,), clsdict)
     ZooDict._init_spec(ZooDict, spec)
+    register_table(ZooDict)
     return ZooDict
 
 register_type(ZooDict)

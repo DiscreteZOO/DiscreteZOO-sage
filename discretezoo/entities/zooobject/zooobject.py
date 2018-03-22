@@ -14,6 +14,7 @@ import discretezoo
 from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
+from ..zooproperty import ZooProperty
 from ...db.query import Column
 from ...db.query import ColumnSet
 from ...db.query import Table
@@ -351,32 +352,58 @@ class ZooObject(ZooEntity):
             d[c._spec["name"]] = self._to_json_field(c)
         return d
 
-    def _to_json_field(self, cl = None):
+    def _to_json_field(self, cl = None, field = None):
         r"""
         Return a dictionary with fields corresponding to the class ``cl``.
+
+        INPUT:
+
+        - ``cl`` - the class to get the fields for.
+          If ``None`` (default), the class of the object is used.
+
+        - ``field`` - if ``None`` (default), then the returned dictionary
+          will contain all existing fields corresponding to ``cl``
+          (i.e., those whose values are not ``None``);
+          otherwise, the dictionary will only contain the value ``field``
+          with its value (which could also be ``None``).
         """
         if cl is None:
             cl = self.__class__
         elif not issubclass(cl, ZooObject):
             return ZooEntity._to_json_field(self, cl = cl)
-        d = self.__getattribute__(cl._dict)
-        for f, t in cl._spec["fields"].items():
-            if f != cl._spec["primary_key"] and f not in d and \
-                    issubclass(t, ZooEntity) and not issubclass(t, ZooObject):
-                self.__getattribute__(f)()
-        d = dict(d)
-        self._to_json_field_extra(cl, d)
-        for f in cl._spec["skip"]:
-            if f != cl._spec["primary_key"]:
-                d[f] = self.__getattribute__(f)()
+        if field is None:
+            d = self.__getattribute__(cl._dict)
+            for f, t in cl._spec["fields"].items():
+                if f != cl._spec["primary_key"] and f not in d and \
+                        issubclass(t, ZooEntity) and \
+                        not issubclass(t, ZooObject):
+                    self.__getattribute__(f)()
+            d = dict(d)
+            self._to_json_field_extra(cl, d)
+            for f in cl._spec["skip"]:
+                if f != cl._spec["primary_key"]:
+                    d[f] = self.__getattribute__(f)()
+        else:
+            d = {field: self.__getattribute__(field)()}
+            self._to_json_field_extra(cl, d, field)
+
         return {f: to_json(v, cl._spec["fields"][f]) for f, v in d.items()
                 if v is not None}
 
-    def _to_json_field_extra(self, cl, d):
+    def _to_json_field_extra(self, cl, d, field = None):
         r"""
         Perform extra tweaking of the dictionary for the JSON encoding.
 
         To be overridden.
+
+        INPUT:
+
+        - ``cl`` - the class to get the fields for.
+
+        - ``d`` - the dictionary to tweak.
+
+        - ``field`` - the field to tweak; if ``None`` (default), all fields
+          may be tweaked.
         """
         pass
 
@@ -400,16 +427,34 @@ class ZooObject(ZooEntity):
             self._zooprops["unique_id"] = ZooObject._spec["fields"]["unique_id"](self._zooid)
             return self._zooprops["unique_id"]
 
-    def write_json(self, location):
+    def write_json(self, location, folder = "objects", field = None,
+                   link = True):
         r"""
         Write a JSON representation of the object to the appropriate file
         in the repository at ``location``.
+
+        INPUT:
+
+        - ``location`` - the location of the repository containing the
+          objects.
+
+        - ``folder`` - the path to the folder within the repository where
+          the objects will be written (default: ``"objects"``).
+
+        - ``field`` - which fields to export: if ``None`` (default), then
+          all fields belonging to all classes will be exported;
+          if ``field`` is an instance of ``ZooProperty``,
+          then the corresponding field will be updated with its values;
+          otherwise ``field`` must be a pair ``(cl, column)``,
+          where ``cl`` is the class for which fields will be exported,
+          and ``column`` is ``None`` if all its fields should be exported,
+          or a string specifying a field.
         """
         targets = {}
         target = None
         links = []
         found = False
-        obj = os.path.join(location, "objects")
+        obj = os.path.join(location, folder)
         for a, u in self.unique_id().items():
             auu = (a, u[:2], u[2:])
             path = os.path.join(obj, *auu)
@@ -442,14 +487,33 @@ class ZooObject(ZooEntity):
             if not os.path.exists(dir):
                 os.makedirs(dir)
             d = {}
-        d.update(self._to_json_dict())
+        if field is None:
+            for k, v in self._to_json_dict().items():
+                if k in d:
+                    d[k].update(v)
+                else:
+                    d[k] = v
+        elif isinstance(field, ZooProperty):
+            table = field._foreign_obj._spec["name"]
+            if table not in d:
+                d[table] = {}
+            op = "_add" if field._deleted is False else "_delete"
+            if op not in d[table]:
+                d[table][op] = {}
+            field._update_json(d[table][op])
+        else:
+            cl, column = field
+            if cl._spec["name"] not in d:
+                d[cl._spec["name"]] = {}
+            d[cl._spec["name"]].update(self._to_json_field(cl, column))
         with open(path, "w") as f:
             json.dump(d, f, indent = 4, sort_keys = True)
-        rel = os.path.join("..", "..", *target)
-        for l in links:
-            dir = os.path.join(obj, *l[:-1])
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-            os.symlink(rel, os.path.join(dir, l[-1]))
+        if link:
+            rel = os.path.join("..", "..", *target)
+            for l in links:
+                dir = os.path.join(obj, *l[:-1])
+                if not os.path.exists(dir):
+                    os.makedirs(dir)
+                os.symlink(rel, os.path.join(dir, l[-1]))
 
 info = ZooInfo(ZooObject)
