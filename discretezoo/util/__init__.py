@@ -1,7 +1,9 @@
 r"""
 Utility module
 
-This module contains three submodules:
+This module contains four submodules:
+
+- ``contributing``: Functions for contributions to the database
 
 - ``decorators``: Method decorators
 
