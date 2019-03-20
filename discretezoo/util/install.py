@@ -17,7 +17,7 @@ import discretezoo
 
 # Repository locations
 GITREPO = "https://github.com/DiscreteZOO/DiscreteZOO-sage.git"
-SPECZIP = "https://github.com/DiscreteZOO/DiscreteZOO-spec/archive/master.zip"
+SPECZIP = "https://github.com/DiscreteZOO/Specifications/archive/master.zip"
 
 def install():
     r"""
