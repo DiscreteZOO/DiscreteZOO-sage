@@ -333,8 +333,8 @@ class ZooGraph(Graph, ZooObject):
         return ZooObject.__getattribute__(self, "_getattr")(name, Graph)
 
     @override.documented
-    def copy(self, weighted = None, implementation = 'c_graph',
-             data_structure = None, sparse = None, immutable = None):
+    def copy(self, weighted = None, data_structure = None, sparse = None,
+             immutable = None):
         r"""
         This method has been overridden by DiscreteZOO to ensure that a mutable
         copy will have type ``Graph``.
@@ -342,13 +342,11 @@ class ZooGraph(Graph, ZooObject):
         if immutable is False or (data_structure is not None
                                   and data_structure is not 'static_sparse'):
             return Graph(self).copy(weighted = weighted,
-                                    implementation = implementation,
                                     data_structure = data_structure,
                                     sparse = sparse,
                                     immutable = immutable)
         else:
             return Graph.copy(self, weighted = weighted,
-                                    implementation = implementation,
                                     data_structure = data_structure,
                                     sparse = sparse,
                                     immutable = immutable)
