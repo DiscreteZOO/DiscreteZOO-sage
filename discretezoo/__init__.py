@@ -21,7 +21,7 @@ from entities import *
 from db import *
 
 # Initialize global objects
-DEFAULT_DB = sqlite.SQLiteDB(track = TRACK_CHANGES)
+DEFAULT_DB = sqlite.SQLiteDB(track=TRACK_CHANGES)
 info = zoograph.info
 
 # Aliases

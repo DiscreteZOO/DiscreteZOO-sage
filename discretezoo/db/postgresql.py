@@ -16,6 +16,7 @@ from .query import enlist
 from .sqldb import SQLDB
 from ..util.utility import lookup
 
+
 class PostgreSQLDB(SQLDB):
     r"""
     An interface class for the PostgreSQL database.
@@ -163,14 +164,14 @@ class PostgreSQLDB(SQLDB):
                 cols = idx
                 cons = set()
             cols = enlist(cols)
-            idxname = self.quoteIdent('idx_%s_%s' % (name,
-                                                '_'.join(cols + list(cons))))
+            idxname = self.quoteIdent('idx_%s_%s' %
+                                      (name, '_'.join(cols + list(cons))))
             cur.execute('SELECT to_regclass(%s)', ['public.%s' % idxname])
             if cur.fetchone()[0] is None:
                 idxcols = ', '.join(self.quoteIdent(col) for col in cols)
                 unique = 'UNIQUE ' if 'unique' in cons else ''
-                cur.execute('CREATE %sINDEX %s ON %s(%s)'
-                        % (unique, idxname, self.quoteIdent(name), idxcols))
+                cur.execute('CREATE %sINDEX %s ON %s(%s)' %
+                            (unique, idxname, self.quoteIdent(name), idxcols))
         except psycopg2.ProgrammingError as ex:
             self.db.rollback()
             raise ex
@@ -187,7 +188,7 @@ class PostgreSQLDB(SQLDB):
             return ' RETURNING %s' % self.quoteIdent(id)
         return ''
 
-    def limit(self, limit = None, offset = None):
+    def limit(self, limit=None, offset=None):
         r"""
         Format a LIMIT clause.
 
@@ -226,6 +227,7 @@ class PostgreSQLDB(SQLDB):
         if "port" in d:
             host = "%s:%s" % (host, d["port"])
         return 'PostgreSQL database "%s" at %s' % (d["dbname"], host)
+
 
 # PostgreSQL-specific keywords and symbols
 PostgreSQLDB.types = dict(SQLDB.types)

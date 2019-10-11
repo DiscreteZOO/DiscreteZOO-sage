@@ -17,6 +17,7 @@ from .sqldb import SQLDB
 DBFILE = os.path.join(os.path.expanduser('~'),
                       '.discretezoo', 'discretezoo.db')
 
+
 class SQLiteDB(SQLDB):
     r"""
     An interface class for the SQLite database.
@@ -26,8 +27,8 @@ class SQLiteDB(SQLDB):
     ident_quote = '"'
     exceptions = sqlite3.Error
     file = None
-    
-    def connect(self, file = DBFILE):
+
+    def connect(self, file=DBFILE):
         r"""
         Connect to the database.
 
@@ -72,8 +73,8 @@ class SQLiteDB(SQLDB):
                                                  '_'.join(cols + list(cons))))
         idxcols = ', '.join(self.quoteIdent(col) for col in cols)
         unique = 'UNIQUE ' if 'unique' in cons else ''
-        cur.execute('CREATE %sINDEX IF NOT EXISTS %s ON %s(%s)'
-                        % (unique, idxname, self.quoteIdent(name), idxcols))
+        cur.execute('CREATE %sINDEX IF NOT EXISTS %s ON %s(%s)' %
+                    (unique, idxname, self.quoteIdent(name), idxcols))
 
     def importDB(self, file):
         r"""
@@ -93,10 +94,11 @@ class SQLiteDB(SQLDB):
             raise OSError(errno.ENOENT)
         self.db.close()
         shutil.copy(file, self.file)
-        self.connect(file = self.file)
+        self.connect(file=self.file)
 
     def __str__(self):
         return 'SQLite database in %s' % self.file
+
 
 # SQLite-specific keywords and symbols
 SQLiteDB.constraints = dict(SQLDB.constraints)

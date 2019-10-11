@@ -9,6 +9,7 @@ import discretezoo
 from ..entities.zooentity import ZooEntity
 from ..util.utility import lookup
 
+
 class DB:
     r"""
     An abstract class for database interfaces.
@@ -29,8 +30,8 @@ class DB:
         - any other parameter will be passed to the ``connect`` method.
         """
         self.track = lookup(kargs, "track",
-                            default = discretezoo.TRACK_CHANGES,
-                            destroy = True)
+                            default=discretezoo.TRACK_CHANGES,
+                            destroy=True)
         self.connect(*largs, **kargs)
 
     def connect(self, *largs, **kargs):

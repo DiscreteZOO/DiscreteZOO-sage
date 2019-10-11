@@ -12,6 +12,7 @@ from ...db.query import Table
 from ...db.query import Value
 from ...util.utility import default
 
+
 class Change(ZooEntity):
     r"""
     A change to the database
@@ -25,8 +26,8 @@ class Change(ZooEntity):
     _objid = None
     _chgid = None
 
-    def __init__(self, id, table = None, column = None, commithash = None,
-                 user = None, **kargs):
+    def __init__(self, id, table=None, column=None, commithash=None,
+                 user=None, **kargs):
         r"""
         Object constructor.
 
@@ -63,7 +64,7 @@ class Change(ZooEntity):
                 table = table._spec["name"]
         default(kargs, "store", discretezoo.WRITE_TO_DB)
         kargs["write"] = {}
-        ZooEntity._init_(self, ZooEntity, kargs, defNone = ["data"])
+        ZooEntity._init_(self, ZooEntity, kargs, defNone=["data"])
         if kargs["store"]:
             cur = kargs["cur"]
             if self._db.track:
@@ -75,16 +76,16 @@ class Change(ZooEntity):
                 self._db.query([Column(self._spec["primary_key"])],
                                Table(self._spec["name"]),
                                [Column(k) == Value(v) for k, v in row.items()],
-                               cur = cur)
+                               cur=cur)
                 r = cur.fetchone()
                 if r is None:
                     row["user"] = user
-                    self._db.insert_row(self._spec["name"], row, cur = cur,
-                                        id = self._spec["primary_key"])
+                    self._db.insert_row(self._spec["name"], row, cur=cur,
+                                        id=self._spec["primary_key"])
                     self._chgid = self._db.lastrowid(cur)
                 else:
                     self._chgid = r[0]
-            self.table =  table
+            self.table = table
             self.column = column
             self.commit = commithash
             self.user = user
@@ -96,7 +97,7 @@ class Change(ZooEntity):
             t = Table(self._spec["name"])
             cur = self._db.query([t], t,
                                  {self._spec["primary_key"]: self._chgid},
-                                 cur = cur)
+                                 cur=cur)
             r = cur.fetchone()
             if r is None:
                 raise KeyError(self._chgid)
@@ -114,7 +115,7 @@ class Change(ZooEntity):
             out = "%s at commit %s" % (out, self.commit)
         return "Change to object with ID %d in %s" % (self._objid, out)
 
-    def commit(commithash, user, cur = None, commit = None):
+    def commit(commithash, user, cur=None, commit=None):
         r"""
         Include the change in a commit.
 
@@ -133,8 +134,8 @@ class Change(ZooEntity):
         if self.commit is not None:
             raise KeyError("change is already included in a commit")
         self._db.update_rows(self._spec["name"],
-                             {"commit" : commithash, "user": user},
+                             {"commit": commithash, "user": user},
                              Column("change_id") == Value(self._chgid),
-                             cur = cur, commit = commit)
+                             cur=cur, commit=commit)
         self.commit = commithash
         self.user = user

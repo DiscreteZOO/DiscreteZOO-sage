@@ -25,6 +25,7 @@ names = {
 # Specification file path
 path = os.path.join(discretezoo.__path__[0], "spec")
 
+
 def normalize_type(t):
     r"""
     Substitute JSON objects with actual classes.
@@ -46,6 +47,7 @@ def normalize_type(t):
         t = names[t]
     return t
 
+
 def init_fields(fields):
     r"""
     Initialize fields in a JSON object.
@@ -59,6 +61,7 @@ def init_fields(fields):
     """
     return {str(k): normalize_type(t) for k, t in fields.items()}
 
+
 def init_fieldparams(fieldparams):
     r"""
     Initialize field parameters in a JSON object.
@@ -71,6 +74,7 @@ def init_fieldparams(fieldparams):
       representing the appropriate parameters.
     """
     return {str(k): to_string(p) for k, p in fieldparams.items()}
+
 
 def init_metaclasses(cl):
     r"""
@@ -89,6 +93,7 @@ def init_metaclasses(cl):
             init_metaclasses(t)
             cl._spec["fields"][k] = t
 
+
 def to_string(s):
     r"""
     Recursively convert elements of a nested list to strings.
@@ -106,6 +111,7 @@ def to_string(s):
     else:
         return [to_string(x) for x in s]
 
+
 def register_type(cl):
     r"""
     For a given class, map its name to it.
@@ -115,6 +121,7 @@ def register_type(cl):
     - ``cl`` -- the class to be registered.
     """
     names[cl.__name__] = cl
+
 
 def init_spec(spec):
     r"""
@@ -140,15 +147,16 @@ def init_spec(spec):
         spec["aliases"] = {str(k): str(v) for k, v in spec["aliases"].items()}
     if "compute" in spec:
         spec["compute"] = {names[c]: to_string(l)
-                            for c, l in spec["compute"].items()}
+                           for c, l in spec["compute"].items()}
     if "condition" in spec:
         spec["condition"] = {names[c]: {str(k): v for k, v in d.items()}
-                                for c, d in spec["condition"].items()}
+                             for c, d in spec["condition"].items()}
     if "default" in spec:
         spec["default"] = {names[c]: {str(k): v for k, v in d.items()}
-                            for c, d in spec["default"].items()}
+                           for c, d in spec["default"].items()}
 
-def init_class(cl, fields = None):
+
+def init_class(cl, fields=None):
     r"""
     Initializes the given class.
 

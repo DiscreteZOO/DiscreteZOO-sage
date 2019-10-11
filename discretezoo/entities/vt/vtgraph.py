@@ -13,6 +13,7 @@ from ...db.query import Table
 from ...util.utility import isinteger
 from ...util.utility import lookup
 
+
 class VTGraph(ZooGraph):
     r"""
     A vertex-transitive graph.
@@ -25,7 +26,7 @@ class VTGraph(ZooGraph):
     _spec = None
     _dict = "_vtprops"
 
-    def __init__(self, data = None, vt_index = None, **kargs):
+    def __init__(self, data=None, vt_index=None, **kargs):
         r"""
         Object constructor.
 
@@ -53,9 +54,9 @@ class VTGraph(ZooGraph):
           Other named parameters are silently ignored.
         """
         ZooObject._init_(self, VTGraph, kargs,
-                         defNone = ["order"],
-                         setVal = {"data": data, "vt_index": vt_index},
-                         setProp = {"vt_index": "vt_index"})
+                         defNone=["order"],
+                         setVal={"data": data, "vt_index": vt_index},
+                         setProp={"vt_index": "vt_index"})
 
     def _parse_params(self, d):
         r"""
@@ -93,11 +94,11 @@ class VTGraph(ZooGraph):
             if d["vt_index"] is not None:
                 join = Table(cl._spec["name"]).join(
                                     Table(ZooGraph._spec["name"]),
-                                    by = frozenset([cl._spec["primary_key"]]))
+                                    by=frozenset([cl._spec["primary_key"]]))
                 try:
                     r = self._db_read(ZooGraph, join,
                                       {"order": d["order"],
-                                       "vt_index": d["vt_index"]}, kargs = d)
+                                       "vt_index": d["vt_index"]}, kargs=d)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
@@ -108,7 +109,7 @@ class VTGraph(ZooGraph):
             assert(d["order"] == self._graphprops["order"])
         if len(self._vtprops) == 0:
             try:
-                self._db_read(cl, kargs = d)
+                self._db_read(cl, kargs=d)
             except KeyError as ex:
                 if not d["store"]:
                     raise ex
@@ -118,7 +119,7 @@ class VTGraph(ZooGraph):
         Return an uncapitalized string representation.
         """
         if lookup(self._graphprops, "connected_components_number",
-                  default = 1) > 1:
+                  default=1) > 1:
             out = "disconnected "
         else:
             out = ""
@@ -144,10 +145,11 @@ class VTGraph(ZooGraph):
         Return the index of the graph among the graphs of the same order
         in the census by G. Royle.
         """
-        return lookup(self._vtprops, "vt_index", default = None)
+        return lookup(self._vtprops, "vt_index", default=None)
 
-def import_vt(file, db = None, format = "sparse6", index = "vt_index",
-              verbose = False):
+
+def import_vt(file, db=None, format="sparse6", index="vt_index",
+              verbose=False):
     r"""
     Import vertex-transitive graphs from ``file`` into the database.
 
@@ -176,7 +178,8 @@ def import_vt(file, db = None, format = "sparse6", index = "vt_index",
     - ``verbose``: whether to print information about the progress of importing
       (default: ``False``).
     """
-    import_graphs(file, cl = VTGraph, db = db, format = format, index = index,
-                  verbose = verbose)
+    import_graphs(file, cl=VTGraph, db=db, format=format, index=index,
+                  verbose=verbose)
+
 
 info = ZooInfo(VTGraph)

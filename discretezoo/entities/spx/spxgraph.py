@@ -15,6 +15,7 @@ from ..zooobject import ZooObject
 from ...util.utility import isinteger
 from ...util.utility import lookup
 
+
 class SPXGraph(ZooGraph):
     r"""
     A split Praeger-Xu (2, r, s) graph.
@@ -30,7 +31,7 @@ class SPXGraph(ZooGraph):
     _spec = None
     _dict = "_spxprops"
 
-    def __init__(self, data = None, s = None, **kargs):
+    def __init__(self, data=None, s=None, **kargs):
         r"""
         Object constructor.
 
@@ -59,9 +60,9 @@ class SPXGraph(ZooGraph):
         - named parameters accepted by or Sage's ``Graph`` class.
           Other named parameters are silently ignored.
         """
-        ZooObject._init_(self, SPXGraph, kargs, defNone = ["r"],
-                         setVal = {"data": data, "s": s},
-                         setProp = {"spx_r": "r", "spx_s": "s"})
+        ZooObject._init_(self, SPXGraph, kargs, defNone=["r"],
+                         setVal={"data": data, "s": s},
+                         setProp={"spx_r": "r", "spx_s": "s"})
 
     def _parse_params(self, d):
         r"""
@@ -85,7 +86,7 @@ class SPXGraph(ZooGraph):
         else:
             return ZooGraph._parse_params(self, d)
 
-    def _init_object(self, cl, d, setProp = {}):
+    def _init_object(self, cl, d, setProp={}):
         r"""
         Initialize the object being represented.
 
@@ -104,8 +105,8 @@ class SPXGraph(ZooGraph):
         """
         if d["graph"] is None and d["r"] is not None and d["s"] is not None:
             try:
-                r = self._db_read(cl, query = {"spx_r": d["r"],
-                                               "spx_s": d["s"]}, kargs = d)
+                r = self._db_read(cl, query={"spx_r": d["r"],
+                                             "spx_s": d["s"]}, kargs=d)
                 d["zooid"] = r["zooid"]
             except KeyError as ex:
                 if not d["store"]:
@@ -117,7 +118,7 @@ class SPXGraph(ZooGraph):
                 d["data"], d["multiedges"] = construct_spx(**d)
                 self._construct_graph(d)
                 d["data"] = None
-        ZooGraph._init_object(self, cl, d, setProp = setProp)
+        ZooGraph._init_object(self, cl, d, setProp=setProp)
 
     def _construct_object(self, cl, d):
         r"""
@@ -135,7 +136,7 @@ class SPXGraph(ZooGraph):
             assert(d["r"] * 2**(d["s"]+1) == self._graphprops["order"])
         if len(self._spxprops) == 0:
             try:
-                self._db_read(cl, kargs = d)
+                self._db_read(cl, kargs=d)
             except KeyError as ex:
                 if not d["store"]:
                     raise ex
@@ -160,8 +161,8 @@ class SPXGraph(ZooGraph):
         r"""
         Return an uncapitalized string representation.
         """
-        return "split Praeger-Xu(2, %d, %d) graph on %d vertices" \
-                                % (self.spx_r(), self.spx_s(), self.order())
+        return "split Praeger-Xu(2, %d, %d) graph on %d vertices" % \
+            (self.spx_r(), self.spx_s(), self.order())
 
     def spx_r(self):
         r"""
@@ -175,7 +176,8 @@ class SPXGraph(ZooGraph):
         """
         return lookup(self._spxprops, "spx_s")
 
-def construct_spx(r, s, multiedges = None, **kargs):
+
+def construct_spx(r, s, multiedges=None, **kargs):
     r"""
     Construct a SPX(2, r, s) graph.
 
@@ -191,7 +193,7 @@ def construct_spx(r, s, multiedges = None, **kargs):
 
     - ``multiedges`` - whether the constructed graph should be considered
       a multigraph. If ``None`` (default), the second element of the output
-      will be set to ``True`` when ``r = 1``. If ``False`` and ``r = 1``,
+      will be set to ``True`` when ``r == 1``. If ``False`` and ``r == 1``,
       a ``ValueError`` is raised. Otherwise, the second element of the
       output will be ``multiedges``.
 
@@ -212,6 +214,7 @@ def construct_spx(r, s, multiedges = None, **kargs):
     else:
         data = [c, spx_adj]
     return (data, multiedges)
+
 
 def check_spx(G):
     r"""
@@ -235,7 +238,7 @@ def check_spx(G):
         p //= 2
         t += 1
     assert all(len(o) == q for o in O), \
-           "All vertex orbits of an SPX graph have the same size"
+        "All vertex orbits of an SPX graph have the same size"
     if t == 0:
         if n == 4:
             return (1, 1)
@@ -249,8 +252,8 @@ def check_spx(G):
     q //= 2
     r = 0
     while q > r:
-        assert q % 2 == 0, \
-            "The size of the automorphism group of an SPX graph is of form r*2^r"
+        assert q % 2 == 0, "The size of the automorphism group " \
+            "of an SPX graph is of form r*2^r"
         q //= 2
         r += 1
     assert q == r, \
@@ -268,9 +271,10 @@ def check_spx(G):
     else:
         s = r + t
     data, multiedges = construct_spx(r, s)
-    H = Graph(data, multiedges = multiedges)
+    H = Graph(data, multiedges=multiedges)
     assert G.is_isomorphic(H), "The given graph is not an SPX graph"
     return (r, s)
+
 
 def spx_adj(x, y):
     r"""
@@ -292,5 +296,6 @@ def spx_adj(x, y):
     if xs == -1:
         xv, yv = yv, xv
     return xv[1:] == yv[:-1]
+
 
 info = ZooInfo(SPXGraph)

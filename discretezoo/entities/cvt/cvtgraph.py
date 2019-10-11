@@ -22,6 +22,7 @@ from ...util.utility import isinteger
 from ...util.utility import lookup
 from ...util.utility import update
 
+
 class CVTGraph(VTGraph):
     r"""
     A cubic vertex-transitive graph.
@@ -35,7 +36,7 @@ class CVTGraph(VTGraph):
     _spec = None
     _dict = "_cvtprops"
 
-    def __init__(self, data = None, cvt_index = None, symcubic_index = None,
+    def __init__(self, data=None, cvt_index=None, symcubic_index=None,
                  **kargs):
         r"""
         Object constructor.
@@ -67,11 +68,11 @@ class CVTGraph(VTGraph):
           Other named parameters are silently ignored.
         """
         ZooObject._init_(self, CVTGraph, kargs,
-                         defNone = ["order", "vt_index"],
-                         setVal = {"data": data, "cvt_index": cvt_index,
-                                   "symcubic_index": symcubic_index},
-                         setProp = {"cvt_index": "cvt_index",
-                                    "symcubic_index": "symcubic_index"})
+                         defNone=["order", "vt_index"],
+                         setVal={"data": data, "cvt_index": cvt_index,
+                                 "symcubic_index": symcubic_index},
+                         setProp={"cvt_index": "cvt_index",
+                                  "symcubic_index": "symcubic_index"})
 
     def _parse_params(self, d):
         r"""
@@ -103,9 +104,9 @@ class CVTGraph(VTGraph):
             if len(cond) > 1:
                 join = Table(cl._spec["name"]).join(
                                     Table(ZooGraph._spec["name"]),
-                                    by = frozenset([cl._spec["primary_key"]]))
+                                    by=frozenset([cl._spec["primary_key"]]))
                 try:
-                    r = self._db_read(ZooGraph, join, cond, kargs = d)
+                    r = self._db_read(ZooGraph, join, cond, kargs=d)
                     d["zooid"] = r["zooid"]
                     d["graph"] = None
                 except KeyError:
@@ -116,7 +117,7 @@ class CVTGraph(VTGraph):
             assert(d["order"] == self._graphprops["order"])
         if len(self._cvtprops) == 0:
             try:
-                self._db_read(cl, kargs = d)
+                self._db_read(cl, kargs=d)
             except KeyError as ex:
                 if not d["store"]:
                     raise ex
@@ -126,7 +127,7 @@ class CVTGraph(VTGraph):
         Return an uncapitalized string representation.
         """
         if lookup(self._graphprops, "connected_components_number",
-                  default = 1) > 1:
+                  default=1) > 1:
             out = "disconnected "
         else:
             out = ""
@@ -136,7 +137,7 @@ class CVTGraph(VTGraph):
             index = self.symcubic_index()
             if index is not None or \
                     lookup(self._graphprops, "is_arc_transitive",
-                           default = False):
+                           default=False):
                 tr = "symmetric"
         out += "cubic %s %s" % (tr, ZooGraph._repr_generic(self))
         if index is not None:
@@ -160,56 +161,56 @@ class CVTGraph(VTGraph):
         Return the index of the graph among the graphs of the same order
         in the census by P. Potočnik, P. Spiga and G. Verret.
         """
-        return lookup(self._cvtprops, "cvt_index", default = None)
+        return lookup(self._cvtprops, "cvt_index", default=None)
 
     @override.computed()
     def is_moebius_ladder(self, **kargs):
         r"""
         Return whether the graph is a Möbius ladder.
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        if not self.is_connected(store = store, cur = cur):
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        if not self.is_connected(store=store, cur=cur):
             return False
-        o = self.order(store = store, cur = cur)
-        g = self.girth(store = store, cur = cur)
+        o = self.order(store=store, cur=cur)
+        g = self.girth(store=store, cur=cur)
         if o <= 6:
             return o+2 == 2*g
         if g != 4:
             return False
-        b = self.is_bipartite(store = store, cur = cur)
-        d = self.diameter(store = store, cur = cur)
-        og = self.odd_girth(store = store, cur = cur)
+        b = self.is_bipartite(store=store, cur=cur)
+        d = self.diameter(store=store, cur=cur)
+        og = self.odd_girth(store=store, cur=cur)
         return ((o % 4 == 0 and 4*d == o and og == 2*d+1) or
-                    (o % 4 == 2 and 4*d == o+2 and b)) and \
-                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
+                (o % 4 == 2 and 4*d == o+2 and b)) and \
+            len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
     @override.computed()
     def is_prism(self, **kargs):
         r"""
         Return whether the graph is a prism.
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        if not self.is_connected(store = store, cur = cur):
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        if not self.is_connected(store=store, cur=cur):
             return False
-        o = self.order(store = store, cur = cur)
-        g = self.girth(store = store, cur = cur)
+        o = self.order(store=store, cur=cur)
+        g = self.girth(store=store, cur=cur)
         if o <= 6:
             return o == 2*g
         if g != 4:
             return False
-        b = self.is_bipartite(store = store, cur = cur)
+        b = self.is_bipartite(store=store, cur=cur)
         if o == 8:
             return b
-        d = self.diameter(store = store, cur = cur)
-        og = self.odd_girth(store = store, cur = cur)
+        d = self.diameter(store=store, cur=cur)
+        og = self.odd_girth(store=store, cur=cur)
         return ((o % 4 == 0 and 4*d == o+4 and b) or
-                    (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
-                len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
+                (o % 4 == 2 and 4*d == o+2 and og == 2*d-1)) and \
+            len(self.distance_graph(2)[next(self.vertex_iterator())]) == 4
 
-    @override.computed(acceptArgs = ["parameters"])
-    def is_spx(self, parameters = False, **kargs):
+    @override.computed(acceptArgs=["parameters"])
+    def is_spx(self, parameters=False, **kargs):
         r"""
         Return whether the graph is an SPX graph.
 
@@ -220,12 +221,12 @@ class CVTGraph(VTGraph):
           (or ``None`` if the graph is not an SPX graph);
           otherwise (default), return a boolean.
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         try:
-            assert lookup(self._cvtprops, "is_spx", default = True)
+            assert lookup(self._cvtprops, "is_spx", default=True)
             if store:
-                G = SPXGraph(self, store = store, cur = cur)
+                G = SPXGraph(self, store=store, cur=cur)
                 if parameters:
                     return (True, (G.spx_r(), G.spx_s()))
             else:
@@ -256,9 +257,9 @@ class CVTGraph(VTGraph):
         Return the index of the graph among the graphs of the same order
         in the extended Foster census of cubic symmetric graphs by M. Conder.
         """
-        return lookup(self._cvtprops, "symcubic_index", default = None)
+        return lookup(self._cvtprops, "symcubic_index", default=None)
 
-    def truncation(self, name = None, **kargs):
+    def truncation(self, name=None, **kargs):
         r"""
         Return a truncated graph.
 
@@ -280,53 +281,54 @@ class CVTGraph(VTGraph):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         commit = False
-        if lookup(self._graphprops, "is_arc_transitive", default = False):
+        if lookup(self._graphprops, "is_arc_transitive", default=False):
             cl = CVTGraph
         else:
             cl = ZooGraph
         try:
             t = lookup(self._cvtprops, "truncation")
             if isinteger(t):
-                t = cl(zooid = t, db = self._db)
+                t = cl(zooid=t, db=self._db)
                 update(self._cvtprops, "truncation", t)
         except KeyError:
             G = Graph([sum([[(n, e, 0), (n, e, 1)] for n, e
-                            in enumerate(self.edge_iterator(labels = False))],
+                            in enumerate(self.edge_iterator(labels=False))],
                            []),
                        lambda (n, e, i), (m, f, j): n == m or e[i] == f[j]],
-                      loops = False)
+                      loops=False)
             if not store:
                 cur = None
             elif cur is None:
                 cur = self._db.cursor()
                 commit = True
             try:
-                t = cl(G, store = store, db = self._db, cur = cur)
+                t = cl(G, store=store, db=self._db, cur=cur)
             except KeyError:
                 t = G
             if store:
                 self._update_rows(CVTGraph, {"truncation": t._zooid},
                                   {self._spec["primary_key"]: self._zooid},
-                                  cur = cur)
+                                  cur=cur)
         if name is None:
             nm = self.name()
             if nm and not t.name():
                 name = "Truncated %s" % nm
         if name is not None:
             if isinstance(t, ZooGraph):
-                t.name(new = name, store = store, cur = cur)
+                t.name(new=name, store=store, cur=cur)
             else:
-                t.name(new = name)
+                t.name(new=name)
         if commit:
             self._db.commit()
         update(self._cvtprops, "truncation", t)
         return t
 
-def import_cvt(file, db = None, format = "sparse6", index = "cvt_index",
-               verbose = False):
+
+def import_cvt(file, db=None, format="sparse6", index="cvt_index",
+               verbose=False):
     r"""
     Import cubic vertex-transitive graphs from ``file`` into the database.
 
@@ -357,7 +359,8 @@ def import_cvt(file, db = None, format = "sparse6", index = "cvt_index",
     - ``verbose``: whether to print information about the progress of importing
       (default: ``False``).
     """
-    import_graphs(file, cl = CVTGraph, db = db, format = format, index = index,
-                  verbose = verbose)
+    import_graphs(file, cl=CVTGraph, db=db, format=format, index=index,
+                  verbose=verbose)
+
 
 info = ZooInfo(CVTGraph)

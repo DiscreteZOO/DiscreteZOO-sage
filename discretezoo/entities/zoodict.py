@@ -15,6 +15,7 @@ from ..db.query import enlist
 from ..util.utility import lookup
 from ..util.utility import to_json
 
+
 class _ZooDict(dict, ZooProperty):
     r"""
     A generic dictionary class with database interaction.
@@ -26,7 +27,7 @@ class _ZooDict(dict, ZooProperty):
     _use_key_tuples = None
     _use_val_tuples = None
 
-    def __init__(self, data, vals = None, **kargs):
+    def __init__(self, data, vals=None, **kargs):
         r"""
         Object constructor.
 
@@ -62,14 +63,14 @@ class _ZooDict(dict, ZooProperty):
             self._objid = data
             if vals is not None and kargs["store"]:
                 for k, v in vals.items():
-                    self.__setitem__(k, v, store = True, cur = kargs["cur"])
+                    self.__setitem__(k, v, store=True, cur=kargs["cur"])
                 if kargs["commit"]:
                     self._db.commit()
             else:
                 t = Table(self._spec["name"])
                 cur = self._db.query([t], t, {self._foreign_key: data,
                                               "deleted": False},
-                                     cur = kargs["cur"])
+                                     cur=kargs["cur"])
                 for r in cur:
                     key = tuple([r[k] for k in self._key_ordering])
                     val = tuple([r[v] for v in self._val_ordering])
@@ -78,8 +79,8 @@ class _ZooDict(dict, ZooProperty):
                     if not self._use_val_tuples:
                         val = val[0]
                     self.__setitem__(key, val,
-                                     id = r[self._spec["primary_key"]],
-                                     store = False)
+                                     id=r[self._spec["primary_key"]],
+                                     store=False)
 
     def __getattr__(self, name):
         r"""
@@ -121,7 +122,7 @@ class _ZooDict(dict, ZooProperty):
         k, tk = self._normalize_key(k)
         return dict.__getitem__(self, k)[1]
 
-    def __setitem__(self, k, v, id = None, **kargs):
+    def __setitem__(self, k, v, id=None, **kargs):
         r"""
         Set a value for the given key.
 
@@ -139,20 +140,20 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         k, tk = self._normalize_key(k)
         v, tv = self._normalize_val(v)
         if k in self and self[k] == v:
             return
         if store:
             row = dict([(self._foreign_key, self._objid)] +
-                    [(c, tk[i]) for i, c in enumerate(self._key_ordering)] +
-                    [(c, tv[i]) for i, c in enumerate(self._val_ordering)])
-            id = self._insert_row(self.__class__, row, cur = cur)
+                       [(c, tk[i]) for i, c in enumerate(self._key_ordering)] +
+                       [(c, tv[i]) for i, c in enumerate(self._val_ordering)])
+            id = self._insert_row(self.__class__, row, cur=cur)
         dict.__setitem__(self, k, (id, v))
 
-    def __delitem__(self, k = None, id = None, **kargs):
+    def __delitem__(self, k=None, id=None, **kargs):
         r"""
         Delete the value for the given key.
 
@@ -169,8 +170,8 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if k is None:
             if id is None:
                 raise KeyError("key or ID not specified")
@@ -185,7 +186,7 @@ class _ZooDict(dict, ZooProperty):
             id = dict.__getitem__(self, k)[0]
         if store:
             self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
-                              cur = cur)
+                              cur=cur)
         dict.__delitem__(self, k)
 
     def __repr__(self):
@@ -237,7 +238,7 @@ class _ZooDict(dict, ZooProperty):
         return (v, tv)
 
     @staticmethod
-    def _get_column(cl, name, table, join = None, by = None):
+    def _get_column(cl, name, table, join=None, by=None):
         r"""
         Return a ``ColumnSet`` object for a property of the given class.
 
@@ -259,14 +260,14 @@ class _ZooDict(dict, ZooProperty):
         if not isinstance(table, Table):
             table = Table(table)
         if join is not None:
-            table = join.join(table, by = by)
+            table = join.join(table, by=by)
         col = None if cl._use_val_tuples else cl._val_ordering[0]
-        return ColumnSet(cl, col, join = table,
-            by = (("deleted", False),
-                  (cl._foreign_key,
-                   Column(cl._foreign_obj._spec["primary_key"],
-                          table = table))),
-            foreign = cl._foreign_key, ordering = cl._key_ordering)
+        return ColumnSet(cl, col, join=table,
+                         by=(("deleted", False),
+                             (cl._foreign_key,
+                              Column(cl._foreign_obj._spec["primary_key"],
+                                     table=table))),
+                         foreign=cl._foreign_key, ordering=cl._key_ordering)
 
     def _to_json(self):
         r"""
@@ -289,11 +290,11 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
-                              cur = cur)
+                              cur=cur)
         dict.clear(self)
 
     def items(self):
@@ -307,6 +308,7 @@ class _ZooDict(dict, ZooProperty):
         Return an iterator over the (key, value) pairs.
         """
         it = dict.iteritems(self)
+
         def iter():
             while True:
                 k, (_, v) = next(it)
@@ -318,6 +320,7 @@ class _ZooDict(dict, ZooProperty):
         Return an iterator over the values.
         """
         it = dict.itervalues(self)
+
         def iter():
             while True:
                 yield next(it)[1]
@@ -342,11 +345,11 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         try:
             d = self[k]
-            self.__delitem__(k, store = store, cur = cur)
+            self.__delitem__(k, store=store, cur=cur)
             return d
         except KeyError as ex:
             if len(largs) > 0:
@@ -368,19 +371,19 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         k, (id, v) = dict.popitem(self)
         if store:
             try:
                 self._delete_rows(self.__class__,
-                                  {self._spec["primary_key"]: id}, cur = cur)
+                                  {self._spec["primary_key"]: id}, cur=cur)
             except self._db.exceptions as ex:
                 dict.__setitem__(self, k, (id, v))
                 raise ex
         return (k, v)
 
-    def setdefault(self, k, v = None, **kargs):
+    def setdefault(self, k, v=None, **kargs):
         r"""
         Get the value for the given key after setting it to the specified value
         if it had not existed.
@@ -397,13 +400,13 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         k, tk = self._normalize_key(k)
         if k in self:
             return self[k]
         else:
-            self.__setitem__(k, v, store = store, cur = cur)
+            self.__setitem__(k, v, store=store, cur=cur)
 
     def update(self, *largs, **kargs):
         r"""
@@ -423,19 +426,19 @@ class _ZooDict(dict, ZooProperty):
         - any other named parameter will be added to the dictionary with its
           name as the key.
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         if len(largs) > 0:
             try:
                 other = largs[0]
                 for k in other:
-                    self.__setitem__(k, other[k], store = store, cur = cur)
+                    self.__setitem__(k, other[k], store=store, cur=cur)
             except AttributeError:
                 for k, v in other:
-                    self.__setitem__(k, v, store = store, cur = cur)
+                    self.__setitem__(k, v, store=store, cur=cur)
         for k, v in kargs.items():
-            self.__setitem__(k, v, store = store, cur = cur)
+            self.__setitem__(k, v, store=store, cur=cur)
 
     def values(self):
         r"""
@@ -443,7 +446,8 @@ class _ZooDict(dict, ZooProperty):
         """
         return [v[1] for v in dict.values(self)]
 
-def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
+
+def ZooDict(parent, name, spec, use_key_tuples=None, use_val_tuples=None):
     r"""
     Construct a subclass of ``_ZooDict``.
 
@@ -493,7 +497,7 @@ def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
             "primary_key": id,
             "indices": [([fkey] + keys.keys(), {"unique"})],
             "skip": {fkey, "deleted"},
-            "fields" : {
+            "fields": {
                 id: ZooEntity,
                 fkey: parent,
                 "deleted": bool
@@ -512,5 +516,6 @@ def ZooDict(parent, name, spec, use_key_tuples = None, use_val_tuples = None):
     ZooDict = type("ZooDict", (_ZooDict,), clsdict)
     ZooDict._init_spec(ZooDict, spec)
     return ZooDict
+
 
 register_type(ZooDict)

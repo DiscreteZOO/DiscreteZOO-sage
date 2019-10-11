@@ -28,6 +28,7 @@ from ...util.utility import update
 
 override = ZooDecorator(Graph)
 
+
 class ZooGraph(Graph, ZooObject):
     r"""
     A graph in DiscreteZOO.
@@ -41,7 +42,7 @@ class ZooGraph(Graph, ZooObject):
     _override = override
     _initialized = False
 
-    def __init__(self, data = None, **kargs):
+    def __init__(self, data=None, **kargs):
         r"""
         Object constructor.
 
@@ -65,10 +66,9 @@ class ZooGraph(Graph, ZooObject):
         - named parameters accepted by or Sage's ``Graph`` class.
           Other named parameters are silently ignored.
         """
-        ZooObject._init_(self, ZooGraph, kargs, defNone = ["vertex_labels"],
-                         setVal = {"data": data,
-                                   "immutable": True,
-                                   "data_structure": "static_sparse"})
+        ZooObject._init_(self, ZooGraph, kargs, defNone=["vertex_labels"],
+                         setVal={"data": data, "immutable": True,
+                                 "data_structure": "static_sparse"})
 
     def _init_defaults(self, d):
         r"""
@@ -135,7 +135,7 @@ class ZooGraph(Graph, ZooObject):
                 d["data"] = d["props"]["data"]
                 del d["props"]["data"]
 
-    def _init_object(self, cl, d, setProp = {}):
+    def _init_object(self, cl, d, setProp={}):
         r"""
         Initialize the object being represented.
 
@@ -157,7 +157,7 @@ class ZooGraph(Graph, ZooObject):
             self._apply_props(cl, d)
         cl._construct_object(self, cl, d)
 
-    def _init_graph(self, cl, d, setProp = {}):
+    def _init_graph(self, cl, d, setProp={}):
         r"""
         Initialize the propreties from the given graph.
 
@@ -183,20 +183,21 @@ class ZooGraph(Graph, ZooObject):
             uid_done = False
             for algo in AVAILABLE_ALGORITHMS:
                 try:
-                    d["unique_id"] = unique_id(d["graph"], algorithm = algo,
-                                               store = False)
+                    d["unique_id"] = unique_id(d["graph"], algorithm=algo,
+                                               store=False)
                     d["unique_id_algorithm"] = algo
                     uid_done = True
                     break
                 except NotImplementedError:
                     pass
             if not uid_done:
-                raise NotImplementedError("no suitable unique ID algorithm found")
+                raise NotImplementedError("no suitable unique ID algorithm "
+                                          "found")
         try:
             if d["zooid"] is None:
-                d["props"] = next(ZooInfo(cl).props(cl._fields.unique_id == \
-                                                        Value(d["unique_id"]),
-                                                    cur = d["cur"]))
+                d["props"] = next(ZooInfo(cl).props(
+                    cl._fields.unique_id == Value(d["unique_id"]),
+                    cur=d["cur"]))
                 for k, v in setProp.items():
                     if k not in d["props"]:
                         d["props"][k] = d[v]
@@ -210,7 +211,7 @@ class ZooGraph(Graph, ZooObject):
         self._graphprops["number_of_loops"] = d["data"].number_of_loops()
         self._graphprops["has_multiple_edges"] = d["data"].has_multiple_edges()
 
-    def _compute_props(self, cl, d, setProp = {}):
+    def _compute_props(self, cl, d, setProp={}):
         r"""
         Compute the properties required by the class specification.
 
@@ -243,11 +244,11 @@ class ZooGraph(Graph, ZooObject):
         ZooObject.__init__(self, **d)
         if d["data"] is None:
             try:
-                d["data"] = self._db_read(cl, kargs = d)["data"]
+                d["data"] = self._db_read(cl, kargs=d)["data"]
             except KeyError as ex:
                 if not d["store"]:
                     raise ex
-        propname = lookup(self._graphprops, "name", default = None)
+        propname = lookup(self._graphprops, "name", default=None)
         if d["name"]:
             self._graphprops["name"] = d["name"]
         elif propname:
@@ -256,7 +257,7 @@ class ZooGraph(Graph, ZooObject):
             del self._graphprops["name"]
         if d["vertex_labels"] is not None:
             d["data"] = Graph(d["data"]).relabel(d["vertex_labels"],
-                                                 inplace = False)
+                                                 inplace=False)
         if d["loops"] is None:
             d["loops"] = self._graphprops["number_of_loops"] > 0
         elif not d["loops"] and self._graphprops["number_of_loops"] > 0:
@@ -280,8 +281,8 @@ class ZooGraph(Graph, ZooObject):
         for algo in AVAILABLE_ALGORITHMS:
             if algo not in uid:
                 try:
-                    uid.__setitem__(algo, unique_id(self, algorithm = algo),
-                                    store = True, cur = cur)
+                    uid.__setitem__(algo, unique_id(self, algorithm=algo),
+                                    store=True, cur=cur)
                 except NotImplementedError:
                     pass
 
@@ -296,7 +297,7 @@ class ZooGraph(Graph, ZooObject):
             name += "multi-"
         if self._directed:
             name += "di"
-        name += "graph on %d vert"%self.order()
+        name += "graph on %d vert" % self.order()
         if self.order() == 1:
             name += "ex"
         else:
@@ -333,47 +334,47 @@ class ZooGraph(Graph, ZooObject):
         return ZooObject.__getattribute__(self, "_getattr")(name, Graph)
 
     @override.documented
-    def copy(self, weighted = None, data_structure = None, sparse = None,
-             immutable = None):
+    def copy(self, weighted=None, data_structure=None, sparse=None,
+             immutable=None):
         r"""
         This method has been overridden by DiscreteZOO to ensure that a mutable
         copy will have type ``Graph``.
         """
         if immutable is False or (data_structure is not None
                                   and data_structure is not 'static_sparse'):
-            return Graph(self).copy(weighted = weighted,
-                                    data_structure = data_structure,
-                                    sparse = sparse,
-                                    immutable = immutable)
+            return Graph(self).copy(weighted=weighted,
+                                    data_structure=data_structure,
+                                    sparse=sparse,
+                                    immutable=immutable)
         else:
-            return Graph.copy(self, weighted = weighted,
-                                    data_structure = data_structure,
-                                    sparse = sparse,
-                                    immutable = immutable)
+            return Graph.copy(self, weighted=weighted,
+                              data_structure=data_structure,
+                              sparse=sparse,
+                              immutable=immutable)
 
     @override.documented
-    def relabel(self, perm = None, inplace = True, return_map = False,
-                check_input = True, complete_partial_function = True,
-                immutable = True):
+    def relabel(self, perm=None, inplace=True, return_map=False,
+                check_input=True, complete_partial_function=True,
+                immutable=True):
         r"""
         This method has been overridden by DiscreteZOO to ensure that a mutable
         copy will have type ``Graph``.
         """
         if inplace:
             raise ValueError("To relabel an immutable graph use inplace=False")
-        G = Graph(self, immutable = False)
-        perm = G.relabel(perm, return_map = True, check_input = check_input,
-                         complete_partial_function = complete_partial_function)
+        G = Graph(self, immutable=False)
+        perm = G.relabel(perm, return_map=True, check_input=check_input,
+                         complete_partial_function=complete_partial_function)
         if immutable is not False:
-            G = self.__class__(self, vertex_labels = perm)
+            G = self.__class__(self, vertex_labels=perm)
         if return_map:
             return G, perm
         else:
             return G
 
     @override.documented
-    def _subgraph_by_adding(self, vertices = None, edges = None,
-                            edge_property = None, immutable = None, *largs,
+    def _subgraph_by_adding(self, vertices=None, edges=None,
+                            edge_property=None, immutable=None, *largs,
                             **kargs):
         r"""
         This method has been overridden by DiscreteZOO to ensure that the
@@ -381,10 +382,10 @@ class ZooGraph(Graph, ZooObject):
         """
         if immutable is None:
             immutable = True
-        return Graph(self)._subgraph_by_adding(vertices = vertices,
-                                               edges = edges,
-                                               edge_property = edge_property,
-                                               immutable = immutable,
+        return Graph(self)._subgraph_by_adding(vertices=vertices,
+                                               edges=edges,
+                                               edge_property=edge_property,
+                                               immutable=immutable,
                                                *largs, **kargs)
 
     def data(self, **kargs):
@@ -402,9 +403,9 @@ class ZooGraph(Graph, ZooObject):
         - other named parameters accepted by the ``data`` function.
         """
         try:
-            lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                   destroy = True)
-            lookup(kargs, "cur", default = None, destroy = True)
+            lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                   destroy=True)
+            lookup(kargs, "cur", default=None, destroy=True)
             if len(kargs) > 0:
                 raise NotImplementedError
             return lookup(self._graphprops, "data")
@@ -413,23 +414,23 @@ class ZooGraph(Graph, ZooObject):
 
     @override.documented
     def average_degree(self, *largs, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         default = len(largs) + len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
             lookup(self._graphprops, "average_degree")
-            return 2*self.size(store = store,
-                               cur = cur)/self.order(store = store, cur = cur)
+            return 2*self.size(store=store,
+                               cur=cur)/self.order(store=store, cur=cur)
         except (KeyError, NotImplementedError):
             a = Graph.average_degree(self, *largs, **kargs)
             if default:
                 if store:
                     self._update_rows(ZooGraph, {"average_degree": a},
                                       {self._spec["primary_key"]: self._zooid},
-                                      cur = cur)
+                                      cur=cur)
                 update(self._graphprops, "average_degree", a)
             return a
 
@@ -439,35 +440,35 @@ class ZooGraph(Graph, ZooObject):
         Return the minimal number of colors needed to color the edges of the
         graph.
         """
-        return edge_coloring(self, value_only = True)
+        return edge_coloring(self, value_only=True)
 
     @override.derived
     def density(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        o = self.order(store = store, cur = cur)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        o = self.order(store=store, cur=cur)
         if o <= 1:
             return Integer(0)
-        return 2*self.size(store = store, cur = cur)/(o*(o-1))
+        return 2*self.size(store=store, cur=cur)/(o*(o-1))
 
     @override.determined((Column("connected_components_number") != Integer(1),
                           PlusInfinity()))
     def diameter(self, value, attrs, **kargs):
         return (value != PlusInfinity(), attrs)
 
-    @override.determined(is_planar = Integer(0))
+    @override.determined(is_planar=Integer(0))
     def genus(self, value, attrs, **kargs):
         return (True, attrs)
 
-    @override.determined(is_forest = PlusInfinity())
+    @override.determined(is_forest=PlusInfinity())
     def girth(self, value, attrs, **kargs):
         return (value != PlusInfinity(), attrs)
 
     @override.documented
-    def hamiltonian_cycle(self, algorithm = "tsp", *largs, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+    def hamiltonian_cycle(self, algorithm="tsp", *largs, **kargs):
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         default = len(largs) + len(kargs) == 0 and \
             algorithm in ["tsp", "backtrack"]
         if default:
@@ -487,7 +488,7 @@ class ZooGraph(Graph, ZooObject):
                 if store:
                     self._update_rows(ZooGraph, {"is_hamiltonian": h},
                                       {self._spec["primary_key"]: self._zooid},
-                                      cur = cur)
+                                      cur=cur)
                 update(self._graphprops, "is_hamiltonian", h)
             if isinstance(out, BaseException):
                 raise out
@@ -498,37 +499,36 @@ class ZooGraph(Graph, ZooObject):
 
     @override.derived
     def has_loops(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        return self.number_of_loops(store = store, cur = cur) > 0
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        return self.number_of_loops(store=store, cur=cur) > 0
 
     @override.derived
     def is_connected(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        return self.connected_components_number(store = store, cur = cur) <= 1
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        return self.connected_components_number(store=store, cur=cur) <= 1
 
     @override.derived
     def is_half_transitive(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        return (self.is_edge_transitive(store = store, cur = cur) and
-            self.is_vertex_transitive(store = store, cur = cur) and
-            not self.is_arc_transitive(store = store, cur = cur))
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        return self.is_edge_transitive(store=store, cur=cur) and \
+            self.is_vertex_transitive(store=store, cur=cur) and \
+            not self.is_arc_transitive(store=store, cur=cur)
 
     @override.documented
-    def is_regular(self, k = None, *largs, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+    def is_regular(self, k=None, *largs, **kargs):
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         default = len(largs) + len(kargs) == 0
         try:
             if not default:
                 raise NotImplementedError
             r = lookup(self._graphprops, "is_regular")
             return r and (True if k is None
-                          else k == self.average_degree(store = store,
-                                                        cur = cur))
+                          else k == self.average_degree(store=store, cur=cur))
         except (KeyError, NotImplementedError):
             r = Graph.is_regular(self, k, *largs, **kargs)
             if default:
@@ -538,7 +538,7 @@ class ZooGraph(Graph, ZooObject):
                         row["average_degree"] = k
                     self._update_rows(ZooGraph, row,
                                       {self._spec["primary_key"]: self._zooid},
-                                      cur = cur)
+                                      cur=cur)
                 update(self._graphprops, "is_regular", r)
                 if r and k is not None:
                     update(self._graphprops, "average_degree", k)
@@ -546,36 +546,36 @@ class ZooGraph(Graph, ZooObject):
 
     @override.derived
     def is_semi_symmetric(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        if not self.is_bipartite(store = store, cur = cur):
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        if not self.is_bipartite(store=store, cur=cur):
             return False
-        return (self.is_regular(store = store, cur = cur) and
-                self.is_edge_transitive(store = store, cur = cur) and
-                not self.is_vertex_transitive(store = store, cur = cur))
+        return (self.is_regular(store=store, cur=cur) and
+                self.is_edge_transitive(store=store, cur=cur) and
+                not self.is_vertex_transitive(store=store, cur=cur))
 
     @override.derived
     def is_triangle_free(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        return self.triangles_count(store = store, cur = cur) == 0
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        return self.triangles_count(store=store, cur=cur) == 0
 
     @override.derived
     def is_weakly_chordal(self, **kargs):
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
-        return self.is_long_hole_free(store = store, cur = cur) \
-            and self.is_long_antihole_free(store = store, cur = cur)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
+        return self.is_long_hole_free(store=store, cur=cur) \
+            and self.is_long_antihole_free(store=store, cur=cur)
 
     @override.documented
-    def name(self, new = None, *largs, **kargs):
+    def name(self, new=None, *largs, **kargs):
         store = lookup(kargs, "store",
-                       default = self._initialized and discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+                       default=self._initialized and discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         default = len(largs) + len(kargs) == 0
         if default:
-            old = lookup(self._graphprops, "name", default = "")
+            old = lookup(self._graphprops, "name", default="")
             if new is None:
                 return old
             elif new != old:
@@ -584,24 +584,26 @@ class ZooGraph(Graph, ZooObject):
                 if store:
                     self._update_rows(ZooGraph, {"name": new},
                                       {self._spec["primary_key"]: self._zooid},
-                                      cur = cur)
+                                      cur=cur)
                 update(self._graphprops, "name", new)
                 if new is not None:
-                    self.alias().add(new, store = store, cur = cur)
+                    self.alias().add(new, store=store, cur=cur)
         else:
             return Graph.name(self, new, *largs, **kargs)
 
-    @override.determined(is_bipartite = PlusInfinity(),
-                         is_forest = PlusInfinity())
+    @override.determined(is_bipartite=PlusInfinity(),
+                         is_forest=PlusInfinity())
     def odd_girth(self, value, attrs, **kargs):
         inf = value == PlusInfinity()
         if inf:
             del attrs["is_forest"]
         return (not inf, attrs)
 
+
 AVAILABLE_ALGORITHMS = ["sage"]
 if is_package_installed("bliss"):
     AVAILABLE_ALGORITHMS.insert(0, "bliss")
+
 
 def canonical_label(graph, **kargs):
     r"""
@@ -615,11 +617,12 @@ def canonical_label(graph, **kargs):
       The default value ``None`` means that ``'bliss'`` will be used if
       available, and ``'sage'`` otherwise.
     """
-    algorithm = lookup(kargs, "algorithm", default = None)
+    algorithm = lookup(kargs, "algorithm", default=None)
     if isinstance(graph, ZooGraph):
         graph = Graph(graph)
-    return graph.canonical_label(partition = None, edge_labels = False,
-                                 algorithm = algorithm)
+    return graph.canonical_label(partition=None, edge_labels=False,
+                                 algorithm=algorithm)
+
 
 def data(graph, **kargs):
     r"""
@@ -636,8 +639,9 @@ def data(graph, **kargs):
       available, and ``'sage'`` otherwise.
     """
     # TODO: determine the most appropriate way of representing the graph
-    algorithm = lookup(kargs, "algorithm", default = None)
-    return canonical_label(graph, algorithm = algorithm).sparse6_string()
+    algorithm = lookup(kargs, "algorithm", default=None)
+    return canonical_label(graph, algorithm=algorithm).sparse6_string()
+
 
 def unique_id(graph, **kargs):
     r"""
@@ -661,17 +665,17 @@ def unique_id(graph, **kargs):
     - ``cur`` - the cursor to use for database interaction
       (must be a named parameter; default: ``None``).
     """
-    algorithm = lookup(kargs, "algorithm", default = None)
-    store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-    cur = lookup(kargs, "cur", default = None)
-    uid = sha256(data(graph, algorithm = algorithm)).hexdigest()
+    algorithm = lookup(kargs, "algorithm", default=None)
+    store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+    cur = lookup(kargs, "cur", default=None)
+    uid = sha256(data(graph, algorithm=algorithm)).hexdigest()
     if isinstance(graph, ZooGraph):
-        graph.unique_id().__setitem__(algorithm, uid, store = store,
-                                      cur = cur)
+        graph.unique_id().__setitem__(algorithm, uid, store=store, cur=cur)
     return uid
 
-def import_graphs(file, cl = ZooGraph, db = None, format = "sparse6",
-                  index = "index", verbose = False):
+
+def import_graphs(file, cl=ZooGraph, db=None, format="sparse6",
+                  index="index", verbose=False):
     r"""
     Import graphs from ``file`` into the database.
 
@@ -706,7 +710,7 @@ def import_graphs(file, cl = ZooGraph, db = None, format = "sparse6",
     info = ZooInfo(cl)
     if db is None:
         db = info.getdb()
-    info.initdb(db = db, commit = False)
+    info.initdb(db=db, commit=False)
     previous = 0
     i = 0
     cur = db.cursor()
@@ -723,11 +727,12 @@ def import_graphs(file, cl = ZooGraph, db = None, format = "sparse6",
                 previous = n
                 i = 0
             i += 1
-            cl(graph = g, order = n, cur = cur, db = db, **{index: i})
+            cl(graph=g, order=n, cur=cur, db=db, **{index: i})
         if verbose:
             print "Imported %d graphs of order %d" % (i, n)
         f.close()
     cur.close()
     db.commit()
+
 
 info = ZooInfo(ZooGraph)

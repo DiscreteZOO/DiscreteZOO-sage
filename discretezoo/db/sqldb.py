@@ -17,12 +17,13 @@ from ..util.utility import int_or_real
 from ..entities.zooentity import ZooEntity
 from ..entities.zooproperty import ZooProperty
 
+
 class SQLDB(DB):
     r"""
     A generic class for SQL databases.
     """
     db = None
-    
+
     data_string = None
     ident_quote = None
     exceptions = ()
@@ -140,7 +141,7 @@ class SQLDB(DB):
         - ``table`` - the ``Table`` to get the alias for.
         """
         return table.tables[0]['alias'] if isinstance(table, query.Table) \
-               else table
+            else table
 
     def binaryOp(self, op, left, right):
         r"""
@@ -200,7 +201,7 @@ class SQLDB(DB):
         else:
             return self.types[t] + cons
 
-    def makeTable(self, t, alias = True):
+    def makeTable(self, t, alias=True):
         r"""
         Format a table specification.
 
@@ -216,17 +217,17 @@ class SQLDB(DB):
         """
         if isinstance(t, query.Table):
             if not alias and len(t.tables) == 1:
-                return self.makeTable(t.tables[0]['table'], alias = False)
+                return self.makeTable(t.tables[0]['table'], alias=False)
             tdata = [self.makeTable(x['table']) if x['alias'] is None
-                     else self.makeTable(x['table'], alias = False)
+                     else self.makeTable(x['table'], alias=False)
                      for x in t.tables]
             tables = ['%s' % tdata[i][0] if x['alias'] is None
                       else '%s AS %s' % (tdata[i][0],
                                          self.quoteIdent(x['alias']))
-                        for i, x in enumerate(t.tables)]
+                      for i, x in enumerate(t.tables)]
             aliases = [query.Table.name(x) for x in t.tables]
             joins = [' %sJOIN ' % ('LEFT ' if x['left'] else '')
-                        for x in t.tables]
+                     for x in t.tables]
             bydata = [{} if not isinstance(x['by'], tuple) else
                       {k: self.makeExpression(v) for k, v in x['by']}
                       for x in t.tables]
@@ -234,16 +235,15 @@ class SQLDB(DB):
             using = ['' if x['by'] is None or len(x['by']) == 0 else
                      ((' USING (%s)' % ', '.join([self.quoteIdent(c)
                                                   for c in x['by']]))
-                        if isinstance(x['by'], frozenset)
-                        else ' ON %s' %
-                            ' AND '.join(['%s.%s = %s' %
-                                            (self.quoteIdent(aliases[i]),
-                                             self.quoteIdent(k),
-                                             bydata[i][k][0])
-                                          for k in bykeys[i]]))
+                     if isinstance(x['by'], frozenset)
+                     else ' ON %s' %
+                     ' AND '.join(['%s.%s = %s' %
+                                   (self.quoteIdent(aliases[i]),
+                                    self.quoteIdent(k), bydata[i][k][0])
+                                   for k in bykeys[i]]))
                      for i, x in enumerate(t.tables)]
             out = tables[0] + ''.join([joins[i] + tables[i] + using[i]
-                                         for i in range(1, len(t.tables))])
+                                       for i in range(1, len(t.tables))])
             data = sum([tdata[i][1] + sum([bydata[i][k][1] for k in keys], [])
                         for i, keys in enumerate(bykeys)], [])
             if len(tables) > 1:
@@ -252,7 +252,7 @@ class SQLDB(DB):
         else:
             return self.quoteIdent(t), []
 
-    def makeExpression(self, exp, alias = False):
+    def makeExpression(self, exp, alias=False):
         r"""
         Format an SQL expression.
 
@@ -318,10 +318,10 @@ class SQLDB(DB):
                 sql = 'COUNT(%s)' % sql
             return (sql, data)
         elif isinstance(exp, query.Subquery):
-            return self.query(exp.columns, exp.table, cond = exp.cond,
-                              groupby = exp.groupby, orderby = exp.orderby,
-                              limit = exp.limit, offset = exp.offset,
-                              subquery = True)
+            return self.query(exp.columns, exp.table, cond=exp.cond,
+                              groupby=exp.groupby, orderby=exp.orderby,
+                              limit=exp.limit, offset=exp.offset,
+                              subquery=True)
         else:
             raise NotImplementedError
 
@@ -380,7 +380,7 @@ class SQLDB(DB):
         """
         raise NotImplementedError
 
-    def init_table(self, spec, commit = False):
+    def init_table(self, spec, commit=False):
         r"""
         Create a table if it does not exist.
 
@@ -400,7 +400,7 @@ class SQLDB(DB):
                 idxs = sorted(idxs)
             idxs = sum(idxs, [])
             ext = {k: v for k, v in spec['fields'].items()
-                    if issubclass(v, ZooProperty)}
+                   if issubclass(v, ZooProperty)}
             cols = pkey[:]
             cols += [idxs[i] for i in range(len(idxs))
                      if idxs[i] not in (cols + idxs[:i])]
@@ -411,8 +411,8 @@ class SQLDB(DB):
             colspec = ['%s %s' % (self.quoteIdent(k),
                                   self.makeType(spec['fields'][k],
                                                 spec['fieldparams'][k]
-                                                    if k in spec['fieldparams']
-                                                    else set()))
+                                                if k in spec['fieldparams']
+                                                else set()))
                        for k in cols]
             if len(pkey) == 1 and pkey[0] in spec['fieldparams'] and \
                     "autoincrement" in spec['fieldparams'][pkey[0]]:
@@ -421,13 +421,12 @@ class SQLDB(DB):
                 colspec += ["PRIMARY KEY (%s)" % ', '.join(pkey)]
             cur = self.cursor()
             cur.execute('CREATE TABLE IF NOT EXISTS %s (%s)' %
-                                                (self.quoteIdent(spec['name']),
-                                                 ', '.join(colspec)))
+                        (self.quoteIdent(spec['name']), ', '.join(colspec)))
             for idx in spec['indices']:
                 self.createIndex(cur, spec['name'], idx)
             cur.close()
             for c in ext.values():
-                self.init_table(c._spec, commit = False)
+                self.init_table(c._spec, commit=False)
             if commit:
                 self.db.commit()
         except self.exceptions as ex:
@@ -445,7 +444,7 @@ class SQLDB(DB):
         """
         return ''
 
-    def limit(self, limit = None, offset = None):
+    def limit(self, limit=None, offset=None):
         r"""
         Format a LIMIT clause.
 
@@ -464,7 +463,7 @@ class SQLDB(DB):
                 out += ' OFFSET %d' % offset
         return out
 
-    def insert_row(self, table, row, cur = None, commit = None, id = None):
+    def insert_row(self, table, row, cur=None, commit=None, id=None):
         r"""
         Insert a row into the database.
 
@@ -529,7 +528,7 @@ class SQLDB(DB):
         """
         return cur.lastrowid
 
-    def update_rows(self, table, row, cond = False, cur = None, commit = None):
+    def update_rows(self, table, row, cond=False, cur=None, commit=None):
         r"""
         Update rows matching specified criteria.
 
@@ -554,7 +553,8 @@ class SQLDB(DB):
           ``None`` (default), commit only if ``cur`` is ``False``.
         """
         if cond is False:
-            raise UserWarning("false condition given; to change all rows specify cond = None")
+            raise UserWarning("false condition given; "
+                              "to change all rows specify cond=None")
         if cur is False:
             cur = None
             ret = False
@@ -588,7 +588,7 @@ class SQLDB(DB):
         except self.exceptions as ex:
             self.handle_exception(ex)
 
-    def delete_rows(self, table, cond = False, cur = None, commit = None):
+    def delete_rows(self, table, cond=False, cur=None, commit=None):
         r"""
         Delete rows matching specified criteria.
 
@@ -611,7 +611,8 @@ class SQLDB(DB):
           ``None`` (default), commit only if ``cur`` is ``False``.
         """
         if cond is False:
-            raise UserWarning("false condition given; to delete all rows specify cond = None")
+            raise UserWarning("false condition given; "
+                              "to delete all rows specify cond=None")
         if cur is False:
             cur = None
             ret = False
@@ -639,9 +640,9 @@ class SQLDB(DB):
         except self.exceptions as ex:
             self.handle_exception(ex)
 
-    def query(self, columns, table, cond = None, groupby = None,
-              orderby = None, limit = None, offset = None, distinct = False,
-              cur = None, subquery = False):
+    def query(self, columns, table, cond=None, groupby=None, orderby=None,
+              limit=None, offset=None, distinct=False, cur=None,
+              subquery=False):
         r"""
         Perform a query.
 
@@ -684,7 +685,7 @@ class SQLDB(DB):
         """
         try:
             dist = 'DISTINCT ' if distinct else ''
-            cols = [self.makeExpression(col, alias = True) for col in columns]
+            cols = [self.makeExpression(col, alias=True) for col in columns]
             c = ', '.join([x[0] for x in cols])
             data = sum([x[1] for x in cols], [])
             t, d = self.makeTable(table)
@@ -711,10 +712,10 @@ class SQLDB(DB):
                 if len(orderby) > 0:
                     orderby = [query.Order(x) for x in orderby]
                     orderby = [(self.makeExpression(v.exp), v.order)
-                                for v in orderby]
+                               for v in orderby]
                     o = ' ORDER BY %s' % \
-                            ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
-                                        for (k, _), v in orderby)
+                        ', '.join('%s %s' % (k, 'ASC' if v else 'DESC')
+                                  for (k, _), v in orderby)
                     data += sum([x[0][1] for x in orderby], [])
             l = self.limit(limit, offset)
             sql = 'SELECT %s%s FROM %s%s%s%s%s' % (dist, c, t, w, g, o, l)

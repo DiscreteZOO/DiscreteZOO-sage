@@ -13,6 +13,7 @@ from .utility import update
 from ..db.query import Expression
 from ..entities.zooobject import ZooObject
 
+
 def parse(obj, exp):
     r"""
     Evaluate an expression with values from ``obj``.
@@ -30,6 +31,7 @@ def parse(obj, exp):
     else:
         raise TypeError
 
+
 class ZooDecorator(object):
     r"""
     A class providing decorators for overriding methods of a given class.
@@ -46,7 +48,7 @@ class ZooDecorator(object):
         """
         this.cl = cl
 
-    def documented(this, fun, attr = None):
+    def documented(this, fun, attr=None):
         r"""
         Embed the overridden function's documentation.
 
@@ -100,7 +102,7 @@ class ZooDecorator(object):
         fun.__doc__ = "\n".join(doc)
         return fun
 
-    def computed(this, acceptArgs = None):
+    def computed(this, acceptArgs=None):
         r"""
         Wrap the computing function with database interaction.
 
@@ -122,9 +124,9 @@ class ZooDecorator(object):
         """
         def _computed(fun):
             def decorated(self, *largs, **kargs):
-                store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                               destroy = True)
-                cur = lookup(kargs, "cur", default = None, destroy = True)
+                store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                               destroy=True)
+                cur = lookup(kargs, "cur", default=None, destroy=True)
                 default = len(largs) + len(kargs) == 0
                 cl = self._getclass(fun.func_name)
                 d = self._getprops(cl)
@@ -132,13 +134,13 @@ class ZooDecorator(object):
                     if not default:
                         raise NotImplementedError
                     a = lookup(d, fun.func_name)
-                    if issubclass(cl._spec["fields"][fun.func_name], ZooObject) \
-                            and isinteger(a):
-                        a = cl._spec["fields"][fun.func_name](zooid = a)
+                    if issubclass(cl._spec["fields"][fun.func_name],
+                                  ZooObject) and isinteger(a):
+                        a = cl._spec["fields"][fun.func_name](zooid=a)
                         update(d, fun.func_name, a)
                     return a
                 except (KeyError, NotImplementedError):
-                    a = fun(self, store = store, cur = cur, *largs, **kargs)
+                    a = fun(self, store=store, cur=cur, *largs, **kargs)
                     if acceptArgs is None:
                         out = a
                     else:
@@ -146,7 +148,7 @@ class ZooDecorator(object):
                         args = getargspec(fun).args
                         default = all(arg in acceptArgs
                                       for arg in args[1:len(largs)+1]) and \
-                                  all(arg in acceptArgs for arg in kargs)
+                            all(arg in acceptArgs for arg in kargs)
                     if default:
                         if store:
                             if isinstance(a, ZooObject):
@@ -154,8 +156,8 @@ class ZooDecorator(object):
                             else:
                                 v = a
                             self._update_rows(cl, {fun.func_name: v},
-                                        {self._spec["primary_key"]: self._zooid},
-                                        cur = cur)
+                                              {self._spec["primary_key"]:
+                                               self._zooid}, cur=cur)
                         update(d, fun.func_name, a)
                     return out
             decorated.func_name = fun.func_name
@@ -176,11 +178,11 @@ class ZooDecorator(object):
           parameter).
         """
         def decorated(self, *largs, **kargs):
-            store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                           destroy = True)
-            cur = lookup(kargs, "cur", default = None, destroy = True)
+            store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                           destroy=True)
+            cur = lookup(kargs, "cur", default=None, destroy=True)
             if len(largs) + len(kargs) == 0:
-                return fun(self, store = store, cur = cur)
+                return fun(self, store=store, cur=cur)
             else:
                 return type.__getattribute__(this.cl,
                                              fun.func_name)(self,
@@ -223,12 +225,13 @@ class ZooDecorator(object):
           value.
         """
         attrs.update(lattrs)
+
         def _determined(fun):
             def decorated(self, *largs, **kargs):
                 store = lookup(kargs, "store",
-                               default = discretezoo.WRITE_TO_DB,
-                               destroy = True)
-                cur = lookup(kargs, "cur", default = None, destroy = True)
+                               default=discretezoo.WRITE_TO_DB,
+                               destroy=True)
+                cur = lookup(kargs, "cur", default=None, destroy=True)
                 default = len(largs) + len(kargs) == 0
                 d = self._getprops(fun.func_name)
                 try:
@@ -246,8 +249,8 @@ class ZooDecorator(object):
                                               fun.func_name)(self,
                                                              *largs, **kargs)
                     if default:
-                        upd, ats = fun(self, a, dict(attrs), store = store,
-                                       cur = cur)
+                        upd, ats = fun(self, a, dict(attrs), store=store,
+                                       cur=cur)
                         if store:
                             t = {}
                             if upd:
@@ -262,8 +265,8 @@ class ZooDecorator(object):
                                 t[cl][k] = a == v
                             for cl, at in t.items():
                                 self._update_rows(cl, at,
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
+                                                  {self._spec["primary_key"]:
+                                                   self._zooid}, cur=cur)
                         if upd:
                             update(d, fun.func_name, a)
                         for k, v in ats.items():

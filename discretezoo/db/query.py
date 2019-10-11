@@ -6,6 +6,7 @@ This module implements objects used to build query expressions.
 
 import re
 
+
 class QueryObject(object):
     r"""
     A superclass for all query objects.
@@ -13,12 +14,14 @@ class QueryObject(object):
     def __repr__(self):
         return "<%s (%s) at 0x%08x>" % (self.__class__, str(self), id(self))
 
+
 class All(QueryObject):
     r"""
     The choice of all columns in a query.
     """
     def __str__(self):
         return "All columns"
+
 
 class Table(QueryObject):
     r"""
@@ -52,7 +55,7 @@ class Table(QueryObject):
                             "left": False,
                             "by": None} for a, t in kargs.items()]
 
-    def join(self, table, by = None, left = False, alias = None, **kargs):
+    def join(self, table, by=None, left=False, alias=None, **kargs):
         r"""
         Join a table to the object.
 
@@ -99,7 +102,7 @@ class Table(QueryObject):
                         else [t["table"]] for t in self.tables], []))
 
     @staticmethod
-    def alias(table = None):
+    def alias(table=None):
         r"""
         Return a unique alias for the specified table.
 
@@ -149,17 +152,21 @@ class Table(QueryObject):
     def __str__(self):
         if len(self.tables) == 0:
             return 'Empty join'
-        aliases = [('(%s)' % t["table"]) if t["table"] == t["alias"]
-                                            or t["alias"] is None
-                    else ('(%s)->"%s"' % (t["table"], t["alias"]))
-                    for t in self.tables]
-        return "Table %s%s" % (aliases[0], ''.join([' %sjoin %s by (%s)' %
-                ("left " if t["left"] else "", aliases[i],
-                 ', '.join([('%s = %s' % (("%s.%s" % x[0])
-                                          if isinstance(x[0], tuple) else x[0],
-                                         x[1])) if isinstance(x, tuple) else x
-                            for x in t["by"]]))
-                for i, t in enumerate(self.tables) if i > 0]))
+        aliases = [('(%s)' % t["table"])
+                   if t["table"] == t["alias"] or t["alias"] is None
+                   else ('(%s)->"%s"' % (t["table"], t["alias"]))
+                   for t in self.tables]
+        return "Table %s%s" % \
+            (aliases[0],
+             ''.join([' %sjoin %s by (%s)' %
+                      ("left " if t["left"] else "", aliases[i],
+                       ', '.join([('%s = %s' %
+                                   (("%s.%s" % x[0])
+                                    if isinstance(x[0], tuple) else x[0],
+                                    x[1])) if isinstance(x, tuple) else x
+                                  for x in t["by"]]))
+                      for i, t in enumerate(self.tables) if i > 0]))
+
 
 class Expression(QueryObject):
     r"""
@@ -302,6 +309,7 @@ class Expression(QueryObject):
     __truediv__ = __div__
     __rtruediv__ = __rdiv__
 
+
 class Value(Expression):
     r"""
     Value object.
@@ -345,6 +353,7 @@ class Value(Expression):
         else:
             return str(self.value)
 
+
 class Column(Expression):
     r"""
     Database column object.
@@ -356,8 +365,7 @@ class Column(Expression):
     by = None
     cond = None
 
-    def __init__(self, column, table = None, alias = None, join = None,
-                 by = None):
+    def __init__(self, column, table=None, alias=None, join=None, by=None):
         r"""
         Object constructor.
 
@@ -410,7 +418,7 @@ class Column(Expression):
         elif self.join is None:
             return self.table
         else:
-            return Table(self.join).join(self.table, by = self.by)
+            return Table(self.join).join(self.table, by=self.by)
 
     def eval(self, parse):
         r"""
@@ -434,6 +442,7 @@ class Column(Expression):
             column = '%s joining %s by %s' % (column, self.join, self.by)
         return column
 
+
 class ColumnSet(Column):
     r"""
     Column set object.
@@ -444,8 +453,8 @@ class ColumnSet(Column):
     table = None
     subtables = None
 
-    def __init__(self, cl, column = None, alias = None, join = None,
-                 by = None, foreign = None, ordering = None, newcond = None):
+    def __init__(self, cl, column=None, alias=None, join=None,
+                 by=None, foreign=None, ordering=None, newcond=None):
         r"""
         Object constructor.
 
@@ -494,11 +503,11 @@ class ColumnSet(Column):
             if self.by is None:
                 self.by = []
             elif isinstance(by, frozenset):
-                self.by = [(k, Column(k, table = self.join)) for k in self.by]
+                self.by = [(k, Column(k, table=self.join)) for k in self.by]
             self.by = tuple(self.by + newcond)
         if column is not None:
-            Column.__init__(self, column = column, table = self.table,
-                            alias = alias, join = self.join, by = self.by)
+            Column.__init__(self, column=column, table=self.table,
+                            alias=alias, join=self.join, by=self.by)
 
     def __str__(self):
         cset = "Columns of %s" % self.cl
@@ -517,11 +526,11 @@ class ColumnSet(Column):
             if name in cl._spec["fields"]:
                 v = cl._spec["fields"][name]
                 try:
-                    col = v._get_column(v, name, table = self.table,
-                                        join = self.join, by = self.by)
+                    col = v._get_column(v, name, table=self.table,
+                                        join=self.join, by=self.by)
                 except AttributeError:
-                    col = Column(name, table = self.table, join = self.join,
-                                 by = self.by)
+                    col = Column(name, table=self.table, join=self.join,
+                                 by=self.by)
                 self.__setattr__(name, col)
                 return col
             cl = cl._parent
@@ -530,8 +539,8 @@ class ColumnSet(Column):
     def __getitem__(self, k):
         tk = tuple(enlist(k))
         if tk not in self.subtables:
-            st = ColumnSet(self, newcond = tuple((c, Value(tk[i])) for i, c
-                                                 in enumerate(self.ordering)))
+            st = ColumnSet(self, newcond=tuple((c, Value(tk[i])) for i, c
+                                               in enumerate(self.ordering)))
             try:
                 self.subtables[tk] = st
             except TypeError:
@@ -539,6 +548,7 @@ class ColumnSet(Column):
         else:
             st = self.subtables[tk]
         return st
+
 
 class BinaryOp(Expression):
     r"""
@@ -572,6 +582,7 @@ class BinaryOp(Expression):
     def __str__(self):
         return "(%s) %s (%s)" % (self.left, self.op, self.right)
 
+
 class LessThan(BinaryOp):
     r"""
     'Less than' object.
@@ -587,6 +598,7 @@ class LessThan(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) < parse(self.right)
+
 
 class LessEqual(BinaryOp):
     r"""
@@ -604,6 +616,7 @@ class LessEqual(BinaryOp):
         """
         return parse(self.left) <= parse(self.right)
 
+
 class Equal(BinaryOp):
     r"""
     Equality object.
@@ -619,6 +632,7 @@ class Equal(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) == parse(self.right)
+
 
 class NotEqual(BinaryOp):
     r"""
@@ -636,6 +650,7 @@ class NotEqual(BinaryOp):
         """
         return parse(self.left) != parse(self.right)
 
+
 class GreaterThan(BinaryOp):
     r"""
     'Greater than' object.
@@ -651,6 +666,7 @@ class GreaterThan(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) > parse(self.right)
+
 
 class GreaterEqual(BinaryOp):
     r"""
@@ -668,6 +684,7 @@ class GreaterEqual(BinaryOp):
         """
         return parse(self.left) >= parse(self.right)
 
+
 class Plus(BinaryOp):
     r"""
     Addition object.
@@ -683,6 +700,7 @@ class Plus(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) + parse(self.right)
+
 
 class Minus(BinaryOp):
     r"""
@@ -700,6 +718,7 @@ class Minus(BinaryOp):
         """
         return parse(self.left) - parse(self.right)
 
+
 class Times(BinaryOp):
     r"""
     Multiplication object.
@@ -715,6 +734,7 @@ class Times(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) * parse(self.right)
+
 
 class Divide(BinaryOp):
     r"""
@@ -732,6 +752,7 @@ class Divide(BinaryOp):
         """
         return parse(self.left) / parse(self.right)
 
+
 class FloorDivide(BinaryOp):
     r"""
     Floor division object.
@@ -747,6 +768,7 @@ class FloorDivide(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) // parse(self.right)
+
 
 class Modulo(BinaryOp):
     r"""
@@ -764,6 +786,7 @@ class Modulo(BinaryOp):
         """
         return parse(self.left) % parse(self.right)
 
+
 class Power(BinaryOp):
     r"""
     Power object.
@@ -779,6 +802,7 @@ class Power(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) ** parse(self.right)
+
 
 class LeftShift(BinaryOp):
     r"""
@@ -796,6 +820,7 @@ class LeftShift(BinaryOp):
         """
         return parse(self.left) << parse(self.right)
 
+
 class RightShift(BinaryOp):
     r"""
     Right shift object.
@@ -811,6 +836,7 @@ class RightShift(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) >> parse(self.right)
+
 
 class BitwiseAnd(BinaryOp):
     r"""
@@ -828,6 +854,7 @@ class BitwiseAnd(BinaryOp):
         """
         return parse(self.left) & parse(self.right)
 
+
 class BitwiseOr(BinaryOp):
     r"""
     Bitwise disjunction object.
@@ -843,6 +870,7 @@ class BitwiseOr(BinaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.left) | parse(self.right)
+
 
 class BitwiseXOr(BinaryOp):
     r"""
@@ -860,6 +888,7 @@ class BitwiseXOr(BinaryOp):
         """
         return parse(self.left) ^ parse(self.right)
 
+
 class Concatenate(BinaryOp):
     r"""
     Concatenation object.
@@ -875,6 +904,7 @@ class Concatenate(BinaryOp):
         - ``parse`` - a callback function.
         """
         return str(parse(self.left)) + str(parse(self.right))
+
 
 class In(BinaryOp):
     r"""
@@ -896,10 +926,10 @@ class In(BinaryOp):
         if isinstance(self.right, Column) and self.right.join is not None:
             self.right = Subquery([self.right.column],
                                   Table(self.right.table),
-                                  cond = Column(self.right.by,
-                                                self.right.join) ==
-                                         Column(self.right.by,
-                                                self.right.table))
+                                  cond=(Column(self.right.by,
+                                               self.right.join) ==
+                                        Column(self.right.by,
+                                               self.right.table)))
 
     def eval(self, parse):
         r"""
@@ -911,6 +941,7 @@ class In(BinaryOp):
         """
         return parse(self.left) in parse(self.right)
 
+
 class Like(BinaryOp):
     r"""
     String matching object.
@@ -918,7 +949,7 @@ class Like(BinaryOp):
     op = "like"
     case = None
 
-    def __init__(self, left, right, case = False):
+    def __init__(self, left, right, case=False):
         r"""
         Object constructor.
 
@@ -947,9 +978,10 @@ class Like(BinaryOp):
 
         - ``parse`` - a callback function.
         """
-        return re.match(re.escape(parse(self.left)).replace("_", ".") \
+        return re.match(re.escape(parse(self.left)).replace("_", ".")
                                                    .replace("%", ".*"),
                         parse(self.right))
+
 
 class UnaryOp(Expression):
     exp = None
@@ -976,6 +1008,7 @@ class UnaryOp(Expression):
     def __str__(self):
         return "%s (%s)" % (self.op, self.exp)
 
+
 class Not(UnaryOp):
     r"""
     Logical negation object.
@@ -992,6 +1025,7 @@ class Not(UnaryOp):
         """
         return not parse(self.exp)
 
+
 class Negate(UnaryOp):
     r"""
     Arithmetic negation object.
@@ -1007,6 +1041,7 @@ class Negate(UnaryOp):
         - ``parse`` - a callback function.
         """
         return -parse(self.exp)
+
 
 class Absolute(UnaryOp):
     r"""
@@ -1025,6 +1060,7 @@ class Absolute(UnaryOp):
         """
         return abs(parse(self.exp))
 
+
 class Invert(UnaryOp):
     r"""
     Bitwise inversion object.
@@ -1040,6 +1076,7 @@ class Invert(UnaryOp):
         - ``parse`` - a callback function.
         """
         return ~parse(self.exp)
+
 
 class IsNull(UnaryOp):
     r"""
@@ -1058,6 +1095,7 @@ class IsNull(UnaryOp):
         """
         return parse(self.exp) is None
 
+
 class IsNotNull(UnaryOp):
     r"""
     'Is not null' object.
@@ -1074,6 +1112,7 @@ class IsNotNull(UnaryOp):
         - ``parse`` - a callback function.
         """
         return parse(self.exp) is not None
+
 
 class LogicalExpression(Expression):
     r"""
@@ -1101,8 +1140,9 @@ class LogicalExpression(Expression):
             lterms = lterms[0]
         if len(kterms) > 0:
             q = kterms.keys()
-            self.__init__(*(list(lterms) + \
-                    [Equal(Column(k), makeExpression(kterms[k])) for k in q]))
+            self.__init__(*(list(lterms) +
+                            [Equal(Column(k), makeExpression(kterms[k]))
+                             for k in q]))
         else:
             self.terms = [makeExpression(e) for e in lterms]
 
@@ -1116,6 +1156,7 @@ class LogicalExpression(Expression):
         See ``Column.getTables`` for the format of set elements.
         """
         return set(sum([list(t.getTables()) for t in self.terms], []))
+
 
 class And(LogicalExpression):
     r"""
@@ -1133,6 +1174,7 @@ class And(LogicalExpression):
         """
         return all(parse(t) for t in terms)
 
+
 class Or(LogicalExpression):
     r"""
     Disjunction object.
@@ -1149,13 +1191,14 @@ class Or(LogicalExpression):
         """
         return any(parse(t) for t in terms)
 
+
 class Count(Expression):
     r"""
     Counting object.
     """
     column = None
 
-    def __init__(self, column = None, distinct = False):
+    def __init__(self, column=None, distinct=False):
         r"""
         Object constructor.
 
@@ -1185,6 +1228,7 @@ class Count(Expression):
         return 'Count%s (%s)' % (" distinct" if self.distinct else "",
                                  self.column)
 
+
 class Random(Expression):
     r"""
     Randomness object.
@@ -1204,6 +1248,7 @@ class Random(Expression):
     def __str__(self):
         return 'Random'
 
+
 class Order(QueryObject):
     r"""
     Generic ordering object.
@@ -1211,7 +1256,7 @@ class Order(QueryObject):
     exp = None
     order = None
 
-    def __init__(self, exp = None):
+    def __init__(self, exp=None):
         r"""
         Object constructor.
 
@@ -1227,8 +1272,9 @@ class Order(QueryObject):
                 self.exp = Column(exp[0])
             else:
                 self.exp = makeExpression(exp[0])
-            self.order = False if isinstance(exp[1], basestring) \
-                                and exp[1].upper() == 'D' else exp[1]
+            self.order = False \
+                if isinstance(exp[1], basestring) and exp[1].upper() == 'D' \
+                else exp[1]
         else:
             if isinstance(exp, basestring):
                 self.exp = Column(exp)
@@ -1239,7 +1285,8 @@ class Order(QueryObject):
 
     def __str__(self):
         return "%s order on %s" % ("Ascending" if self.order else "Descending",
-                                    self.exp)
+                                   self.exp)
+
 
 class Ascending(Order):
     r"""
@@ -1247,11 +1294,13 @@ class Ascending(Order):
     """
     order = True
 
+
 class Descending(Order):
     r"""
     Descending ordering object.
     """
     order = False
+
 
 class Subquery(Expression):
     r"""
@@ -1265,8 +1314,8 @@ class Subquery(Expression):
     limit = None
     offset = None
 
-    def __init__(self, columns, table, cond = None, groupby = None,
-                 orderby = None, limit = None, offset = None):
+    def __init__(self, columns, table, cond=None, groupby=None,
+                 orderby=None, limit=None, offset=None):
         r"""
         Object constructor.
 
@@ -1328,6 +1377,7 @@ class Subquery(Expression):
         return {(table, join, by) for table, join, by in exptables
                 if table not in t}
 
+
 def enlist(l):
     r"""
     Make a list out of ``l``.
@@ -1342,6 +1392,7 @@ def enlist(l):
     elif not isinstance(l, list):
         l = [l]
     return l
+
 
 def makeExpression(val):
     r"""
@@ -1362,7 +1413,8 @@ def makeExpression(val):
     else:
         return Value(val)
 
-def makeFields(cl, module, join = None, by = None, table = None):
+
+def makeFields(cl, module, join=None, by=None, table=None):
     r"""
     Make field objects.
 
@@ -1389,18 +1441,20 @@ def makeFields(cl, module, join = None, by = None, table = None):
         for k in dir(cl._parent._fields):
             if not k.startswith("_"):
                 mtype.__setattr__(module, k,
-                                mtype.__getattribute__(cl._parent._fields, k))
+                                  mtype.__getattribute__(cl._parent._fields,
+                                                         k))
     if table is None:
         table = cl._spec["name"]
     for k, v in cl._spec["fields"].items():
         try:
             if isinstance(v, tuple):
                 v = v[0]
-            col = v._get_column(v, k, table = table, join = join, by = by)
+            col = v._get_column(v, k, table=table, join=join, by=by)
         except AttributeError:
-            col = Column(k, table = table, join = join, by = by)
+            col = Column(k, table=table, join=join, by=by)
         mtype.__setattr__(module, k, col)
     cl._fields = module
+
 
 # Aliases
 A = All()

@@ -19,6 +19,7 @@ import discretezoo
 GITREPO = "https://github.com/DiscreteZOO/DiscreteZOO-sage.git"
 SPECZIP = "https://github.com/DiscreteZOO/Specifications/archive/master.zip"
 
+
 def install():
     r"""
     Install the package.
@@ -37,10 +38,13 @@ def install():
         pkgsdir = os.path.dirname(sage.__path__[0])
         zoodir = os.path.join(pkgsdir, 'discretezoo')
         if os.path.exists(zoodir):
-            print("Warning: the path %s exists but DiscreteZOO has not loaded from it" % zoodir)
+            print("Warning: the path %s exists "
+                  "but DiscreteZOO has not loaded from it" % zoodir)
         elif not os.access(pkgsdir, os.W_OK):
             print("Warning: the path %s is not writable." % pkgsdir)
-            print("To make DiscreteZOO always available from Sage, run the following line as a sufficiently privileged user:\n")
+            print("To make DiscreteZOO always available from Sage, "
+                  "run the following line as a sufficiently privileged user:"
+                  "\n")
             print("ln -s %s %s\n" % (curdir, zoodir))
         else:
             print("Creating symbolic link at %s to %s" % (zoodir, curdir))
@@ -53,26 +57,31 @@ def install():
         git = find_executable('git') is not None
         if not git:
             print("Warning: git is not available on your system.")
-            print("It is recommended that you install it in order to obtain updates and contribute.")
+            print("It is recommended that you install it "
+                  "in order to obtain updates and contribute.")
     else:
         print("Warning: DiscreteZOO is not located in a git repository.")
-        print("For an easily updatable version, clone the official repository by running\n")
+        print("For an easily updatable version, "
+              "clone the official repository by running\n")
         print("git clone %s\n" % GITREPO)
     if git:
         if len(os.listdir(specdir)) == 0:
             print("Initializing the object specifications submodule...")
-            if call(["git", "submodule", "init", "spec"], cwd = gitdir):
-                raise ImportError("Error initializing the specifications submodule")
-            if call(["git", "submodule", "update", "spec"], cwd = gitdir):
-                raise ImportError("Error updating the specifications submodule")
+            if call(["git", "submodule", "init", "spec"], cwd=gitdir):
+                raise ImportError("Error initializing "
+                                  "the specifications submodule")
+            if call(["git", "submodule", "update", "spec"], cwd=gitdir):
+                raise ImportError("Error updating "
+                                  "the specifications submodule")
             print("Object specifications submodule successfully initialized!")
     else:
         if len(os.listdir(specdir)) == 0:
             if not os.access(specdir, os.W_OK):
-                raise ImportError(("The path %s is empty and not writable.\n" +
-                                   "To use DiscreteZOO, download the archive at\n\n" +
-                                   "%s\n\nand extract it into the path above.")
-                                    % (specdir, SPECZIP))
+                raise ImportError("The path %s is empty and not writable.\n"
+                                  "To use DiscreteZOO, "
+                                  "download the archive at\n\n%s\n\n"
+                                  "and extract it into the path above." %
+                                  (specdir, SPECZIP))
             print("Downloading object specifications...")
             f = urlopen(SPECZIP)
             io = StringIO()

@@ -15,6 +15,7 @@ from ..db.query import enlist
 from ..util.utility import lookup
 from ..util.utility import to_json
 
+
 class _ZooSet(dict, ZooProperty):
     r"""
     A generic set class with database interaction.
@@ -25,7 +26,7 @@ class _ZooSet(dict, ZooProperty):
     _objid = None
     _use_tuples = None
 
-    def __init__(self, data, vals = None, **kargs):
+    def __init__(self, data, vals=None, **kargs):
         r"""
         Object constructor.
 
@@ -61,14 +62,14 @@ class _ZooSet(dict, ZooProperty):
             self._objid = data
             if vals is not None and kargs["store"]:
                 for val in vals:
-                    self.add(val, store = True, cur = kargs["cur"])
+                    self.add(val, store=True, cur=kargs["cur"])
                 if kargs["commit"]:
                     self._db.commit()
             else:
                 t = Table(self._spec["name"])
                 cur = self._db.query([t], t, {self._foreign_key: data,
                                               "deleted": False},
-                                     cur = kargs["cur"])
+                                     cur=kargs["cur"])
                 for r in cur:
                     v = tuple([r[k] for k in self._ordering])
                     if not self._use_tuples:
@@ -106,7 +107,7 @@ class _ZooSet(dict, ZooProperty):
         """
         return self._spec["indices"][0][0]
 
-    def _normalize(self, x, id = None):
+    def _normalize(self, x, id=None):
         r"""
         Normalize a value to the standard form.
 
@@ -131,7 +132,7 @@ class _ZooSet(dict, ZooProperty):
         return (x, tx, id)
 
     @staticmethod
-    def _get_column(cl, name, table, join = None, by = None):
+    def _get_column(cl, name, table, join=None, by=None):
         r"""
         Return a ``ColumnSet`` object for a property of the given class.
 
@@ -153,14 +154,15 @@ class _ZooSet(dict, ZooProperty):
         if not isinstance(table, Table):
             table = Table(table)
         if join is not None:
-            table = join.join(table, by = by)
+            table = join.join(table, by=by)
         col = None if cl._use_tuples else cl._ordering[0]
-        return ColumnSet(cl, col, join = table,
-            by = (("deleted", False),
-                  (cl._foreign_key,
-                   Column(cl._foreign_obj._spec["primary_key"],
-                          table = table))),
-            foreign = cl._foreign_key, ordering = cl._ordering)
+        return ColumnSet(
+            cl, col, join=table,
+            by=(("deleted", False),
+                (cl._foreign_key,
+                 Column(cl._foreign_obj._spec["primary_key"],
+                        table=table))),
+            foreign=cl._foreign_key, ordering=cl._ordering)
 
     def _to_json(self):
         r"""
@@ -171,7 +173,7 @@ class _ZooSet(dict, ZooProperty):
         """
         return sorted(to_json(v) for v in self)
 
-    def add(self, x, id = None, **kargs):
+    def add(self, x, id=None, **kargs):
         r"""
         Add an element to the set.
 
@@ -187,15 +189,15 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         x, tx, id = self._normalize(x, id)
         if x in self:
             return
         if store:
             row = {c: tx[i] for i, c in enumerate(self._ordering)}
             row[self._foreign_key] = self._objid
-            id = self._insert_row(self.__class__, row, cur = cur)
+            id = self._insert_row(self.__class__, row, cur=cur)
         self[x] = id
 
     def clear(self, **kargs):
@@ -210,11 +212,11 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
-                              cur = cur)
+                              cur=cur)
         dict.clear(self)
 
     def difference(self, *largs):
@@ -241,11 +243,11 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         for other in largs:
             for x in other:
-                self.discard(x, store = store, cur = cur)
+                self.discard(x, store=store, cur=cur)
 
     def discard(self, x, **kargs):
         r"""
@@ -261,10 +263,10 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         try:
-            self.remove(x, store = store, cur = cur)
+            self.remove(x, store=store, cur=cur)
         except KeyError:
             pass
 
@@ -292,11 +294,11 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         for x in set(self):
             if not all(x in other for other in largs):
-                self.remove(x, store = store, cur = cur)
+                self.remove(x, store=store, cur=cur)
 
     def isdisjoint(self, other):
         r"""
@@ -347,9 +349,9 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB,
-                       destroy = True)
-        cur = lookup(kargs, "cur", default = None, destroy = True)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
+                       destroy=True)
+        cur = lookup(kargs, "cur", default=None, destroy=True)
         if len(largs) == 0:
             try:
                 x = next(iter(self))
@@ -358,7 +360,7 @@ class _ZooSet(dict, ZooProperty):
         else:
             x = largs[0]
         try:
-            self.remove(x, store = store, cur = cur)
+            self.remove(x, store=store, cur=cur)
             return x
         except KeyError as ex:
             if len(largs) > 1:
@@ -381,19 +383,19 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         k, v = dict.popitem(self)
         if store:
             try:
                 self._delete_rows(self.__class__,
-                                  {self._spec["primary_key"]: v}, cur = cur)
+                                  {self._spec["primary_key"]: v}, cur=cur)
             except self._db.exceptions as ex:
                 self[k] = v
                 raise ex
         return (k, v)
 
-    def remove(self, x = None, id = None, **kargs):
+    def remove(self, x=None, id=None, **kargs):
         r"""
         Remove an element from a set.
 
@@ -412,8 +414,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if x is None:
             if id is None:
                 raise KeyError("element or ID not specified")
@@ -428,10 +430,10 @@ class _ZooSet(dict, ZooProperty):
             id = self[x]
         if store:
             self._delete_rows(self.__class__, {self._spec["primary_key"]: id},
-                              cur = cur)
+                              cur=cur)
         del self[x]
 
-    def rename(self, old, new = None, id = None, **kargs):
+    def rename(self, old, new=None, id=None, **kargs):
         r"""
         Replace a set member with another value.
 
@@ -453,8 +455,8 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if new is None:
             if id is None:
                 raise KeyError("new value or ID not specified")
@@ -477,8 +479,9 @@ class _ZooSet(dict, ZooProperty):
         id = self[old]
         if store:
             self._update_rows(self.__class__,
-                            {c: tnew[i] for i, c in enumerate(self._ordering)},
-                            {self._spec["primary_key"]: id}, cur = cur)
+                              {c: tnew[i] for i, c
+                               in enumerate(self._ordering)},
+                              {self._spec["primary_key"]: id}, cur=cur)
         del self[old]
         self[new] = id
 
@@ -506,15 +509,15 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:
             if x in self:
-                self.remove(x, store = store, cur = cur)
+                self.remove(x, store=store, cur=cur)
             else:
-                self.add(x, other[x], store = store, cur = cur)
+                self.add(x, other[x], store=store, cur=cur)
 
     def union(self, *largs):
         r"""
@@ -540,16 +543,17 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default = discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default = None)
+        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
+        cur = lookup(kargs, "cur", default=None)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for other in largs:
             for x in other:
                 if x not in self or self[x] is None:
-                    self.add(x, other[x], store = store, cur = cur)
+                    self.add(x, other[x], store=store, cur=cur)
 
-def ZooSet(parent, name, spec, use_tuples = None):
+
+def ZooSet(parent, name, spec, use_tuples=None):
     r"""
     Construct a subclass of ``_ZooDict``.
 
@@ -606,5 +610,6 @@ def ZooSet(parent, name, spec, use_tuples = None):
     ZooSet = type("ZooSet", (_ZooSet,), clsdict)
     ZooSet._init_spec(ZooSet, spec)
     return ZooSet
+
 
 register_type(ZooSet)

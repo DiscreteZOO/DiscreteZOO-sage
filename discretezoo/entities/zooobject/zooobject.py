@@ -23,6 +23,7 @@ from ...util.utility import lookup
 from ...util.utility import to_json
 from ...util.utility import update
 
+
 class ZooObject(ZooEntity):
     r"""
     A class which all DiscreteZOO objects extend.
@@ -39,7 +40,7 @@ class ZooObject(ZooEntity):
     _override = None
     _fields = None
 
-    def __init__(self, data = None, **kargs):
+    def __init__(self, data=None, **kargs):
         r"""
         Object constructor.
 
@@ -61,7 +62,7 @@ class ZooObject(ZooEntity):
 
         - other named parameters are silently ignored.
         """
-        self._init_(ZooObject, kargs, setVal = {"data": data})
+        self._init_(ZooObject, kargs, setVal={"data": data})
 
     def _init_defaults(self, d):
         r"""
@@ -98,7 +99,7 @@ class ZooObject(ZooEntity):
         else:
             return False
 
-    def _init_object(self, cl, d, setProp = {}):
+    def _init_object(self, cl, d, setProp={}):
         r"""
         Initialize the object being represented.
 
@@ -123,13 +124,13 @@ class ZooObject(ZooEntity):
             self._unique_id_algorithm = d["unique_id_algorithm"]
         if self._zooid is None or self._unique_id is None:
             try:
-                r = self._db_read(cl, kargs = d)
+                r = self._db_read(cl, kargs=d)
                 self._zooid = r["zooid"]
                 if self._unique_id is None:
                     uid = self._fields.unique_id
                     cur = self._db.query([uid.algorithm, uid], uid.getJoin(),
                                          {uid.foreign: self._zooid},
-                                          limit = 1, cur = d["cur"])
+                                         limit=1, cur=d["cur"])
                     r = cur.fetchone()
                     if r is not None:
                         self._unique_id_algorithm, self._unique_id = r
@@ -170,7 +171,7 @@ class ZooObject(ZooEntity):
                 if isinstance(attr, MethodType):
                     self.__setattr__(a, MethodType(attr.im_func, self, cl))
 
-    def _db_read_nonprimary(self, cur = None):
+    def _db_read_nonprimary(self, cur=None):
         r"""
         Read properties from the database identified by the unique ID
         of the object.
@@ -186,9 +187,9 @@ class ZooObject(ZooEntity):
             uid = self._fields.unique_id
             query = {uid.column: self._unique_id}
             cur = self._db.query([Column(ZooObject._spec["primary_key"],
-                                         table = ZooObject._spec["name"]),
+                                         table=ZooObject._spec["name"]),
                                   uid.algorithm.column],
-                                 uid.getJoin(), query, cur = cur)
+                                 uid.getJoin(), query, cur=cur)
             r = cur.fetchone()
             if r is None:
                 raise KeyError(query)
@@ -208,7 +209,7 @@ class ZooObject(ZooEntity):
             raise ValueError("Insufficient data to construct the object")
         uid = self.unique_id()
         uid.__setitem__(self._unique_id_algorithm, self._unique_id,
-                        store = True, cur = cur)
+                        store=True, cur=cur)
 
     def _add_change(self, cl, cur):
         r"""
@@ -220,7 +221,7 @@ class ZooObject(ZooEntity):
 
         - ``cur`` - the cursor to use for database interaction.
         """
-        Change(self._zooid, cl, cur = cur)
+        Change(self._zooid, cl, cur=cur)
 
     def _getattr(self, name, parent):
         r"""
@@ -250,22 +251,23 @@ class ZooObject(ZooEntity):
             attr = None
             error = True
         if error or (isinstance(attr, MethodType) and
-                (isinstance(attr.im_func, BuiltinFunctionType) or
-                    (attr.func_globals["__package__"] is not None and
-                     attr.func_globals["__package__"].startswith("sage.")) or
-                    (attr.func_globals["__name__"] is not None and
-                     attr.func_globals["__name__"].startswith("sage.")))):
+                     (isinstance(attr.im_func, BuiltinFunctionType) or
+                      (attr.func_globals["__package__"] is not None and
+                       attr.func_globals["__package__"].startswith("sage.")) or
+                      (attr.func_globals["__name__"] is not None and
+                       attr.func_globals["__name__"].startswith("sage.")))):
             try:
-                cl, name = self._getclass(name, alias = True)
+                cl, name = self._getclass(name, alias=True)
             except KeyError:
                 if error:
                     raise ex
                 return attr
+
             def _attr(*largs, **kargs):
                 store = lookup(kargs, "store",
-                               default = discretezoo.WRITE_TO_DB,
-                               destroy = True)
-                cur = lookup(kargs, "cur", default = None, destroy = True)
+                               default=discretezoo.WRITE_TO_DB,
+                               destroy=True)
+                cur = lookup(kargs, "cur", default=None, destroy=True)
                 default = len(largs) + len(kargs) == 0
                 props = self._getprops(cl)
                 try:
@@ -274,7 +276,7 @@ class ZooObject(ZooEntity):
                     a = lookup(props, name)
                     if issubclass(cl._spec["fields"][name], ZooObject) \
                             and isinteger(a):
-                        a = cl._spec["fields"][name](zooid = a)
+                        a = cl._spec["fields"][name](zooid=a)
                         update(props, name, a)
                     return a
                 except (KeyError, NotImplementedError):
@@ -283,9 +285,10 @@ class ZooObject(ZooEntity):
                     a = attr(*largs, **kargs)
                     if default:
                         if store:
-                            self._update_rows(cl, {name: a},
-                                    {self._spec["primary_key"]: self._zooid},
-                                    cur = cur)
+                            self._update_rows(
+                                cl, {name: a},
+                                {self._spec["primary_key"]: self._zooid},
+                                cur=cur)
                         update(props, name, a)
                     return a
             _attr.func_name = name
@@ -296,7 +299,7 @@ class ZooObject(ZooEntity):
         return attr
 
     @staticmethod
-    def _get_column(cl, name, table, join = None, by = None):
+    def _get_column(cl, name, table, join=None, by=None):
         r"""
         Return a ``Column`` object for a property of the given class.
 
@@ -318,15 +321,15 @@ class ZooObject(ZooEntity):
         if not isinstance(table, Table):
             table = Table(table)
         if name == cl._spec["primary_key"]:
-            return Column(name, table = table, join = join, by = by)
+            return Column(name, table=table, join=join, by=by)
         else:
             if join is None:
                 join = table
             else:
-                join = join.join(table, by = by)
-            return ColumnSet(cl, cl._spec["primary_key"], join = join,
-                             by = ((cl._spec["primary_key"],
-                                    Column(name, table = table)), ))
+                join = join.join(table, by=by)
+            return ColumnSet(cl, cl._spec["primary_key"], join=join,
+                             by=((cl._spec["primary_key"],
+                                  Column(name, table=table)), ))
 
     def _to_json(self):
         r"""
@@ -351,14 +354,14 @@ class ZooObject(ZooEntity):
             d[c._spec["name"]] = self._to_json_field(c)
         return d
 
-    def _to_json_field(self, cl = None):
+    def _to_json_field(self, cl=None):
         r"""
         Return a dictionary with fields corresponding to the class ``cl``.
         """
         if cl is None:
             cl = self.__class__
         elif not issubclass(cl, ZooObject):
-            return ZooEntity._to_json_field(self, cl = cl)
+            return ZooEntity._to_json_field(self, cl=cl)
         d = self.__getattribute__(cl._dict)
         for f, t in cl._spec["fields"].items():
             if f != cl._spec["primary_key"] and f not in d and \
@@ -387,7 +390,8 @@ class ZooObject(ZooEntity):
         try:
             return lookup(self._zooprops, "alias")
         except KeyError:
-            self._zooprops["alias"] = ZooObject._spec["fields"]["alias"](self._zooid)
+            self._zooprops["alias"] = \
+                ZooObject._spec["fields"]["alias"](self._zooid)
             return self._zooprops["alias"]
 
     def unique_id(self):
@@ -397,7 +401,8 @@ class ZooObject(ZooEntity):
         try:
             return lookup(self._zooprops, "unique_id")
         except KeyError:
-            self._zooprops["unique_id"] = ZooObject._spec["fields"]["unique_id"](self._zooid)
+            self._zooprops["unique_id"] = \
+                ZooObject._spec["fields"]["unique_id"](self._zooid)
             return self._zooprops["unique_id"]
 
     def write_json(self, location):
@@ -444,12 +449,13 @@ class ZooObject(ZooEntity):
             d = {}
         d.update(self._to_json_dict())
         with open(path, "w") as f:
-            json.dump(d, f, indent = 4, sort_keys = True)
+            json.dump(d, f, indent=4, sort_keys=True)
         rel = os.path.join("..", "..", *target)
         for l in links:
             dir = os.path.join(obj, *l[:-1])
             if not os.path.exists(dir):
                 os.makedirs(dir)
             os.symlink(rel, os.path.join(dir, l[-1]))
+
 
 info = ZooInfo(ZooObject)

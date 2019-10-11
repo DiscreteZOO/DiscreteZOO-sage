@@ -12,7 +12,8 @@ from sage.sets.set import Set_generic as Set
 from inspect import getargspec
 from ..db.query import Column
 
-def lookup(d, k, destroy = False, **kargs):
+
+def lookup(d, k, destroy=False, **kargs):
     r"""
     Lookup a key in a dictionary.
 
@@ -41,7 +42,8 @@ def lookup(d, k, destroy = False, **kargs):
         return kargs["default"]
     raise KeyError(k)
 
-def default(d, k, v = None):
+
+def default(d, k, v=None):
     r"""
     Set a default value if none exists.
 
@@ -59,6 +61,7 @@ def default(d, k, v = None):
     if k not in d:
         d[k] = v
 
+
 def update(d, k, v):
     r"""
     Set a value in the dictionary.
@@ -73,6 +76,7 @@ def update(d, k, v):
     """
     d[k] = v
 
+
 def isinteger(x):
     r"""
     Decide whether ``x`` is an integer.
@@ -80,6 +84,7 @@ def isinteger(x):
     Returns ``True`` is ``x`` is either a Sage ``Integer`` or a Python ``int``.
     """
     return isinstance(x, Integer) or isinstance(x, int)
+
 
 def int_or_real(x):
     r"""
@@ -92,6 +97,7 @@ def int_or_real(x):
         return Integer(x)
     else:
         return create_RealNumber(x)
+
 
 def tomultidict(rows, dims):
     r"""
@@ -128,6 +134,7 @@ def tomultidict(rows, dims):
                 dd = dd[v][1]
     return (dims[0], d)
 
+
 def todict(r, db):
     r"""
     Construct a dictionary from a row, skipping ``None``s.
@@ -144,7 +151,8 @@ def todict(r, db):
     return {k: db.from_db_type(v, type(v))
             for k, v in dict(r).items() if v is not None}
 
-def to_json(x, t = None):
+
+def to_json(x, t=None):
     """
     Return an object suitable for conversion to JSON.
     """
@@ -169,6 +177,7 @@ def to_json(x, t = None):
     elif not isinstance(x, t):
         x = t(x)
     return x
+
 
 def construct(cl, self, d):
     r"""
