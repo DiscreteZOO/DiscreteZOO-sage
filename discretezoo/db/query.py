@@ -4,6 +4,7 @@ Query objects
 This module implements objects used to build query expressions.
 """
 
+import operator
 import re
 
 
@@ -571,6 +572,16 @@ class BinaryOp(Expression):
         self.left = makeExpression(left)
         self.right = makeExpression(right)
 
+    def eval(self, parse):
+        r"""
+        Evaluate expression.
+
+        INPUT:
+
+        - ``parse`` - a callback function.
+        """
+        return self.oper(parse(self.left), parse(self.right))
+
     def getTables(self):
         r"""
         Return a set of tables referenced by ``self``.
@@ -588,16 +599,7 @@ class LessThan(BinaryOp):
     'Less than' object.
     """
     op = "<"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) < parse(self.right)
+    oper = operator.lt
 
 
 class LessEqual(BinaryOp):
@@ -605,16 +607,7 @@ class LessEqual(BinaryOp):
     'Less than or equal' object.
     """
     op = "<="
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) <= parse(self.right)
+    oper = operator.le
 
 
 class Equal(BinaryOp):
@@ -622,16 +615,7 @@ class Equal(BinaryOp):
     Equality object.
     """
     op = "="
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) == parse(self.right)
+    oper = operator.eq
 
 
 class NotEqual(BinaryOp):
@@ -639,16 +623,7 @@ class NotEqual(BinaryOp):
     Inequality object.
     """
     op = "!="
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) != parse(self.right)
+    oper = operator.ne
 
 
 class GreaterThan(BinaryOp):
@@ -656,16 +631,7 @@ class GreaterThan(BinaryOp):
     'Greater than' object.
     """
     op = ">"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) > parse(self.right)
+    oper = operator.gt
 
 
 class GreaterEqual(BinaryOp):
@@ -673,16 +639,7 @@ class GreaterEqual(BinaryOp):
     'Greater than or equal' object.
     """
     op = ">="
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) >= parse(self.right)
+    oper = operator.ge
 
 
 class Plus(BinaryOp):
@@ -690,16 +647,7 @@ class Plus(BinaryOp):
     Addition object.
     """
     op = "+"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) + parse(self.right)
+    oper = operator.add
 
 
 class Minus(BinaryOp):
@@ -707,16 +655,7 @@ class Minus(BinaryOp):
     Subtraction object.
     """
     op = "-"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) - parse(self.right)
+    oper = operator.sub
 
 
 class Times(BinaryOp):
@@ -724,16 +663,7 @@ class Times(BinaryOp):
     Multiplication object.
     """
     op = "*"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) * parse(self.right)
+    oper = operator.mul
 
 
 class Divide(BinaryOp):
@@ -741,16 +671,7 @@ class Divide(BinaryOp):
     Division object.
     """
     op = "/"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) / parse(self.right)
+    oper = operator.div
 
 
 class FloorDivide(BinaryOp):
@@ -758,16 +679,7 @@ class FloorDivide(BinaryOp):
     Floor division object.
     """
     op = "//"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) // parse(self.right)
+    oper = operator.floordiv
 
 
 class Modulo(BinaryOp):
@@ -775,16 +687,7 @@ class Modulo(BinaryOp):
     Modulo object.
     """
     op = "mod"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) % parse(self.right)
+    oper = operator.mod
 
 
 class Power(BinaryOp):
@@ -792,16 +695,7 @@ class Power(BinaryOp):
     Power object.
     """
     op = "**"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) ** parse(self.right)
+    oper = operator.pow
 
 
 class LeftShift(BinaryOp):
@@ -809,16 +703,7 @@ class LeftShift(BinaryOp):
     Left shift object.
     """
     op = "<<"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) << parse(self.right)
+    oper = operator.lshift
 
 
 class RightShift(BinaryOp):
@@ -826,16 +711,7 @@ class RightShift(BinaryOp):
     Right shift object.
     """
     op = ">>"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) >> parse(self.right)
+    oper = operator.rshift
 
 
 class BitwiseAnd(BinaryOp):
@@ -843,16 +719,7 @@ class BitwiseAnd(BinaryOp):
     Bitwise conjunction object.
     """
     op = "&"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) & parse(self.right)
+    oper = operator.and_
 
 
 class BitwiseOr(BinaryOp):
@@ -860,16 +727,7 @@ class BitwiseOr(BinaryOp):
     Bitwise disjunction object.
     """
     op = "|"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) | parse(self.right)
+    oper = operator.or_
 
 
 class BitwiseXOr(BinaryOp):
@@ -877,16 +735,7 @@ class BitwiseXOr(BinaryOp):
     Bitwise XOR object.
     """
     op = "^"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return parse(self.left) ^ parse(self.right)
+    oper = operator.xor
 
 
 class Concatenate(BinaryOp):
@@ -894,16 +743,7 @@ class Concatenate(BinaryOp):
     Concatenation object.
     """
     op = "++"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return str(parse(self.left)) + str(parse(self.right))
+    oper = operator.concat
 
 
 class In(BinaryOp):
@@ -931,15 +771,18 @@ class In(BinaryOp):
                                         Column(self.right.by,
                                                self.right.table)))
 
-    def eval(self, parse):
+    @staticmethod
+    def oper(left, right):
         r"""
-        Evaluate expression.
+        Perform inclusion check.
 
         INPUT:
 
-        - ``parse`` - a callback function.
+        - ``left`` - object to be checked for inclusion in ``right``.
+
+        - ``right`` - object to be checked for inclusion of ``left``.
         """
-        return parse(self.left) in parse(self.right)
+        return left in right
 
 
 class Like(BinaryOp):
@@ -963,6 +806,7 @@ class Like(BinaryOp):
         """
         BinaryOp.__init__(self, left, right)
         self.case = case
+        self.oper = lambda left, right: self.match(left, right, case)
 
     def __str__(self):
         out = BinaryOp.__str__(self)
@@ -970,17 +814,34 @@ class Like(BinaryOp):
             out += " (case insensitive)"
         return out
 
-    def eval(self, parse):
+    @staticmethod
+    def match(left, right, case):
         r"""
-        Evaluate expression.
+        Perform string matching with SQL LIKE syntax.
 
         INPUT:
 
-        - ``parse`` - a callback function.
+        - ``left`` - object to be checked for inclusion in ``right``.
+
+        - ``right`` - object to be checked for inclusion of ``left``.
         """
-        return re.match(re.escape(parse(self.left)).replace("_", ".")
-                                                   .replace("%", ".*"),
-                        parse(self.right))
+        s = list(right)
+        i = 0
+        while i < len(s):
+            if s[i] == "\000":
+                s[i] = "\\000"
+            elif s[i] == "\\" and right[i+1:i+2] in ("%", "_"):
+                i += 1
+            elif s[i] == "%":
+                s[i] = r"(.|\n)*"
+            elif s[i] == "_":
+                s[i] = r"."
+            elif s[i] not in re._alphanum:
+                s[i] = "\\" + s[i]
+            i += 1
+        return re.match("^%s$" % right[:0].join(s), left,
+                        re.MULTILINE | (0 if case else re.IGNORECASE)) \
+            is not None
 
 
 class UnaryOp(Expression):
@@ -996,6 +857,16 @@ class UnaryOp(Expression):
         - ``exp`` - the argument.
         """
         self.exp = makeExpression(exp)
+
+    def eval(self, parse):
+        r"""
+        Evaluate expression.
+
+        INPUT:
+
+        - ``parse`` - a callback function.
+        """
+        return self.oper(parse(self.exp))
 
     def getTables(self):
         r"""
@@ -1014,16 +885,7 @@ class Not(UnaryOp):
     Logical negation object.
     """
     op = "not"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return not parse(self.exp)
+    oper = operator.not_
 
 
 class Negate(UnaryOp):
@@ -1031,34 +893,17 @@ class Negate(UnaryOp):
     Arithmetic negation object.
     """
     op = "-"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return -parse(self.exp)
+    oper = operator.neg
 
 
 class Absolute(UnaryOp):
     r"""
     Absolute value object.
     """
+    oper = operator.abs
+
     def __str__(self):
         return "|%s|" % self.exp
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return abs(parse(self.exp))
 
 
 class Invert(UnaryOp):
@@ -1066,16 +911,7 @@ class Invert(UnaryOp):
     Bitwise inversion object.
     """
     op = "~"
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return ~parse(self.exp)
+    oper = operator.inv
 
 
 class IsNull(UnaryOp):
@@ -1085,15 +921,16 @@ class IsNull(UnaryOp):
     def __str__(self):
         return "%s is null" % self.exp
 
-    def eval(self, parse):
+    @staticmethod
+    def oper(exp):
         r"""
-        Evaluate expression.
+        Compare for equality with ``None``.
 
         INPUT:
 
         - ``parse`` - a callback function.
         """
-        return parse(self.exp) is None
+        return exp is None
 
 
 class IsNotNull(UnaryOp):
@@ -1103,15 +940,16 @@ class IsNotNull(UnaryOp):
     def __str__(self):
         return "%s is not null" % self.exp
 
-    def eval(self, parse):
+    @staticmethod
+    def oper(exp):
         r"""
-        Evaluate expression.
+        Compare for equality with ``None``.
 
         INPUT:
 
         - ``parse`` - a callback function.
         """
-        return parse(self.exp) is not None
+        return exp is not None
 
 
 class LogicalExpression(Expression):
@@ -1146,8 +984,15 @@ class LogicalExpression(Expression):
         else:
             self.terms = [makeExpression(e) for e in lterms]
 
-    def __str__(self):
-        return self.op.join("%s" % t for t in self.terms)
+    def eval(self, parse):
+        r"""
+        Evaluate expression.
+
+        INPUT:
+
+        - ``parse`` - a callback function.
+        """
+        return self.oper(parse(t) for t in terms)
 
     def getTables(self):
         r"""
@@ -1157,22 +1002,15 @@ class LogicalExpression(Expression):
         """
         return set(sum([list(t.getTables()) for t in self.terms], []))
 
+    def __str__(self):
+        return self.op.join("%s" % t for t in self.terms)
 
 class And(LogicalExpression):
     r"""
     Conjunction object.
     """
     op = " and "
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return all(parse(t) for t in terms)
+    oper = all
 
 
 class Or(LogicalExpression):
@@ -1180,16 +1018,7 @@ class Or(LogicalExpression):
     Disjunction object.
     """
     op = " or "
-
-    def eval(self, parse):
-        r"""
-        Evaluate expression.
-
-        INPUT:
-
-        - ``parse`` - a callback function.
-        """
-        return any(parse(t) for t in terms)
+    oper = any
 
 
 class Count(Expression):
