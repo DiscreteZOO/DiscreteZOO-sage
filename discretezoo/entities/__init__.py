@@ -11,9 +11,9 @@ This module contains the following submodules:
 
 - ``zooproperty``: A superclass for properties of DiscreteZOO objects
 
-- ``zoodict``: A dictionary metaclass
+- ``zoodict``: A dictionary template class
 
-- ``zooset``: A set metaclass
+- ``zooset``: A set template class
 
 - ``zooobject``: A superclass for all DiscreteZOO objects
 

@@ -1,5 +1,5 @@
 r"""
-A set metaclass
+A set template class
 
 This module provides a function to create set-like classes.
 """
@@ -555,7 +555,7 @@ class _ZooSet(dict, ZooProperty):
 
 def ZooSet(parent, name, spec, use_tuples=None):
     r"""
-    Construct a subclass of ``_ZooDict``.
+    Construct a subclass of ``_ZooSet``.
 
     INPUT:
 
@@ -563,8 +563,8 @@ def ZooSet(parent, name, spec, use_tuples=None):
 
     - ``name`` - the name of the represented property.
 
-    - ``spec`` - metaclass specification. The ``"params"`` field should contain
-      a dictionary with the specification for value properties at key
+    - ``spec`` - template class specification. The ``"params"`` field should
+      contain a dictionary with the specification for value properties at key
       ``"fields"``. See the documentation in the ``spec/`` folder for more
       details.
 

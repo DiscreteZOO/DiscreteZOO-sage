@@ -1,5 +1,5 @@
 r"""
-A dictionary metaclass
+A dictionary template class
 
 This module provides a function to create dictionary-like classes.
 """
@@ -457,10 +457,11 @@ def ZooDict(parent, name, spec, use_key_tuples=None, use_val_tuples=None):
 
     - ``name`` - the name of the represented property.
 
-    - ``spec`` - metaclass specification. The ``"params"`` field should contain
-      a dictionary with the specification for key properties at key ``"keys"``,
-      and the specification for value properties at key ``"values"``. See the
-      documentation in the ``spec/`` folder for more details.
+    - ``spec`` - template class specification. The ``"params"`` field should
+      contain a dictionary with the specification for key properties at key
+      ``"keys"``, and the specification for value properties at key
+      ``"values"``. See the documentation in the ``spec/`` folder for more
+      details.
 
     - ``use_key_tuples`` - whether to use tuples for key properties. If
       ``None`` (default), use tuples when the number of key properties is not

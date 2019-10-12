@@ -31,7 +31,7 @@ def normalize_type(t):
     Substitute JSON objects with actual classes.
 
     If ``t`` is a string, returns the corresponding class. If ``t`` is a
-    dictionary representing a metaclass, returns a dictionary containing
+    dictionary representing a template class, returns a dictionary containing
     the base class and its initalized parameters,
 
     INPUT:
@@ -76,21 +76,21 @@ def init_fieldparams(fieldparams):
     return {str(k): to_string(p) for k, p in fieldparams.items()}
 
 
-def init_metaclasses(cl):
+def init_template_classes(cl):
     r"""
-    Initialize metaclasses belonging to a class.
+    Initialize template classes belonging to a class.
 
-    Replaces dictionaries representing metaclasses with their parameters
+    Replaces dictionaries representing template classes with their parameters
     with actual classes.
 
     INPUT:
 
-    - ``cl`` -- the class whose metaclasses should be initialized.
+    - ``cl`` -- the class whose template classes should be initialized.
     """
     for k, v in cl._spec["fields"].items():
         if isinstance(v, dict):
             t = v["class"](cl, k, v)
-            init_metaclasses(t)
+            init_template_classes(t)
             cl._spec["fields"][k] = t
 
 
@@ -179,6 +179,6 @@ def init_class(cl, fields=None):
     spec["fields"] = init_fields(spec["fields"])
     init_spec(spec)
     cl._spec = spec
-    init_metaclasses(cl)
+    init_template_classes(cl)
     if fields is not None:
         makeFields(cl, fields)
