@@ -31,6 +31,20 @@ class PostgreSQLDB(SQLDB):
         Or: 'FALSE'
     }
 
+    @classmethod
+    def _init_class(cl):
+        r"""
+        Initialize PostgreSQL-specific keywords and symbols.
+        """
+        cl.types = dict(cl.types)
+        cl.convert_to = dict(cl.convert_to)
+        cl.binaryops = dict(cl.binaryops)
+        cl.types[bool] = 'BOOLEAN'
+        cl.types[enumerate] = 'SERIAL'
+        cl.convert_to[bool] = bool
+        cl.binaryops[Power] = '^'
+        cl.binaryops[BitwiseXOr] = '#'
+
     def connect(self, *largs, **kargs):
         r"""
         Connect to the database.
@@ -227,14 +241,3 @@ class PostgreSQLDB(SQLDB):
         if "port" in d:
             host = "%s:%s" % (host, d["port"])
         return 'PostgreSQL database "%s" at %s' % (d["dbname"], host)
-
-
-# PostgreSQL-specific keywords and symbols
-PostgreSQLDB.types = dict(SQLDB.types)
-PostgreSQLDB.convert_to = dict(SQLDB.convert_to)
-PostgreSQLDB.binaryops = dict(SQLDB.binaryops)
-PostgreSQLDB.types[bool] = 'BOOLEAN'
-PostgreSQLDB.types[enumerate] = 'SERIAL'
-PostgreSQLDB.convert_to[bool] = bool
-PostgreSQLDB.binaryops[Power] = '^'
-PostgreSQLDB.binaryops[BitwiseXOr] = '#'

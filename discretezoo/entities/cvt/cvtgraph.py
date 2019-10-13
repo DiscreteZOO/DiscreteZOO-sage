@@ -9,6 +9,7 @@ from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
 import discretezoo
+from . import fields
 from ..spx import check_spx
 from ..spx import SPXGraph
 from ..vt import VTGraph
@@ -35,6 +36,7 @@ class CVTGraph(VTGraph):
     _parent = VTGraph
     _spec = None
     _dict = "_cvtprops"
+    _fields = fields
 
     def __init__(self, data=None, cvt_index=None, symcubic_index=None,
                  **kargs):

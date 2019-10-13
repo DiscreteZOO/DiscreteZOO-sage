@@ -89,8 +89,8 @@ class ZooDecorator(object):
             doc.append(r"""
 {0}DiscreteZOO-specific parameters:
 
-{0}- ``store`` - whether to store the computed results back to the
-{0}  database (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+{0}- ``store`` - whether to store the computed results back to the database
+{0}  (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
 
 {0}- ``cur`` - the cursor to use for database interaction (must be a named
 {0}  parameter; default: ``None``).

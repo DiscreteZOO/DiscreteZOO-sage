@@ -28,6 +28,16 @@ class SQLiteDB(SQLDB):
     exceptions = sqlite3.Error
     file = None
 
+    @classmethod
+    def _init_class(cl):
+        r"""
+        Initialize SQLite-specific keywords and symbols.
+        """
+        cl.constraints = dict(cl.constraints)
+        cl.binaryops = dict(cl.binaryops)
+        cl.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
+        cl.binaryops[Modulo] = '%'
+
     def connect(self, file=DBFILE):
         r"""
         Connect to the database.
@@ -98,10 +108,3 @@ class SQLiteDB(SQLDB):
 
     def __str__(self):
         return 'SQLite database in %s' % self.file
-
-
-# SQLite-specific keywords and symbols
-SQLiteDB.constraints = dict(SQLDB.constraints)
-SQLiteDB.constraints['autoincrement'] = 'PRIMARY KEY AUTOINCREMENT'
-SQLiteDB.binaryops = dict(SQLDB.binaryops)
-SQLiteDB.binaryops[Modulo] = '%'

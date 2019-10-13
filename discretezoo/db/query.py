@@ -740,10 +740,23 @@ class BitwiseXOr(BinaryOp):
 
 class Concatenate(BinaryOp):
     r"""
-    Concatenation object.
+    String concatenation object.
     """
     op = "++"
-    oper = operator.concat
+
+    @staticmethod
+    def oper(left, right):
+        r"""
+        Perform string concatenation.
+        The arguments will be coerced to strings.
+
+        INPUT:
+
+        - ``left`` - left string.
+
+        - ``right`` - right string.
+        """
+        return str(left) + str(right)
 
 
 class In(BinaryOp):
@@ -1005,6 +1018,7 @@ class LogicalExpression(Expression):
     def __str__(self):
         return self.op.join("%s" % t for t in self.terms)
 
+
 class And(LogicalExpression):
     r"""
     Conjunction object.
@@ -1243,18 +1257,16 @@ def makeExpression(val):
         return Value(val)
 
 
-def makeFields(cl, module, join=None, by=None, table=None):
+def makeFields(cl, join=None, by=None, table=None):
     r"""
     Make field objects.
 
     Make objects representing the fields of the class ``cl`` as members of
-    ``module``. The fields of the parent class are inherited.
+    ``cl._fields``. The fields of the parent class are inherited.
 
     INPUT:
 
     - ``cl`` - the class to make the objects for.
-
-    - ``module`` - a module or object to store the field objects into.
 
     - ``join`` - the table to join when creating ``Column`` objects
       (default: ``None``).
@@ -1265,11 +1277,11 @@ def makeFields(cl, module, join=None, by=None, table=None):
     - ``table`` - the table containing the columns corresponding to the
       fields (default: ``None``).
     """
-    mtype = type(module)
+    mtype = type(cl._fields)
     if cl._parent is not None:
         for k in dir(cl._parent._fields):
             if not k.startswith("_"):
-                mtype.__setattr__(module, k,
+                mtype.__setattr__(cl._fields, k,
                                   mtype.__getattribute__(cl._parent._fields,
                                                          k))
     if table is None:
@@ -1281,8 +1293,7 @@ def makeFields(cl, module, join=None, by=None, table=None):
             col = v._get_column(v, k, table=table, join=join, by=by)
         except AttributeError:
             col = Column(k, table=table, join=join, by=by)
-        mtype.__setattr__(module, k, col)
-    cl._fields = module
+        mtype.__setattr__(cl._fields, k, col)
 
 
 # Aliases

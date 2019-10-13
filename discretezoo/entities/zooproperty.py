@@ -19,6 +19,8 @@ class ZooProperty(ZooEntity):
     A superclass for properties of DiscreteZOO objects.
     """
 
+    _init = False
+
     def _init_(self, kargs):
         """
         Initialize the object.

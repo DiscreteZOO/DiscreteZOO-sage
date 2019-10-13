@@ -9,6 +9,7 @@ from sage.categories.cartesian_product import cartesian_product
 from sage.graphs.graph import Graph
 from sage.rings.finite_rings.integer_mod_ring import Integers
 from sage.rings.integer import Integer
+from . import fields
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zooobject import ZooObject
@@ -30,6 +31,7 @@ class SPXGraph(ZooGraph):
     _parent = ZooGraph
     _spec = None
     _dict = "_spxprops"
+    _fields = fields
 
     def __init__(self, data=None, s=None, **kargs):
         r"""

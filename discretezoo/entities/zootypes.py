@@ -156,7 +156,7 @@ def init_spec(spec):
                            for c, d in spec["default"].items()}
 
 
-def init_class(cl, fields=None):
+def init_class(cl):
     r"""
     Initializes the given class.
 
@@ -166,9 +166,6 @@ def init_class(cl, fields=None):
     INPUT:
 
     - ``cl`` -- the class to be initialized.
-
-    - ``fields`` (default: ``None``) -- the module to be initialized with
-      field objects.
     """
     register_type(cl)
     f = file(os.path.join(path, cl.__name__ + ".json"))
@@ -180,5 +177,5 @@ def init_class(cl, fields=None):
     init_spec(spec)
     cl._spec = spec
     init_template_classes(cl)
-    if fields is not None:
-        makeFields(cl, fields)
+    if cl._fields is not None:
+        makeFields(cl)

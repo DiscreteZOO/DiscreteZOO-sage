@@ -5,6 +5,7 @@ This module contains a representing vertex-transitive graphs
 and a function for importing such graphs.
 """
 from sage.rings.integer import Integer
+from . import fields
 from ..zooentity import ZooInfo
 from ..zoograph import ZooGraph
 from ..zoograph import import_graphs
@@ -25,6 +26,7 @@ class VTGraph(ZooGraph):
     _parent = ZooGraph
     _spec = None
     _dict = "_vtprops"
+    _fields = fields
 
     def __init__(self, data=None, vt_index=None, **kargs):
         r"""

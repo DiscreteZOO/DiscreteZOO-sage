@@ -18,6 +18,19 @@ class DB:
     convert_from = None
     track = discretezoo.TRACK_CHANGES
 
+    class __metaclass__(type):
+        r"""
+        A metaclass for initializing database classes.
+        """
+
+        def __new__(mcl, name, bases, attrs):
+            r"""
+            Class initialization method.
+            """
+            cl = type.__new__(mcl, name, bases, attrs)
+            cl._init_class()
+            return cl
+
     def __init__(self, *largs, **kargs):
         r"""
         Object constructor.
@@ -33,6 +46,15 @@ class DB:
                             default=discretezoo.TRACK_CHANGES,
                             destroy=True)
         self.connect(*largs, **kargs)
+
+    @classmethod
+    def _init_class(cl):
+        r"""
+        Perform custom class initialization.
+
+        Does nothing, to be overridden.
+        """
+        pass
 
     def connect(self, *largs, **kargs):
         r"""

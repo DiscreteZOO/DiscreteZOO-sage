@@ -37,6 +37,22 @@ class ZooEntity(object):
     _fields = None
     _parent = None
     _extra_classes = None
+    _init = True
+
+    class __metaclass__(type):
+        r"""
+        A metaclass for initializing DiscreteZOO classes.
+        """
+
+        def __new__(mcl, name, bases, attrs):
+            r"""
+            Class initialization method.
+            """
+            cl = type.__new__(mcl, name, bases, attrs)
+            if cl._init:
+                zootypes.init_class(cl)
+                cl._init_derived()
+            return cl
 
     def __init__(self, data=None, **kargs):
         r"""
@@ -227,6 +243,15 @@ class ZooEntity(object):
             self.__setattr__(cl._dict, dict(d))
         else:
             props.update(d)
+
+    @classmethod
+    def _init_derived(cl):
+        r"""
+        Initialize derived fields.
+
+        Does nothing, to be overridden.
+        """
+        pass
 
     def _init_defaults(self, d):
         r"""

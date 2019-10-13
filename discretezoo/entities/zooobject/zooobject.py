@@ -11,6 +11,7 @@ from types import BuiltinFunctionType
 from types import MethodType
 from warnings import warn
 import discretezoo
+from . import fields
 from ..change import Change
 from ..zooentity import ZooEntity
 from ..zooentity import ZooInfo
@@ -38,7 +39,7 @@ class ZooObject(ZooEntity):
     _parent = ZooEntity
     _dict = "_zooprops"
     _override = None
-    _fields = None
+    _fields = fields
 
     def __init__(self, data=None, **kargs):
         r"""
