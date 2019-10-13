@@ -97,6 +97,15 @@ class CVTGraph(VTGraph):
             return VTGraph._parse_params(self, d)
 
     def _construct_object(self, cl, d):
+        r"""
+        Prepare all necessary data and construct the graph.
+
+        INPUT:
+
+        - ``cl`` - the class to construct the graph for.
+
+        - ``d`` - the dictionary of parameters.
+        """
         if d["order"] is not None:
             cond = {"order": d["order"]}
             if d["cvt_index"] is not None:
