@@ -202,113 +202,31 @@ class Expression(QueryObject):
         """
         raise NotImplementedError
 
+    @classmethod
+    def register(cl, *largs, **kargs):
+        r"""
+        Register callable as method.
+
+        INPUT:
+
+        - method names as unnamed parameters.
+
+        - ``reversed`` - whether to reverse the arguments to the method
+          (must be a named parameter; default: ``False``).
+        """
+        def decorator(c):
+            if len(largs) > 0:
+                rev = reversed if kargs.get("reversed", False) else lambda x: x
+                def fun(*ll):
+                    return c(*rev(ll))
+                fun.__name__ = largs[0]
+                for name in largs:
+                    setattr(cl, name, fun)
+            return c
+        return decorator
+
     def __hash__(self):
         return hash(str(self))
-
-    def __lt__(self, other):
-        return LessThan(self, other)
-
-    def __le__(self, other):
-        return LessEqual(self, other)
-
-    def __eq__(self, other):
-        return Equal(self, other)
-
-    def __ne__(self, other):
-        return NotEqual(self, other)
-
-    def __gt__(self, other):
-        return GreaterThan(self, other)
-
-    def __ge__(self, other):
-        return GreaterEqual(self, other)
-
-    def __add__(self, other):
-        return Plus(self, other)
-
-    def __radd__(self, other):
-        return Plus(other, self)
-
-    def __sub__(self, other):
-        return Minus(self, other)
-
-    def __rsub__(self, other):
-        return Minus(other, self)
-
-    def __mul__(self, other):
-        return Times(self, other)
-
-    def __rmul__(self, other):
-        return Times(other, self)
-
-    def __div__(self, other):
-        return Divide(self, other)
-
-    def __rdiv__(self, other):
-        return Divide(other, self)
-
-    def __floordiv__(self, other):
-        return FloorDivide(self, other)
-
-    def __rfloordiv__(self, other):
-        return FloorDivide(other, self)
-
-    def __mod__(self, other):
-        return Modulo(self, other)
-
-    def __rmod__(self, other):
-        return Modulo(other, self)
-
-    def __pow__(self, other):
-        return Power(self, other)
-
-    def __rpow__(self, other):
-        return Power(other, self)
-
-    def __lshift__(self, other):
-        return LeftShift(self, other)
-
-    def __rlshift__(self, other):
-        return LeftShift(other, self)
-
-    def __rshift__(self, other):
-        return RightShift(self, other)
-
-    def __rrshift__(self, other):
-        return RightShift(other, self)
-
-    def __and__(self, other):
-        return And(self, other)
-
-    def __rand__(self, other):
-        return And(other, self)
-
-    def __or__(self, other):
-        return Or(self, other)
-
-    def __ror__(self, other):
-        return Or(other, self)
-
-    def __xor__(self, other):
-        return BitwiseXOr(self, other)
-
-    def __rxor__(self, other):
-        return BitwiseXOr(other, self)
-
-    def __neg__(self):
-        return Negate(self)
-
-    def __pos__(self):
-        return self
-
-    def __abs__(self):
-        return Absolute(self)
-
-    def __invert__(self):
-        return Not(self)
-
-    __truediv__ = __div__
-    __rtruediv__ = __rdiv__
 
 
 class Value(Expression):
@@ -594,6 +512,7 @@ class BinaryOp(Expression):
         return "(%s) %s (%s)" % (self.left, self.op, self.right)
 
 
+@Expression.register("__lt__")
 class LessThan(BinaryOp):
     r"""
     'Less than' object.
@@ -602,6 +521,7 @@ class LessThan(BinaryOp):
     oper = operator.lt
 
 
+@Expression.register("__le__")
 class LessEqual(BinaryOp):
     r"""
     'Less than or equal' object.
@@ -610,6 +530,7 @@ class LessEqual(BinaryOp):
     oper = operator.le
 
 
+@Expression.register("__eq__")
 class Equal(BinaryOp):
     r"""
     Equality object.
@@ -618,6 +539,7 @@ class Equal(BinaryOp):
     oper = operator.eq
 
 
+@Expression.register("__ne__")
 class NotEqual(BinaryOp):
     r"""
     Inequality object.
@@ -626,6 +548,7 @@ class NotEqual(BinaryOp):
     oper = operator.ne
 
 
+@Expression.register("__gt__")
 class GreaterThan(BinaryOp):
     r"""
     'Greater than' object.
@@ -634,6 +557,7 @@ class GreaterThan(BinaryOp):
     oper = operator.gt
 
 
+@Expression.register("__ge__")
 class GreaterEqual(BinaryOp):
     r"""
     'Greater than or equal' object.
@@ -642,6 +566,8 @@ class GreaterEqual(BinaryOp):
     oper = operator.ge
 
 
+@Expression.register("__add__")
+@Expression.register("__radd__", reversed=True)
 class Plus(BinaryOp):
     r"""
     Addition object.
@@ -650,6 +576,8 @@ class Plus(BinaryOp):
     oper = operator.add
 
 
+@Expression.register("__sub__")
+@Expression.register("__rsub__", reversed=True)
 class Minus(BinaryOp):
     r"""
     Subtraction object.
@@ -658,6 +586,8 @@ class Minus(BinaryOp):
     oper = operator.sub
 
 
+@Expression.register("__mul__")
+@Expression.register("__rmul__", reversed=True)
 class Times(BinaryOp):
     r"""
     Multiplication object.
@@ -666,6 +596,8 @@ class Times(BinaryOp):
     oper = operator.mul
 
 
+@Expression.register("__div__", "__truediv__")
+@Expression.register("__rdiv__", "__rtruediv__", reversed=True)
 class Divide(BinaryOp):
     r"""
     Division object.
@@ -674,6 +606,8 @@ class Divide(BinaryOp):
     oper = operator.div
 
 
+@Expression.register("__floordiv__")
+@Expression.register("__rfloordiv__", reversed=True)
 class FloorDivide(BinaryOp):
     r"""
     Floor division object.
@@ -682,6 +616,8 @@ class FloorDivide(BinaryOp):
     oper = operator.floordiv
 
 
+@Expression.register("__mod__")
+@Expression.register("__rmod__", reversed=True)
 class Modulo(BinaryOp):
     r"""
     Modulo object.
@@ -690,6 +626,8 @@ class Modulo(BinaryOp):
     oper = operator.mod
 
 
+@Expression.register("__pow__")
+@Expression.register("__rpow__", reversed=True)
 class Power(BinaryOp):
     r"""
     Power object.
@@ -698,6 +636,8 @@ class Power(BinaryOp):
     oper = operator.pow
 
 
+@Expression.register("__lshift__")
+@Expression.register("__rlshift__", reversed=True)
 class LeftShift(BinaryOp):
     r"""
     Left shift object.
@@ -706,6 +646,8 @@ class LeftShift(BinaryOp):
     oper = operator.lshift
 
 
+@Expression.register("__rshift__")
+@Expression.register("__rrshift__", reversed=True)
 class RightShift(BinaryOp):
     r"""
     Right shift object.
@@ -714,6 +656,8 @@ class RightShift(BinaryOp):
     oper = operator.rshift
 
 
+@Expression.register("__and__")
+@Expression.register("__rand__", reversed=True)
 class BitwiseAnd(BinaryOp):
     r"""
     Bitwise conjunction object.
@@ -722,6 +666,8 @@ class BitwiseAnd(BinaryOp):
     oper = operator.and_
 
 
+@Expression.register("__or__")
+@Expression.register("__ror__", reversed=True)
 class BitwiseOr(BinaryOp):
     r"""
     Bitwise disjunction object.
@@ -730,6 +676,8 @@ class BitwiseOr(BinaryOp):
     oper = operator.or_
 
 
+@Expression.register("__xor__")
+@Expression.register("__rxor__", reversed=True)
 class BitwiseXOr(BinaryOp):
     r"""
     Bitwise XOR object.
@@ -901,6 +849,7 @@ class Not(UnaryOp):
     oper = operator.not_
 
 
+@Expression.register("__neg__")
 class Negate(UnaryOp):
     r"""
     Arithmetic negation object.
@@ -909,6 +858,16 @@ class Negate(UnaryOp):
     oper = operator.neg
 
 
+@Expression.register("__pos__")
+class Positive(UnaryOp):
+    r"""
+    Arithmetic positive object.
+    """
+    op = "+"
+    oper = operator.pos
+
+
+@Expression.register("__abs__")
 class Absolute(UnaryOp):
     r"""
     Absolute value object.
@@ -919,6 +878,7 @@ class Absolute(UnaryOp):
         return "|%s|" % self.exp
 
 
+@Expression.register("__invert__")
 class Invert(UnaryOp):
     r"""
     Bitwise inversion object.
