@@ -16,9 +16,11 @@ from ...db.query import In
 from ...db.query import R as Random
 from ...db.query import Subquery
 from ...db.query import Table
+from ...util.context import DBParams
 from ...util.utility import default
 from ...util.utility import isinteger
 from ...util.utility import lookup
+from ...util.utility import parse
 from ...util.utility import todict
 from ...util.utility import tomultidict
 
@@ -114,9 +116,8 @@ class ZooEntity(object):
         for k, v in setVal.items():
             d[k] = v
         default(d, "db")
-        default(d, "cur")
         default(d, "commit")
-        default(d, "store", discretezoo.WRITE_TO_DB)
+        DBParams.get(d)
         self._initdb(d["db"])
         if self.__class__ is cl:
             d["write"] = {}
@@ -210,15 +211,15 @@ class ZooEntity(object):
           dictionary for.
         """
         if isinstance(cl, type):
-            return self.__getattribute__(cl._dict)
+            return getattr(self, cl._dict)
         c = self.__class__
         while c is not None:
             if cl in c._spec["fields"]:
-                return self.__getattribute__(c._dict)
+                return getattr(self, c._dict)
             c = c._parent
         for c in self._extra_classes:
             if cl in c._spec["fields"]:
-                return self.__getattribute__(c._dict)
+                return getattr(self, c._dict)
         raise KeyError(cl)
 
     def _setprops(self, cl, d):
@@ -236,11 +237,11 @@ class ZooEntity(object):
         - ``d`` - the dictionary of properties to set.
         """
         try:
-            props = self.__getattribute__(cl._dict)
+            props = getattr(self, cl._dict)
         except AttributeError:
             props = None
         if props is None:
-            self.__setattr__(cl._dict, dict(d))
+            setattr(self, cl._dict, dict(d))
         else:
             props.update(d)
 
@@ -252,6 +253,27 @@ class ZooEntity(object):
         Does nothing, to be overridden.
         """
         pass
+
+    @classmethod
+    def _derive(cl, name, exp, add_method=True):
+        r"""
+        Add a derived field.
+
+        INPUT:
+
+        - ``name`` - name of the derived field.
+
+        - ``exp`` - an expression determining the value.
+
+        - ``add_method`` (default: ``True``) - whether to add a corresponding
+          method.
+        """
+        setattr(cl._fields, name, exp)
+        if add_method:
+            def derived(self, **kargs):
+                return parse(self, exp, compute=True, **kargs)
+            derived.__name__ = name
+            setattr(cl, name, cl._override.derived(derived))
 
     def _init_defaults(self, d):
         r"""
@@ -405,7 +427,7 @@ class ZooEntity(object):
             p[k] = d[v]
         for c, s in cl._spec["compute"].items():
             for k in s:
-                self.__getattribute__(k)(store=(c is not cl))
+                getattr(self, k)(store=(c is not cl))
 
     def _check_conditions(self, cl, d):
         r"""
@@ -421,7 +443,7 @@ class ZooEntity(object):
         """
         for c, m in cl._spec["condition"].items():
             for k, v in m.items():
-                assert self.__getattribute__(k)(store=(c is not cl)) == v, \
+                assert getattr(self, k)(store=(c is not cl)) == v, \
                     "Attribute %s does not have value %s" % (k, v)
 
     def _db_read(self, cl, join=None, query=None, cur=None, kargs=None):
@@ -499,7 +521,7 @@ class ZooEntity(object):
         if cl._parent is None:
             id = cl._spec["primary_key"]
         row = dict(self._getprops(cl).items() +
-                   [(k, self.__getattribute__(k)(store=False))
+                   [(k, getattr(self, k)(store=False))
                     for k in cl._spec["skip"]])
         row = {k: v for k, v in row.items()
                if not issubclass(cl._spec['fields'][k], ZooProperty)}

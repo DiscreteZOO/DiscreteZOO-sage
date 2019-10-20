@@ -4,7 +4,6 @@ A set template class
 This module provides a function to create set-like classes.
 """
 
-import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
 from .zootypes import register_type
@@ -12,7 +11,7 @@ from ..db.query import Column
 from ..db.query import ColumnSet
 from ..db.query import Table
 from ..db.query import enlist
-from ..util.utility import lookup
+from ..util.context import DBParams
 from ..util.utility import to_json
 
 
@@ -189,8 +188,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         x, tx, id = self._normalize(x, id)
         if x in self:
             return
@@ -212,8 +210,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
                               cur=cur)
@@ -243,8 +240,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         for other in largs:
             for x in other:
                 self.discard(x, store=store, cur=cur)
@@ -263,8 +259,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         try:
             self.remove(x, store=store, cur=cur)
         except KeyError:
@@ -294,8 +289,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         for x in set(self):
             if not all(x in other for other in largs):
                 self.remove(x, store=store, cur=cur)
@@ -349,9 +343,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
+        store, cur = DBParams.get(kargs, destroy=True)
         if len(largs) == 0:
             try:
                 x = next(iter(self))
@@ -383,8 +375,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         k, v = dict.popitem(self)
         if store:
             try:
@@ -414,8 +405,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if x is None:
             if id is None:
                 raise KeyError("element or ID not specified")
@@ -455,8 +445,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if new is None:
             if id is None:
                 raise KeyError("new value or ID not specified")
@@ -509,8 +498,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for x in other:
@@ -543,8 +531,7 @@ class _ZooSet(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if not isinstance(other, dict):
             other = {x: None for x in other}
         for other in largs:

@@ -4,7 +4,6 @@ A dictionary template class
 This module provides a function to create dictionary-like classes.
 """
 
-import discretezoo
 from .zooentity import ZooEntity
 from .zooproperty import ZooProperty
 from .zootypes import register_type
@@ -12,7 +11,7 @@ from ..db.query import Column
 from ..db.query import ColumnSet
 from ..db.query import Table
 from ..db.query import enlist
-from ..util.utility import lookup
+from ..util.context import DBParams
 from ..util.utility import to_json
 
 
@@ -140,8 +139,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         k, tk = self._normalize_key(k)
         v, tv = self._normalize_val(v)
         if k in self and self[k] == v:
@@ -170,8 +168,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if k is None:
             if id is None:
                 raise KeyError("key or ID not specified")
@@ -290,8 +287,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if store:
             self._delete_rows(self.__class__, {self._foreign_key: self._objid},
                               cur=cur)
@@ -345,8 +341,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         try:
             d = self[k]
             self.__delitem__(k, store=store, cur=cur)
@@ -371,8 +366,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         k, (id, v) = dict.popitem(self)
         if store:
             try:
@@ -400,8 +394,7 @@ class _ZooDict(dict, ZooProperty):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         k, tk = self._normalize_key(k)
         if k in self:
             return self[k]
@@ -426,9 +419,7 @@ class _ZooDict(dict, ZooProperty):
         - any other named parameter will be added to the dictionary with its
           name as the key.
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
+        store, cur = DBParams.get(kargs, destroy=True)
         if len(largs) > 0:
             try:
                 other = largs[0]

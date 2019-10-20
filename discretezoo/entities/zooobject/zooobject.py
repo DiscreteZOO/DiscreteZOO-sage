@@ -7,10 +7,10 @@ This module contains a class which all DiscreteZOO objects extend.
 import json
 import os
 import re
+from inspect import getargspec
 from types import BuiltinFunctionType
 from types import MethodType
 from warnings import warn
-import discretezoo
 from . import fields
 from ..change import Change
 from ..zooentity import ZooEntity
@@ -18,9 +18,11 @@ from ..zooentity import ZooInfo
 from ...db.query import Column
 from ...db.query import ColumnSet
 from ...db.query import Table
+from ...util.context import DBParams
 from ...util.utility import default
 from ...util.utility import isinteger
 from ...util.utility import lookup
+from ...util.utility import parse
 from ...util.utility import to_json
 from ...util.utility import update
 
@@ -157,20 +159,20 @@ class ZooObject(ZooEntity):
         c = obj.__class__
         cl = self.__class__
         while c is not None and not issubclass(cl, c):
-            self.__setattr__(c._dict, obj._getprops(c))
+            setattr(self, c._dict, obj._getprops(c))
             self._extra_classes.add(c)
             c = c._parent
         for c in obj._extra_classes:
             try:
-                self.__getattribute__(c._dict)
+                getattr(self, c._dict)
             except AttributeError:
-                self.__setattr__(c._dict, obj.__getattribute__(c._dict))
+                setattr(self, c._dict, getattr(obj, c._dict))
                 self._extra_classes.add(c)
         for a in dir(obj):
             if a not in dir(self):
-                attr = obj.__getattribute__(a)
+                attr = getattr(obj, a)
                 if isinstance(attr, MethodType):
-                    self.__setattr__(a, MethodType(attr.im_func, self, cl))
+                    setattr(self, a, MethodType(attr.im_func, self, cl))
 
     def _db_read_nonprimary(self, cur=None):
         r"""
@@ -224,6 +226,112 @@ class ZooObject(ZooEntity):
         """
         Change(self._zooid, cl, cur=cur)
 
+    def _call(self, cl, name, fun, largs, kargs, db_params=False,
+              acceptArgs=None, replacement=None, determiner=None, attrs={}):
+        r"""
+        Perform a call to the specified function associated to a field.
+
+        INPUT:
+
+        - ``cl`` - the class the field belongs to.
+
+        - ``name`` - the name of the field.
+
+        - ``fun`` - the function to be called.
+
+        - ``largs`` - an iterable of positional arguments.
+
+        - ``kargs`` - a dictionary of named parameters.
+
+        - ``db_params`` (default: ``False``) - whether to leave the
+          database-related parameters in ``kargs`` for the function call.
+
+        - ``acceptArgs`` - if specified, the given function should return a
+          pair containing the value to be stored in the database and the actual
+          output. The specified function will be called only if all of the
+          specified arguments are present in ``acceptArgs``.
+
+        - ``replacement`` - if specified, the given function accepts the cached
+          value and provides the value to be returned.
+
+        - ``determiner`` - if specified, the given function should return a
+          pair specifying whether the attribute should be updated and a
+          dictionary of additional attributes to be updated (see
+          ``util.decorators.ZooDecorator.determined`` for details).
+
+        - ``attrs`` - a dictionary mapping boolean atributes or expressions
+          to the values of the sought attribute that they imply if true.
+        """
+        store, cur = DBParams.get(kargs, destroy=not db_params)
+        default = len(largs) + len(kargs) == 0
+        props = self._getprops(cl)
+        try:
+            if not default:
+                raise NotImplementedError
+            for k, v in attrs.items():
+                try:
+                    if parse(self, k):
+                        return v
+                except KeyError:
+                    pass
+            a = lookup(props, name)
+            if replacement is not None:
+                a = replacement(self, a, store, cur)
+            if issubclass(cl._spec["fields"][name], ZooObject) \
+                    and isinteger(a):
+                a = cl._spec["fields"][name](zooid=a)
+                update(props, name, a)
+            return a
+        except (KeyError, NotImplementedError):
+            if fun is None:
+                raise NotImplementedError
+            with DBParams(locals(), store, cur):
+                a = fun(self, *largs, **kargs)
+            if acceptArgs is None:
+                out = a
+            else:
+                a, out = a
+                args = getargspec(fun).args
+                if db_params:
+                    keywords = [kw for kw in kargs
+                                if kw not in ("store", "cur")]
+                else:
+                    keywords = kargs
+                default = all(arg in acceptArgs
+                              for arg in args[1:len(largs)+1]) and \
+                    all(arg in acceptArgs for arg in keywords)
+            if default:
+                attrs = dict(attrs)
+                if determiner is None:
+                    upd, ats = True, attrs
+                else:
+                    upd, ats = determiner(self, a, attrs, store=store, cur=cur)
+                if store:
+                    t = {}
+                    if upd:
+                        if isinstance(a, ZooObject):
+                            v = a._zooid
+                        else:
+                            v = a
+                        t[cl] = {name: v}
+                    for k, v in ats.items():
+                        if not isinstance(k, basestring):
+                            continue
+                        c = self._getclass(k)
+                        if c not in t:
+                            t[c] = {}
+                        t[c][k] = v(a)
+                    for c, at in t.items():
+                        self._update_rows(c, at,
+                                          {self._spec["primary_key"]:
+                                           self._zooid}, cur=cur)
+                if upd:
+                    update(props, name, a)
+                for k, v in ats.items():
+                    if isinstance(k, basestring):
+                        update(self._getprops(k), k, v(a))
+            return out
+
     def _getattr(self, name, parent):
         r"""
         Provide a wrapper for Sage's methods.
@@ -265,33 +373,9 @@ class ZooObject(ZooEntity):
                 return attr
 
             def _attr(*largs, **kargs):
-                store = lookup(kargs, "store",
-                               default=discretezoo.WRITE_TO_DB,
-                               destroy=True)
-                cur = lookup(kargs, "cur", default=None, destroy=True)
-                default = len(largs) + len(kargs) == 0
-                props = self._getprops(cl)
-                try:
-                    if not default:
-                        raise NotImplementedError
-                    a = lookup(props, name)
-                    if issubclass(cl._spec["fields"][name], ZooObject) \
-                            and isinteger(a):
-                        a = cl._spec["fields"][name](zooid=a)
-                        update(props, name, a)
-                    return a
-                except (KeyError, NotImplementedError):
-                    if error:
-                        raise NotImplementedError
-                    a = attr(*largs, **kargs)
-                    if default:
-                        if store:
-                            self._update_rows(
-                                cl, {name: a},
-                                {self._spec["primary_key"]: self._zooid},
-                                cur=cur)
-                        update(props, name, a)
-                    return a
+                func = None if error else attr.im_func
+                return self._call(cl, name, func, largs, kargs)
+
             _attr.func_name = name
             if self._override is None:
                 return _attr
@@ -363,16 +447,16 @@ class ZooObject(ZooEntity):
             cl = self.__class__
         elif not issubclass(cl, ZooObject):
             return ZooEntity._to_json_field(self, cl=cl)
-        d = self.__getattribute__(cl._dict)
+        d = getattr(self, cl._dict)
         for f, t in cl._spec["fields"].items():
             if f != cl._spec["primary_key"] and f not in d and \
                     issubclass(t, ZooEntity) and not issubclass(t, ZooObject):
-                self.__getattribute__(f)()
+                getattr(self, f)()
         d = dict(d)
         self._to_json_field_extra(cl, d)
         for f in cl._spec["skip"]:
             if f != cl._spec["primary_key"]:
-                d[f] = self.__getattribute__(f)()
+                d[f] = getattr(self, f)()
         return {f: to_json(v, cl._spec["fields"][f]) for f, v in d.items()
                 if v is not None}
 

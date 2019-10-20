@@ -4,13 +4,16 @@ Utility functions
 This module contains utility functions used throughout the package.
 """
 
+import sys
+from functools import partial
+from inspect import getargspec
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import create_RealNumber
 from sage.rings.real_mpfr import RealNumber
 from sage.sets.set import Set_generic as Set
-from inspect import getargspec
 from ..db.query import Column
+from ..db.query import Expression
 
 
 def lookup(d, k, destroy=False, **kargs):
@@ -195,3 +198,33 @@ def construct(cl, self, d):
     if argspec.keywords is None:
         d = {k: v for k, v in d.items() if k in argspec.args}
     cl.__init__(self, **d)
+
+
+def parse(obj, exp, compute=False, **kargs):
+    r"""
+    Evaluate an expression with values from ``obj``.
+
+    INPUT:
+
+    - ``obj`` -- the object to get the properties from.
+
+    - ``exp`` -- the expression to evaluate.
+
+    - ``compute`` (default: ``False``) -- whether to compute properties if not
+      yet available.
+
+    - ``store`` -- whether to store the computed results back to the database
+      (must be a named parameter; default: ``discretezoo.WRITE_TO_DB``).
+
+    - ``cur`` -- the cursor to use for database interaction (must be a named
+      parameter; default: ``None``).
+    """
+    if isinstance(exp, basestring):
+        if compute:
+            return getattr(obj, exp)(**kargs)
+        else:
+            return lookup(obj._getprops(exp), exp)
+    elif isinstance(exp, Expression):
+        return exp.eval(partial(parse, obj, compute=compute, **kargs))
+    else:
+        raise TypeError

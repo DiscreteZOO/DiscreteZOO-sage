@@ -532,7 +532,7 @@ class ColumnSet(Column):
                 except AttributeError:
                     col = Column(name, table=self.table, join=self.join,
                                  by=self.by)
-                self.__setattr__(name, col)
+                setattr(self, name, col)
                 return col
             cl = cl._parent
         raise AttributeError(name)
@@ -1005,7 +1005,7 @@ class LogicalExpression(Expression):
 
         - ``parse`` - a callback function.
         """
-        return self.oper(parse(t) for t in terms)
+        return self.oper(parse(t) for t in self.terms)
 
     def getTables(self):
         r"""
@@ -1277,13 +1277,10 @@ def makeFields(cl, join=None, by=None, table=None):
     - ``table`` - the table containing the columns corresponding to the
       fields (default: ``None``).
     """
-    mtype = type(cl._fields)
     if cl._parent is not None:
         for k in dir(cl._parent._fields):
             if not k.startswith("_"):
-                mtype.__setattr__(cl._fields, k,
-                                  mtype.__getattribute__(cl._parent._fields,
-                                                         k))
+                setattr(cl._fields, k, getattr(cl._parent._fields, k))
     if table is None:
         table = cl._spec["name"]
     for k, v in cl._spec["fields"].items():
@@ -1293,7 +1290,7 @@ def makeFields(cl, join=None, by=None, table=None):
             col = v._get_column(v, k, table=table, join=join, by=by)
         except AttributeError:
             col = Column(k, table=table, join=join, by=by)
-        mtype.__setattr__(cl._fields, k, col)
+        setattr(cl._fields, k, col)
 
 
 # Aliases

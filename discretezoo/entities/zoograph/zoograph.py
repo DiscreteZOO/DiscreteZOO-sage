@@ -15,12 +15,12 @@ from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
 from inspect import getargspec
-import discretezoo
 from . import fields
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
 from ...db.query import Column
 from ...db.query import Value
+from ...util.context import DBParams
 from ...util.decorators import ZooDecorator
 from ...util.utility import construct
 from ...util.utility import default
@@ -78,20 +78,20 @@ class ZooGraph(Graph, ZooObject):
         Initialize derived fields.
         """
         if cl._fields is fields:
-            fields.degree = fields.average_degree
-            fields.density = \
-                2 * fields.size / (fields.order * (fields.order - 1))
-            fields.has_loops = fields.number_of_loops != 0
-            fields.is_connected = fields.connected_components_number <= 1
-            fields.is_half_transitive = \
-                fields.is_edge_transitive & fields.is_vertex_transitive & \
-                ~fields.is_arc_transitive
-            fields.is_semi_symmetric = \
-                fields.is_regular & fields.is_edge_transitive & \
-                ~fields.is_vertex_transitive
-            fields.is_triangle_free = fields.triangles_count == 0
-            fields.is_weakly_chordal = \
-                fields.is_long_hole_free & fields.is_long_antihole_free
+            cl._derive("degree", fields.average_degree, add_method=False)
+            cl._derive("density",
+                       2 * fields.size / (fields.order * (fields.order - 1)))
+            cl._derive("has_loops", fields.number_of_loops != 0)
+            cl._derive("is_connected", fields.connected_components_number <= 1)
+            cl._derive("is_half_transitive",
+                       fields.is_edge_transitive & fields.is_vertex_transitive
+                       & ~fields.is_arc_transitive)
+            cl._derive("is_semi_symmetric",
+                       fields.is_regular & fields.is_edge_transitive
+                       & ~fields.is_vertex_transitive)
+            cl._derive("is_triangle_free", fields.triangles_count == 0)
+            cl._derive("is_weakly_chordal",
+                       fields.is_long_hole_free & fields.is_long_antihole_free)
 
     def _init_defaults(self, d):
         r"""
@@ -426,36 +426,24 @@ class ZooGraph(Graph, ZooObject):
         - other named parameters accepted by the ``data`` function.
         """
         try:
-            lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                   destroy=True)
-            lookup(kargs, "cur", default=None, destroy=True)
+            DBParams.get(kargs, destroy=True)
             if len(kargs) > 0:
                 raise NotImplementedError
             return lookup(self._graphprops, "data")
         except (KeyError, TypeError, NotImplementedError):
             return data(self, **kargs)
 
+    def _average_degree(self, val, store, cur):
+        r"""
+        Replacement function providing the average degree as a rational number.
+        """
+        with DBParams(locals(), store, cur):
+            return Graph.average_degree(self)
+
     @override.documented
     def average_degree(self, *largs, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            lookup(self._graphprops, "average_degree")
-            return 2*self.size(store=store,
-                               cur=cur)/self.order(store=store, cur=cur)
-        except (KeyError, NotImplementedError):
-            a = Graph.average_degree(self, *largs, **kargs)
-            if default:
-                if store:
-                    self._update_rows(ZooGraph, {"average_degree": a},
-                                      {self._spec["primary_key"]: self._zooid},
-                                      cur=cur)
-                update(self._graphprops, "average_degree", a)
-            return a
+        return self._call(ZooGraph, "average_degree", Graph.average_degree,
+                          largs, kargs, replacement=ZooGraph._average_degree)
 
     @override.computed()
     def chromatic_index(self, **kargs):
@@ -464,15 +452,6 @@ class ZooGraph(Graph, ZooObject):
         graph.
         """
         return edge_coloring(self, value_only=True)
-
-    @override.derived
-    def density(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        o = self.order(store=store, cur=cur)
-        if o <= 1:
-            return Integer(0)
-        return 2*self.size(store=store, cur=cur)/(o*(o-1))
 
     @override.determined((Column("connected_components_number") != Integer(1),
                           PlusInfinity()))
@@ -489,9 +468,7 @@ class ZooGraph(Graph, ZooObject):
 
     @override.documented
     def hamiltonian_cycle(self, algorithm="tsp", *largs, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
+        store, cur = DBParams.get(kargs, destroy=True)
         default = len(largs) + len(kargs) == 0 and \
             algorithm in ["tsp", "backtrack"]
         if default:
@@ -505,14 +482,8 @@ class ZooGraph(Graph, ZooObject):
             elif algorithm == "backtrack":
                 out = Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
                 h = out[0]
-            try:
-                lookup(self._graphprops, "is_hamiltonian")
-            except KeyError:
-                if store:
-                    self._update_rows(ZooGraph, {"is_hamiltonian": h},
-                                      {self._spec["primary_key"]: self._zooid},
-                                      cur=cur)
-                update(self._graphprops, "is_hamiltonian", h)
+            self._call(ZooGraph, "is_hamiltonian", lambda s, *ll, **kk: h, (),
+                       {"store": store, "cur": cur})
             if isinstance(out, BaseException):
                 raise out
             else:
@@ -520,84 +491,24 @@ class ZooGraph(Graph, ZooObject):
         else:
             return Graph.hamiltonian_cycle(self, algorithm, *largs, **kargs)
 
-    @override.derived
-    def has_loops(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        return self.number_of_loops(store=store, cur=cur) > 0
-
-    @override.derived
-    def is_connected(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        return self.connected_components_number(store=store, cur=cur) <= 1
-
-    @override.derived
-    def is_half_transitive(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        return self.is_edge_transitive(store=store, cur=cur) and \
-            self.is_vertex_transitive(store=store, cur=cur) and \
-            not self.is_arc_transitive(store=store, cur=cur)
-
     @override.documented
     def is_regular(self, k=None, *largs, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
-        default = len(largs) + len(kargs) == 0
-        try:
-            if not default:
-                raise NotImplementedError
-            r = lookup(self._graphprops, "is_regular")
-            return r and (True if k is None
-                          else k == self.average_degree(store=store, cur=cur))
-        except (KeyError, NotImplementedError):
-            r = Graph.is_regular(self, k, *largs, **kargs)
-            if default:
-                if store:
-                    row = {"is_regular": r}
-                    if r and k is not None:
-                        row["average_degree"] = k
-                    self._update_rows(ZooGraph, row,
-                                      {self._spec["primary_key"]: self._zooid},
-                                      cur=cur)
-                update(self._graphprops, "is_regular", r)
-                if r and k is not None:
-                    update(self._graphprops, "average_degree", k)
-            return r
-
-    @override.derived
-    def is_semi_symmetric(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        if not self.is_bipartite(store=store, cur=cur):
-            return False
-        return (self.is_regular(store=store, cur=cur) and
-                self.is_edge_transitive(store=store, cur=cur) and
-                not self.is_vertex_transitive(store=store, cur=cur))
-
-    @override.derived
-    def is_triangle_free(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        return self.triangles_count(store=store, cur=cur) == 0
-
-    @override.derived
-    def is_weakly_chordal(self, **kargs):
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
-        return self.is_long_hole_free(store=store, cur=cur) \
-            and self.is_long_antihole_free(store=store, cur=cur)
+        attrs = {}
+        if k is not None:
+            attrs["average_degree"] = lambda r: k
+        return self._call(ZooGraph, "is_regular", Graph.is_regular,
+                          (k, ) + largs, kargs,
+                          replacement=lambda s, r, store, cur: r and
+                          (True if k is None
+                           else k == s.average_degree(store=store, cur=cur)),
+                          determiner=lambda s, r, ats, store, cur:
+                          (r or k is None, attrs if r else {}))
 
     @override.documented
     def name(self, new=None, *largs, **kargs):
-        store = lookup(kargs, "store",
-                       default=self._initialized and discretezoo.WRITE_TO_DB,
-                       destroy=True)
-        cur = lookup(kargs, "cur", default=None, destroy=True)
-        default = len(largs) + len(kargs) == 0
-        if default:
+        store, cur = DBParams.get(kargs, destroy=True,
+                                  initialized=self._initialized)
+        if len(largs) + len(kargs) == 0:
             old = lookup(self._graphprops, "name", default="")
             if new is None:
                 return old
@@ -612,7 +523,8 @@ class ZooGraph(Graph, ZooObject):
                 if new is not None:
                     self.alias().add(new, store=store, cur=cur)
         else:
-            return Graph.name(self, new, *largs, **kargs)
+            with DBParams(locals(), store, cur):
+                return Graph.name(self, new, *largs, **kargs)
 
     @override.determined(is_bipartite=PlusInfinity(),
                          is_forest=PlusInfinity())
@@ -689,8 +601,7 @@ def unique_id(graph, **kargs):
       (must be a named parameter; default: ``None``).
     """
     algorithm = lookup(kargs, "algorithm", default=None)
-    store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-    cur = lookup(kargs, "cur", default=None)
+    store, cur = DBParams.get(kargs)
     uid = sha256(data(graph, algorithm=algorithm)).hexdigest()
     if isinstance(graph, ZooGraph):
         graph.unique_id().__setitem__(algorithm, uid, store=store, cur=cur)

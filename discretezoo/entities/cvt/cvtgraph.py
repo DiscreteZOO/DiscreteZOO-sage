@@ -8,7 +8,6 @@ and a function for importing such graphs.
 from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import Graph
 from sage.rings.integer import Integer
-import discretezoo
 from . import fields
 from ..spx import check_spx
 from ..spx import SPXGraph
@@ -19,6 +18,7 @@ from ..zoograph import import_graphs
 from ..zoograph import override
 from ..zooobject import ZooObject
 from ...db.query import Table
+from ...util.context import DBParams
 from ...util.utility import isinteger
 from ...util.utility import lookup
 from ...util.utility import update
@@ -179,8 +179,7 @@ class CVTGraph(VTGraph):
         r"""
         Return whether the graph is a Möbius ladder.
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if not self.is_connected(store=store, cur=cur):
             return False
         o = self.order(store=store, cur=cur)
@@ -201,8 +200,7 @@ class CVTGraph(VTGraph):
         r"""
         Return whether the graph is a prism.
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         if not self.is_connected(store=store, cur=cur):
             return False
         o = self.order(store=store, cur=cur)
@@ -232,8 +230,7 @@ class CVTGraph(VTGraph):
           (or ``None`` if the graph is not an SPX graph);
           otherwise (default), return a boolean.
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         try:
             assert lookup(self._cvtprops, "is_spx", default=True)
             if store:
@@ -292,8 +289,7 @@ class CVTGraph(VTGraph):
         - ``cur`` - the cursor to use for database interaction
           (must be a named parameter; default: ``None``).
         """
-        store = lookup(kargs, "store", default=discretezoo.WRITE_TO_DB)
-        cur = lookup(kargs, "cur", default=None)
+        store, cur = DBParams.get(kargs)
         commit = False
         if lookup(self._graphprops, "is_arc_transitive", default=False):
             cl = CVTGraph

@@ -10,7 +10,6 @@ from ..zooentity import ZooEntity
 from ...db.query import Column
 from ...db.query import Table
 from ...db.query import Value
-from ...util.utility import default
 
 
 class Change(ZooEntity):
@@ -62,7 +61,6 @@ class Change(ZooEntity):
             self._objid = id
             if issubclass(table, ZooEntity):
                 table = table._spec["name"]
-        default(kargs, "store", discretezoo.WRITE_TO_DB)
         kargs["write"] = {}
         ZooEntity._init_(self, ZooEntity, kargs, defNone=["data"])
         if kargs["store"]:
