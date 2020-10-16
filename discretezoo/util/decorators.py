@@ -51,7 +51,7 @@ class ZooDecorator(object):
         end = None
         try:
             if attr is None:
-                attr = getattr(this.cl, fun.func_name)
+                attr = getattr(this.cl, fun.__name__)
             basedoc = attr.__doc__
         except AttributeError:
             pass
@@ -109,8 +109,8 @@ class ZooDecorator(object):
         def _computed(fun):
             @wraps(fun, assigned=('__module__', '__name__'))
             def decorated(self, *largs, **kargs):
-                cl = self._getclass(fun.func_name)
-                return self._call(cl, fun.func_name, fun, largs, kargs,
+                cl = self._getclass(fun.__name__)
+                return self._call(cl, fun.__name__, fun, largs, kargs,
                                   db_params=True, acceptArgs=acceptArgs)
             return this.documented(decorated, fun)
         return _computed
@@ -135,7 +135,7 @@ class ZooDecorator(object):
                 if len(largs) + len(kargs) == 0:
                     return fun(self, store=store, cur=cur)
                 else:
-                    return getattr(this.cl, fun.func_name)(self, *largs,
+                    return getattr(this.cl, fun.__name__)(self, *largs,
                                                            **kargs)
         return this.documented(decorated)
 
@@ -178,9 +178,9 @@ class ZooDecorator(object):
         def _determined(fun):
             @wraps(fun)
             def decorated(self, *largs, **kargs):
-                cl = self._getclass(fun.func_name)
-                attr = getattr(this.cl, fun.func_name)
-                return self._call(cl, fun.func_name, attr, largs, kargs,
+                cl = self._getclass(fun.__name__)
+                attr = getattr(this.cl, fun.__name__)
+                return self._call(cl, fun.__name__, attr, largs, kargs,
                                   determiner=fun, attrs=attrs)
             return this.documented(decorated)
         return _determined

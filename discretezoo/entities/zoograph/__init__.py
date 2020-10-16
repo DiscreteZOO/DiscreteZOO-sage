@@ -4,6 +4,6 @@ ZooGraph module
 Contains a class representing DiscreteZOO graphs.
 """
 from .zoograph import *
-import fields
+from . import fields
 
 __all__ = ['fields', 'ZooGraph', 'info']

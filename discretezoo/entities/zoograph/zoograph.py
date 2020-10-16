@@ -657,13 +657,13 @@ def import_graphs(file, cl=ZooGraph, db=None, format="sparse6",
             n = g.order()
             if n > previous:
                 if verbose and previous > 0:
-                    print "Imported %d graphs of order %d" % (i, previous)
+                    print("Imported %d graphs of order %d" % (i, previous))
                 previous = n
                 i = 0
             i += 1
             cl(graph=g, order=n, cur=cur, db=db, **{index: i})
         if verbose:
-            print "Imported %d graphs of order %d" % (i, n)
+            print("Imported %d graphs of order %d" % (i, n))
         f.close()
     cur.close()
     db.commit()

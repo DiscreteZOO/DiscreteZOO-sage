@@ -13,12 +13,12 @@ WRITE_TO_DB = True
 TRACK_CHANGES = True
 
 # Install needed files at startup
-from util.install import install
+from .util.install import install
 install()
 
 # Globally available names
-from entities import *
-from db import *
+from .entities import *
+from .db import *
 
 # Initialize global objects
 DEFAULT_DB = sqlite.SQLiteDB(track=TRACK_CHANGES)

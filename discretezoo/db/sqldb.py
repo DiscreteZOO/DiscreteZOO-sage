@@ -281,7 +281,7 @@ class SQLDB(DB):
         if isinstance(exp, query.Value):
             return (self.data_string, [self.to_db_type(exp.value)])
         elif isinstance(exp, query.Column):
-            if isinstance(exp.column, basestring):
+            if isinstance(exp.column, str):
                 sql = self.quoteIdent(exp.column)
                 data = []
                 if exp.table is not None:

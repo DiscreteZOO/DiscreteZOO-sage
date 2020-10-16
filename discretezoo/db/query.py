@@ -267,7 +267,7 @@ class Value(Expression):
         return self.value
 
     def __str__(self):
-        if isinstance(self.value, basestring):
+        if isinstance(self.value, str):
             return "'%s'" % self.value
         else:
             return str(self.value)
@@ -603,7 +603,7 @@ class Divide(BinaryOp):
     Division object.
     """
     op = "/"
-    oper = operator.div
+    oper = operator.truediv
 
 
 @Expression.register("__floordiv__")
@@ -1071,15 +1071,15 @@ class Order(QueryObject):
             self.exp = exp.exp
             self.order = exp.order
         elif isinstance(exp, tuple):
-            if isinstance(exp[0], basestring):
+            if isinstance(exp[0], str):
                 self.exp = Column(exp[0])
             else:
                 self.exp = makeExpression(exp[0])
             self.order = False \
-                if isinstance(exp[1], basestring) and exp[1].upper() == 'D' \
+                if isinstance(exp[1], str) and exp[1].upper() == 'D' \
                 else exp[1]
         else:
-            if isinstance(exp, basestring):
+            if isinstance(exp, str):
                 self.exp = Column(exp)
             else:
                 self.exp = makeExpression(exp)

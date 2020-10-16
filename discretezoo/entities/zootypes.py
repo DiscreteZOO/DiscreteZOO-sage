@@ -106,8 +106,8 @@ def to_string(s):
 
     - ``s`` -- the object to be converted.
     """
-    if isinstance(s, basestring):
-        return str(s)
+    if isinstance(s, str):
+        return s
     else:
         return [to_string(x) for x in s]
 

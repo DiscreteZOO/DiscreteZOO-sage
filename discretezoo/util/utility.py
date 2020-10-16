@@ -219,7 +219,7 @@ def parse(obj, exp, compute=False, **kargs):
     - ``cur`` -- the cursor to use for database interaction (must be a named
       parameter; default: ``None``).
     """
-    if isinstance(exp, basestring):
+    if isinstance(exp, str):
         if compute:
             return getattr(obj, exp)(**kargs)
         else:

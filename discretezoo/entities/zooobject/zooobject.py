@@ -94,7 +94,7 @@ class ZooObject(ZooEntity):
         """
         if ZooEntity._parse_params(self, d):
             return True
-        elif isinstance(d["data"], basestring) \
+        elif isinstance(d["data"], str) \
                 and re.match(r'^[0-9A-Fa-f]{64}$', d["data"]):
             d["unique_id"] = d["data"]
             d["data"] = None
@@ -172,7 +172,7 @@ class ZooObject(ZooEntity):
             if a not in dir(self):
                 attr = getattr(obj, a)
                 if isinstance(attr, MethodType):
-                    setattr(self, a, MethodType(attr.im_func, self, cl))
+                    setattr(self, a, MethodType(attr.__func__, self, cl))
 
     def _db_read_nonprimary(self, cur=None):
         r"""
@@ -315,7 +315,7 @@ class ZooObject(ZooEntity):
                             v = a
                         t[cl] = {name: v}
                     for k, v in ats.items():
-                        if not isinstance(k, basestring):
+                        if not isinstance(k, str):
                             continue
                         c = self._getclass(k)
                         if c not in t:
@@ -328,7 +328,7 @@ class ZooObject(ZooEntity):
                 if upd:
                     update(props, name, a)
                 for k, v in ats.items():
-                    if isinstance(k, basestring):
+                    if isinstance(k, str):
                         update(self._getprops(k), k, v(a))
             return out
 
@@ -360,11 +360,11 @@ class ZooObject(ZooEntity):
             attr = None
             error = True
         if error or (isinstance(attr, MethodType) and
-                     (isinstance(attr.im_func, BuiltinFunctionType) or
-                      (attr.func_globals["__package__"] is not None and
-                       attr.func_globals["__package__"].startswith("sage.")) or
-                      (attr.func_globals["__name__"] is not None and
-                       attr.func_globals["__name__"].startswith("sage.")))):
+                     (isinstance(attr.__func__, BuiltinFunctionType) or
+                      (attr.__globals__["__package__"] is not None and
+                       attr.__globals__["__package__"].startswith("sage.")) or
+                      (attr.__globals__["__name__"] is not None and
+                       attr.__globals__["__name__"].startswith("sage.")))):
             try:
                 cl, name = self._getclass(name, alias=True)
             except KeyError:
@@ -373,10 +373,10 @@ class ZooObject(ZooEntity):
                 return attr
 
             def _attr(*largs, **kargs):
-                func = None if error else attr.im_func
+                func = None if error else attr.__func__
                 return self._call(cl, name, func, largs, kargs)
 
-            _attr.func_name = name
+            _attr.__name__ = name
             if self._override is None:
                 return _attr
             else:

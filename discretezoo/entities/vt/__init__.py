@@ -5,6 +5,6 @@ Contains a class representing vertex-transitive graphs.
 """
 
 from .vtgraph import *
-import fields
+from . import fields
 
 __all__ = ['fields', 'VTGraph', 'info']

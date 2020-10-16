@@ -4,6 +4,6 @@ SPXGraph module
 Contains a class representing split Praeger-Xu graphs.
 """
 from .spxgraph import *
-import fields
+from . import fields
 
 __all__ = ['fields', 'SPXGraph', 'info']

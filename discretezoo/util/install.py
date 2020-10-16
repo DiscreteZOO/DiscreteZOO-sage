@@ -9,9 +9,9 @@ import os
 from distutils.spawn import find_executable
 from shutil import copyfileobj
 from subprocess import call
-from urllib2 import urlopen
+from urllib.request import urlopen
 from zipfile import ZipFile
-from StringIO import StringIO
+from io import StringIO
 import sage
 import discretezoo
 

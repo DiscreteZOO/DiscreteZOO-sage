@@ -81,7 +81,7 @@ class PostgreSQLDB(SQLDB):
         """
         for arg in largs:
             d = None
-            if isinstance(arg, basestring):
+            if isinstance(arg, str):
                 kargs["dsn"] = arg
             elif isinstance(arg, ModuleType):
                 d = arg.__dict__

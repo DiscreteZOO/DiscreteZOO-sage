@@ -304,7 +304,7 @@ class CVTGraph(VTGraph):
             G = Graph([sum([[(n, e, 0), (n, e, 1)] for n, e
                             in enumerate(self.edge_iterator(labels=False))],
                            []),
-                       lambda (n, e, i), (m, f, j): n == m or e[i] == f[j]],
+                       lambda s, t: s[0] == t[0] or s[1][s[2]] == t[1][t[2]]],
                       loops=False)
             if not store:
                 cur = None
