@@ -359,6 +359,7 @@ class ZooObject(ZooEntity):
         except AttributeError as ex:
             attr = None
             error = True
+            exception = ex
         if error or (isinstance(attr, MethodType) and
                      (isinstance(attr.__func__, BuiltinFunctionType) or
                       (attr.__globals__["__package__"] is not None and
@@ -369,7 +370,7 @@ class ZooObject(ZooEntity):
                 cl, name = self._getclass(name, alias=True)
             except KeyError:
                 if error:
-                    raise ex
+                    raise exception
                 return attr
 
             def _attr(*largs, **kargs):
@@ -423,7 +424,7 @@ class ZooObject(ZooEntity):
         Returns a tuple containing an algorithm and the unique ID
         produced by the former.
         """
-        return next(self.unique_id().iteritems())
+        return next(iter(self.unique_id().items()))
 
     def _to_json_dict(self):
         r"""
@@ -514,7 +515,7 @@ class ZooObject(ZooEntity):
                     os.remove(path)
         if len(targets) > 0:
             if target is None:
-                path, target = next(targets.iteritems())
+                path, target = next(iter(targets.items()))
                 warn("Existing symlinks point to target "
                      "not corresponding to a known unique ID")
             else:

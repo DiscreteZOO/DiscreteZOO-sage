@@ -576,7 +576,7 @@ def ZooSet(parent, name, spec, use_tuples=None):
         '_spec': {
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
-            "indices": [([fkey] + fields.keys(), {"unique"})],
+            "indices": [([fkey, *fields.keys()], {"unique"})],
             "skip": {fkey, "deleted"},
             "fields": {
                 id: ZooEntity,

@@ -520,9 +520,9 @@ class ZooEntity(object, metaclass=ZooMetaclass):
         id = None
         if cl._parent is None:
             id = cl._spec["primary_key"]
-        row = dict(self._getprops(cl).items() +
-                   [(k, getattr(self, k)(store=False))
-                    for k in cl._spec["skip"]])
+        row = {**self._getprops(cl),
+               **{k: getattr(self, k)(store=False)
+                  for k in cl._spec["skip"]}}
         row = {k: v for k, v in row.items()
                if not issubclass(cl._spec['fields'][k], ZooProperty)}
         if self._zooid is False and "zooid" in row:

@@ -151,7 +151,7 @@ class ZooProperty(ZooEntity):
         deleted = {}
         for r in a:
             self._db.query([Column(c) for c in
-                            [cl._spec["primary_key"], "deleted"] + row.keys()],
+                            [cl._spec["primary_key"], "deleted", *row.keys()]],
                            cl._spec["name"],
                            {k: row[k] if k in row else r[k] for k in uidx},
                            cur=cur)
@@ -174,8 +174,7 @@ class ZooProperty(ZooEntity):
                                  Or([col == Value(id)
                                      for id in deleted.values()]),
                                  cur=cur, commit=False)
-            self._db.update_rows(cl._spec["name"],
-                                 dict(row.items() + [("deleted", False)]),
+            self._db.update_rows(cl._spec["name"], {**row, "deleted": False},
                                  Or([col == Value(id) for id in deleted]),
                                  cur=cur, commit=False)
         if len(deleted) < len(a):

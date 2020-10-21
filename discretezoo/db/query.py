@@ -83,7 +83,7 @@ class Table(QueryObject):
           of the parameter being used as ``alias``.
         """
         if len(kargs) == 1:
-            alias, table = kargs.items()[0]
+            (alias, table), = kargs.items()
         elif len(kargs) != 0:
             raise NotImplementedError
         else:
@@ -950,12 +950,9 @@ class LogicalExpression(Expression):
         if len(lterms) == 1 and isinstance(lterms[0], (list, set, tuple)):
             lterms = lterms[0]
         if len(kterms) > 0:
-            q = kterms.keys()
-            self.__init__(*(list(lterms) +
-                            [Equal(Column(k), makeExpression(kterms[k]))
-                             for k in q]))
-        else:
-            self.terms = [makeExpression(e) for e in lterms]
+            lterms = [*lterms, *(Equal(Column(k), makeExpression(v))
+                                 for k, v in kterms.items())]
+        self.terms = [makeExpression(e) for e in lterms]
 
     def eval(self, parse):
         r"""

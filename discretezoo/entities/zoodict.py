@@ -15,6 +15,142 @@ from ..util.context import DBParams
 from ..util.utility import to_json
 
 
+class ZooDictView():
+    r"""
+    An abstract class for DiscreteZOO dictionary views.
+    """
+    _DICT_METHOD = None
+
+    def __init__(self, d):
+        r"""
+        Object constructor.
+
+        INPUT:
+
+        - ``d`` - dictionary for which the view is being constructed.
+        """
+        self._dict = d
+
+    def __len__(self):
+        r"""
+        Return the length of the dictionary being viewed.
+        """
+        return len(self._dict)
+
+    def __iter__(self):
+        r"""
+        Return an iterator over the view elements.
+        """
+        return self._iter_(iter)
+
+    def __repr__(self):
+        r"""
+        The object representation of the view.
+        """
+        return "%s(%s)" % (self.__class__.__name__, repr(list(self)))
+
+    def __reversed__(self):
+        r"""
+        Return a reverse iterator over the view elements.
+        """
+        return self._iter_(reversed)
+
+    @staticmethod
+    def _fetch(val):
+        r"""
+        Fetch the value from the underlying view.
+
+        Not implemented, to be overridden.
+
+        INPUT:
+
+        - ``val`` - an element of the underlying view.
+        """
+        raise NotImplementedError
+
+    def _iter_(self, itr):
+        r"""
+        Return an iterator over the view elements
+        according to the specified iterator function.
+        """
+        it = itr(self._DICT_METHOD(self._dict))
+
+        def iterator():
+            while True:
+                try:
+                    yield self._fetch(next(it))
+                except StopIteration:
+                    return
+
+        return iterator()
+
+
+class ZooItemsView(ZooDictView):
+    r"""
+    A class for DiscreteZOO dictionary items views.
+    """
+    _DICT_METHOD = staticmethod(dict.items)
+
+    def __contains__(self, item):
+        r"""
+        Check whether ``item`` is contained in the view.
+
+        INPUT:
+
+        - ``item`` - the item to be checked. A (key, value) tuple is expected.
+        """
+        if not isinstance(item, tuple) or len(item) != 2:
+            return False
+        key, value = item
+        if key not in self._dict:
+            return False
+        return self._dict[key] == value
+
+    @staticmethod
+    def _fetch(val):
+        r"""
+        Fetch the (key, value)-pair from the underlying view.
+
+        INPUT:
+
+        - ``val`` - an element of the underlying view.
+        """
+        k, (_, v) = val
+        return (k, v)
+
+    def isdisjoint(self, other):
+        r"""
+        Check if the view and the given iterable have a null intersection.
+
+        INPUT:
+
+        - ``other`` - an iterable.
+        """
+        for elt in other:
+            if elt in self:
+                return False
+        return True
+
+
+class ZooValuesView(ZooDictView):
+    r"""
+    A class for DiscreteZOO dictionary values views.
+    """
+    _DICT_METHOD = staticmethod(dict.values)
+
+    @staticmethod
+    def _fetch(val):
+        r"""
+        Fetch the value from the underlying view.
+
+        INPUT:
+
+        - ``val`` - an element of the underlying view.
+        """
+        _, v = val
+        return v
+
+
 class _ZooDict(dict, ZooProperty):
     r"""
     A generic dictionary class with database interaction.
@@ -295,32 +431,9 @@ class _ZooDict(dict, ZooProperty):
 
     def items(self):
         r"""
-        List the (key, value) pairs.
+        Return a view of the (key, value) pairs.
         """
-        return [(k, v) for k, (_, v) in dict.items(self)]
-
-    def iteritems(self):
-        r"""
-        Return an iterator over the (key, value) pairs.
-        """
-        it = dict.iteritems(self)
-
-        def iter():
-            while True:
-                k, (_, v) = next(it)
-                yield (k, v)
-        return iter()
-
-    def itervalues(self):
-        r"""
-        Return an iterator over the values.
-        """
-        it = dict.itervalues(self)
-
-        def iter():
-            while True:
-                yield next(it)[1]
-        return iter()
+        return ZooItemsView(self)
 
     def pop(self, k, *largs, **kargs):
         r"""
@@ -433,9 +546,9 @@ class _ZooDict(dict, ZooProperty):
 
     def values(self):
         r"""
-        Return a list of values.
+        Return a view of the values.
         """
-        return [v[1] for v in dict.values(self)]
+        return ZooValuesView(self)
 
 
 def ZooDict(parent, name, spec, use_key_tuples=None, use_val_tuples=None):
@@ -487,7 +600,7 @@ def ZooDict(parent, name, spec, use_key_tuples=None, use_val_tuples=None):
         "_spec": {
             "name": "%s_%s" % (parent._spec["name"], name),
             "primary_key": id,
-            "indices": [([fkey] + keys.keys(), {"unique"})],
+            "indices": [([fkey, *keys.keys()], {"unique"})],
             "skip": {fkey, "deleted"},
             "fields": {
                 id: ZooEntity,
