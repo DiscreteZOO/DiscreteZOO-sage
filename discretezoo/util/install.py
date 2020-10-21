@@ -93,7 +93,7 @@ def install():
                 if not filename:
                     continue
                 src = zip.open(member)
-                tgt = file(os.path.join(specdir, filename), "wb")
+                tgt = open(os.path.join(specdir, filename), "wb")
                 with src, tgt:
                     copyfileobj(src, tgt)
             zip.close()

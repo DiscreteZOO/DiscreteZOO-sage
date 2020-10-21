@@ -168,7 +168,7 @@ def init_class(cl):
     - ``cl`` -- the class to be initialized.
     """
     register_type(cl)
-    f = file(os.path.join(path, cl.__name__ + ".json"))
+    f = open(os.path.join(path, cl.__name__ + ".json"), encoding="utf-8")
     spec = json.load(f)
     f.close()
     spec["name"] = str(spec["name"])
