@@ -24,8 +24,23 @@ from ...util.utility import parse
 from ...util.utility import todict
 from ...util.utility import tomultidict
 
+class ZooMetaclass(type):
+    r"""
+    A metaclass for initializing DiscreteZOO classes.
+    """
 
-class ZooEntity(object):
+    def __new__(mcl, name, bases, attrs):
+        r"""
+        Class initialization method.
+        """
+        cl = type.__new__(mcl, name, bases, attrs)
+        if cl._init:
+            zootypes.init_class(cl)
+            cl._init_derived()
+        return cl
+
+
+class ZooEntity(object, metaclass=ZooMetaclass):
     r"""
     A class which all DiscreteZOO entities extend.
 
@@ -40,21 +55,6 @@ class ZooEntity(object):
     _parent = None
     _extra_classes = None
     _init = True
-
-    class __metaclass__(type):
-        r"""
-        A metaclass for initializing DiscreteZOO classes.
-        """
-
-        def __new__(mcl, name, bases, attrs):
-            r"""
-            Class initialization method.
-            """
-            cl = type.__new__(mcl, name, bases, attrs)
-            if cl._init:
-                zootypes.init_class(cl)
-                cl._init_derived()
-            return cl
 
     def __init__(self, data=None, **kargs):
         r"""
