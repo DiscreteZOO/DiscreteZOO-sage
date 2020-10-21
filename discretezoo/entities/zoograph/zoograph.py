@@ -576,7 +576,8 @@ def data(graph, **kargs):
     """
     # TODO: determine the most appropriate way of representing the graph
     algorithm = lookup(kargs, "algorithm", default=None)
-    return canonical_label(graph, algorithm=algorithm).sparse6_string()
+    C = canonical_label(graph, algorithm=algorithm)
+    return Graph([C.vertices(), C.edges()]).sparse6_string()
 
 
 def unique_id(graph, **kargs):
@@ -603,7 +604,7 @@ def unique_id(graph, **kargs):
     """
     algorithm = lookup(kargs, "algorithm", default=None)
     store, cur = DBParams.get(kargs)
-    uid = sha256(data(graph, algorithm=algorithm)).hexdigest()
+    uid = sha256(data(graph, algorithm=algorithm).encode()).hexdigest()
     if isinstance(graph, ZooGraph):
         graph.unique_id().__setitem__(algorithm, uid, store=store, cur=cur)
     return uid
