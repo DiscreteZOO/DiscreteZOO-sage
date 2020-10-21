@@ -14,7 +14,7 @@ from sage.misc.package import is_package_installed
 from sage.rings.infinity import PlusInfinity
 from sage.rings.integer import Integer
 from hashlib import sha256
-from inspect import getargspec
+from inspect import getfullargspec
 from . import fields
 from ..zooentity import ZooInfo
 from ..zooobject import ZooObject
@@ -135,7 +135,8 @@ class ZooGraph(Graph, ZooObject):
         r"""
         Construct a graph from the given data.
         """
-        args = getargspec(Graph.__init__)[0][1:]
+        argspec = getfullargspec(Graph.__init__)
+        args = argspec.args[1:] + argspec.kwonlyargs
         d["graph"] = Graph(**{k: v for k, v in d.items() if k in args})
         d["vertex_labels"] = None
 
@@ -364,7 +365,7 @@ class ZooGraph(Graph, ZooObject):
         copy will have type ``Graph``.
         """
         if immutable is False or (data_structure is not None
-                                  and data_structure is not 'static_sparse'):
+                                  and data_structure != 'static_sparse'):
             return Graph(self).copy(weighted=weighted,
                                     data_structure=data_structure,
                                     sparse=sparse,

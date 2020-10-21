@@ -6,7 +6,7 @@ This module contains utility functions used throughout the package.
 
 import sys
 from functools import partial
-from inspect import getargspec
+from inspect import getfullargspec
 from sage.rings.integer import Integer
 from sage.rings.rational import Rational
 from sage.rings.real_mpfr import create_RealNumber
@@ -194,9 +194,10 @@ def construct(cl, self, d):
 
     - ``d`` -- the dictionary containing the parameters.
     """
-    argspec = getargspec(cl.__init__)
-    if argspec.keywords is None:
-        d = {k: v for k, v in d.items() if k in argspec.args}
+    argspec = getfullargspec(cl.__init__)
+    if argspec.varkw is None:
+        args = argspec.args + argspec.kwonlyargs
+        d = {k: v for k, v in d.items() if k in args}
     cl.__init__(self, **d)
 
 

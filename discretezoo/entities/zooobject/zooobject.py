@@ -7,7 +7,7 @@ This module contains a class which all DiscreteZOO objects extend.
 import json
 import os
 import re
-from inspect import getargspec
+from inspect import getfullargspec
 from types import BuiltinFunctionType
 from types import MethodType
 from warnings import warn
@@ -291,14 +291,14 @@ class ZooObject(ZooEntity):
                 out = a
             else:
                 a, out = a
-                args = getargspec(fun).args
+                args = getfullargspec(fun).args
                 if db_params:
                     keywords = [kw for kw in kargs
                                 if kw not in ("store", "cur")]
                 else:
                     keywords = kargs
-                default = all(arg in acceptArgs
-                              for arg in args[1:len(largs)+1]) and \
+                default = all(args[i+1] in acceptArgs
+                              for i in range(len(largs))) and \
                     all(arg in acceptArgs for arg in keywords)
             if default:
                 attrs = dict(attrs)
