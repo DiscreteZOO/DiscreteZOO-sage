@@ -5,7 +5,6 @@ This module provides some decorators for class methods.
 """
 
 import re
-from functools import partial
 from functools import wraps
 from operator import eq
 import discretezoo
@@ -173,7 +172,6 @@ class ZooDecorator(object):
           value.
         """
         attrs.update(lattrs)
-        attrs = {k: partial(eq, v) for k, v in attrs.items()}
 
         def _determined(fun):
             @wraps(fun)

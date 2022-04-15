@@ -227,7 +227,7 @@ class ZooObject(ZooEntity):
         Change(self._zooid, cl, cur=cur)
 
     def _call(self, cl, name, fun, largs, kargs, db_params=False,
-              acceptArgs=None, replacement=None, determiner=None, attrs={}):
+              acceptArgs=None, replacement=None, determiner=None, attrs=None):
         r"""
         Perform a call to the specified function associated to a field.
 
@@ -265,6 +265,8 @@ class ZooObject(ZooEntity):
         store, cur = DBParams.get(kargs, destroy=not db_params)
         default = len(largs) + len(kargs) == 0
         props = self._getprops(cl)
+        if attrs is None:
+            attrs = {}
         try:
             if not default:
                 raise NotImplementedError
@@ -318,9 +320,7 @@ class ZooObject(ZooEntity):
                         if not isinstance(k, str):
                             continue
                         c = self._getclass(k)
-                        if c not in t:
-                            t[c] = {}
-                        t[c][k] = v(a)
+                        t.setdefault(c, {})[k] = v == a
                     for c, at in t.items():
                         self._update_rows(c, at,
                                           {self._spec["primary_key"]:
