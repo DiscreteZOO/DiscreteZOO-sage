@@ -6,8 +6,8 @@ DiscreteZOO to work.
 """
 
 import os
-from distutils.spawn import find_executable
 from shutil import copyfileobj
+from shutil import which
 from subprocess import call
 from urllib.request import urlopen
 from zipfile import ZipFile
@@ -54,7 +54,7 @@ def install():
     specdir = os.path.join(gitdir, 'spec')
     git = os.path.exists(os.path.join(gitdir, '../.git'))
     if git:
-        git = find_executable('git') is not None
+        git = which('git') is not None
         if not git:
             print("Warning: git is not available on your system.")
             print("It is recommended that you install it "

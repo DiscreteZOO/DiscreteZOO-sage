@@ -6,7 +6,7 @@ and some helper functions.
 """
 
 from sage.categories.sets_cat import EmptySetError
-from sage.graphs.graph import DiGraph
+from sage.graphs.digraph import DiGraph
 from sage.graphs.graph import GenericGraph
 from sage.graphs.graph import Graph
 from sage.graphs.graph_coloring import edge_coloring
